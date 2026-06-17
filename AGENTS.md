@@ -1,143 +1,62 @@
-# AGENTS.md — Custom Contract Plugin (KSP1 / SOL Quarter-Scale)
+# AGENTS.md - CustomScienceContracts
 
 ## Was wir bauen
-Ein KSP1-Plugin (C#) das ein eigenes Contract-/Ziel-System bereitstellt, parallel und
-unabhaengig vom Stock-Career-Contractsystem. Lauffaehig im **Science Mode**. Es zeigt
-selbst definierte Missionen, trackt deren Erfuellung ueber reine Stock-Spielzustaende und
-vergibt bei Abschluss einen Science-Bonus via
+Ein KSP1-Plugin in C# fuer KSP 1.12.x. Es stellt im Science Mode ein eigenes
+Missions-/Zielsystem bereit, parallel und unabhaengig vom Stock-Contractsystem.
+Erfuellte Missionen geben einen Science-Bonus ueber
 `ResearchAndDevelopment.AddScience(amount, TransactionReasons.Cheating)`.
 
-**Single Source of Truth fuer die Missionen:** die hochgeladene Datei
-`Missionsplan_Spec_SOL_v3.md`. Diese AGENTS.md enthaelt zusaetzlich verbindliche
-Korrekturen (Abschnitt "Korrekturen zur v3-Spec"), die ueber die Datei gelten.
+## Aktuelle Quelle der Missionen
+**Single Source of Truth:** `custom_science_contracts_missionsdesign.md`.
 
-## Setup / Build
-- KSP 1.12.x, C#, Ziel-Framework .NET 4.x (Unity-Mono).
-- Referenzen aus `KSP_x64_Data/Managed/`: `Assembly-CSharp.dll`, `UnityEngine.*.dll`.
-- Output-DLL nach `GameData/CustomContracts/Plugins/`.
-- Persistenz ueber `ScenarioModule` mit `[KSPScenario(...)]`, Speichern/Laden via
-  `OnSave`/`OnLoad` in ein `ConfigNode` (Fortschritt, aktive Missionen, Cooldown-Zaehler,
-  gesetzte Marker-Waypoints).
-- UI ueber `ApplicationLauncher`-Button + `OnGUI`/`GUILayout`-Fenster.
-- Pruef-Loop NICHT jeden Frame: Coroutine alle ~1 s ueber die AKTIVEN Missionen.
+Die Dateien in `GameData/CustomScienceContracts/Contracts/*.cfg` sind generiert.
+Sie werden nicht von Hand editiert, sondern ueber `tools/gen_catalog.py` neu erzeugt.
+Die alte v3-Spec, alte SOL-Config-Kopien und alte Auslieferungsordner sind bewusst
+nicht mehr Teil des Arbeitsordners.
 
-## Erste Schritte (bevor Contract-Liste gecoded wird)
-1. **Body-Namen abgleichen.** Aus dem configs-Ordner (oder per Debug-Dump
-   `foreach b in FlightGlobals.Bodies -> b.name`) die internen `name`-Strings ziehen.
-   Die Platzhalter in der v3-Spec (`Earth`, `Luna`, `Mars`, `Mercury`, `Ganymede`, ...)
-   gegen die echten Strings mappen. **Mir die fertige Mapping-Tabelle zeigen und bestaetigen
-   lassen, bevor die Contracts hardcoded werden.**
-2. **Asteroiden klaeren:** Sind sie echte `CelestialBody` (dann FLYBY/ORBIT/LANDED normal)
-   oder spawnbare Tracking-Objekte (dann `RENDEZVOUS` an ein Vessel)? Aus configs ableiten.
-3. **Aeussere Monde:** pro aeusserem Planeten auf >=10 Flyby-Contracts auffuellen, SOWEIT
-   SOL so viele Monde modelliert. Gibt es weniger, auf die tatsaechliche Anzahl reduzieren —
-   keine erfundenen Bodies anlegen.
+## Saubere Ordnerstruktur
+- `src/CustomScienceContracts/` - C#-Quellcode.
+- `GameData/CustomScienceContracts/` - KSP-Moddaten: generierter Katalog, Icons, Settings.
+- `tools/` - Generator und Validatoren fuer Missionsdesign und Katalog.
+- `custom_science_contracts_missionsdesign.md` - Ablauf und Missionsdesign.
+- `customScienceContracts Logo.png` - Logo/Artwork, bewusst behalten.
+- `DOKUMENTATION.md` - Architektur- und Workflow-Dokumentation.
 
-## Datenmodell
-```
-enum Sparte { Bemannt, UnbemannteErkundung, NetzwerkLogistik, Wiederholbar }
-class MissionContract {
-  string Id, Titel, Beschreibung;
-  Sparte HeimatSparte;            // Bemannt/UnbemannteErkundung/NetzwerkLogistik
-  string Unterkategorie;          // Koerper-Name (Luna eigene Kat.; Monde unter Planet)
-  string[] Voraussetzungen;       // IDs, muessen alle Completed sein
-  Condition[] Bedingungen;
-  float ScienceReward;
-  bool Repeatable;
-  // Laufzeit-State:
-  Status status;                  // Locked / Available / Active / CompletedOnce
-  int completionsSinceLastClaim;  // fuer Repeatable-Cooldown
-}
-```
+## Build / Workflow
+1. Missionsdesign aendern: `custom_science_contracts_missionsdesign.md`.
+2. Design pruefen: `python3 tools/validate_design.py`.
+3. Katalog erzeugen: `python3 tools/gen_catalog.py`.
+4. Katalog pruefen: `python3 tools/validate_catalog.py`.
+5. Plugin bauen/deployen: `./build.sh`.
 
-## Contract-States & Flow
-- **Locked** -> nicht alle Voraussetzungen Completed.
-- **Available** -> alle Voraussetzungen Completed, im Auswahlfenster sichtbar (Sichtbarkeits-
-  regeln s.u.). NICHT getrackt.
-- **Active** -> vom Spieler angenommen, wird im Pruef-Loop getrackt, zaehlt gegen das
-  Aktiv-Limit. Annehmen nur moeglich, solange Limit nicht erreicht.
-- **CompletedOnce** -> Bedingungen erfuellt, Reward ausgezahlt.
-  - Nicht-Repeatable: endgueltig fertig.
-  - Repeatable: wandert in Sparte **Wiederholbar**, raus aus der Heimat-Liste.
+Build-Ausgaben wie `bin/`, `obj/`, DLLs und Release-Exportordner werden nicht als
+Quellbestand gepflegt. Sie sind regenerierbar.
 
-## Repeatable / Sparte Wiederholbar
-- Vor Erstabschluss lebt der Contract in seiner Heimat-Unterkategorie.
-- Nach Erstabschluss erscheint er nur noch in der Sparte **Wiederholbar**.
-- **Cooldown:** erneut annehmbar erst, wenn seit dem letzten Einloesen **>= 2 andere
-  Missionen** abgeschlossen wurden. Zaehler `completionsSinceLastClaim`: reset 0 beim
-  Einloesen, +1 bei jedem anderen Abschluss, annehmbar wenn >= 2. UI zeigt Restzaehler.
+## Laufzeitregeln
+- Persistenz ueber `ScenarioModule` und eine editierbare Save-Datei:
+  `saves/<save>/CustomScienceContracts/contracts_state.cfg`.
+- UI ueber `ApplicationLauncher` und IMGUI-Fenster.
+- Pruef-Loop nicht jeden Frame, sondern per Coroutine etwa alle 1 s ueber aktive Missionen.
+- Body-Groessen, Atmosphaerenhoehen und Tageslaenge immer aus der KSP-API ziehen.
 
-## Sichtbarkeitsregeln (Auswahlfenster, = "Available")
-- Eine Mission wird NUR angezeigt, wenn alle Voraussetzungen erfuellt sind.
-- **Bemannt:** max. **3** gleichzeitig sichtbare Available-Contracts. Sobald **>= 50 %**
-  aller bemannten Contracts CompletedOnce sind, steigt das Limit auf **5**.
-- **Unbemannte Erkundung:** **4** Available pro Unterkategorie. AUSNAHME aeusseres System:
-  zuerst ist nur der Planeten-Flyby sichtbar; ist dieser abgeschlossen, werden **alle**
-  Contracts dieser Unterkategorie sichtbar (4er-Limit faellt fuer diese Unterkat. weg).
-  -> Unterkategorie-Feld `RevealAllAfter = un_<planet>_flyby`.
-- **Netzwerk/Logistik:** max. **3** sichtbar pro Unterkategorie.
+## Contract-Flow
+- `Locked`: Voraussetzungen fehlen.
+- `Available`: Voraussetzungen erfuellt, sichtbar nach Sichtbarkeitsregeln.
+- `Active`: angenommen und im Pruef-Loop.
+- `ReadyToClaim`: Bedingungen erfuellt, Reward noch nicht ausgezahlt.
+- `CompletedOnce`: abgeschlossen.
 
-## Aktiv-Limits (gleichzeitig angenommene Missionen)
-- Bemannt: max. **3** aktiv.
-- Unbemannte Erkundung: max. **10** aktiv.
-- Netzwerk/Logistik: max. **5** aktiv.
-- Annehmen bei erreichtem Limit blockiert (UI-Hinweis).
+Repeatables wandern nach Erstabschluss in die Sparte `Wiederholbar` und brauchen
+den Cooldown von zwei anderen Abschluessen.
 
-## Bedingungstypen
-Einfach (zuerst implementieren): `ORBIT`, `ORBIT_HIGH`, `LANDED`, `ATMO_ENTRY`,
-`ALT_FRACTION_ATMO`, `ABOVE_ATMO_SUBORBITAL`, `EVA`, `CREW_DURATION`, `DOCK`,
-`ORE_SURFACE`, `VESSEL_COUNT_ORBIT`, `FUEL_ORBIT`.
-Knifflig (State-Tracking, zuletzt): `FLYBY`, `MARKER_LANDING`, `RENDEZVOUS`.
-- `ALT_FRACTION_ATMO` / `ABOVE_ATMO_SUBORBITAL`: Schwellen als Bruchteil von
-  `CelestialBody.atmosphereDepth`, zur Laufzeit gezogen, NIE hardcoden.
-- `MARKER_LANDING`: Waypoint beim Annehmen setzen, bei LANDED Distanz <= R pruefen.
-  R = 15 km Standard, 5 km bei Basis-Versorgung/-Rotation.
+## Harte Verbote
+- Keine Part-Anforderungen.
+- Keine Kopplung an Kerbalism/Simplex-APIs.
+- Keine hardcodeten Body-Groessen oder Atmosphaerenhoehen.
+- Keine erfundenen Body-Namen.
 
-## Korrekturen zur v3-Spec (gelten ueber die hochgeladene Datei)
-1. **Startphase umverteilt:**
-   - `cr_pad` und `cr_upperatmo` -> werden UNBEMANNT: `un_pad`, `un_upperatmo`
-     (Unterkat. Erde, Crew nicht erforderlich).
-   - "Atmosphaere verlassen" existiert in BEIDEN Sparten: `un_leaveatmo` (unbemannt) und
-     `cr_leaveatmo` (bemannt).
-   - Unbemannte Erde-Kette: `un_pad` -> `un_upperatmo` -> `un_leaveatmo` -> `un_earth_orbit`.
-2. **Bemannte Starts erst nach Satellit ausserhalb Atmosphaere:**
-   - `cr_leaveatmo` (erste bemannte Mission) Voraussetzung: **`un_leaveatmo`**.
-   - Bemannte Erde-Kette startet bei `cr_leaveatmo` (kein bemanntes pad/upperatmo mehr).
-3. **Venus & Merkur: zuerst bemannter Flyby.**
-   - Neu `cr_venus_flyby` (FLYBY Venus, Crew>=1; Voraus: cr_mars_orbit, un_venus_orbit)
-     vor `cr_venus_orbit` (Voraus jetzt: cr_venus_flyby).
-   - Neu `cr_mercury_flyby` (FLYBY Mercury, Crew>=1; Voraus: cr_venus_orbit, un_mercury_orbit)
-     vor `cr_mercury_orbit` (Voraus jetzt: cr_mercury_flyby).
-4. **Mars erst nach erster Raumstation:**
-   - `cr_mars_orbit` Voraussetzung zusaetzlich: **`cr_station_leo`**.
-5. **Stations-Langzeit >200 Tage, frueh:**
-   - Neu `cr_station_longstay200` (CREW_DURATION ORBIT Earth, Crew>=3, 200d),
-     Voraussetzung: `cr_station_expand3`. Reward hoch (~450). Erscheint frueh im
-     Stations-Block, NICHT erst nach Mars.
-6. **Crew-Groessen erhoeht:**
-   - Erde-Station: Ausbaustufen auf 4 und dann **6** Crew (`cr_station_expand4` Crew>=4,
-     neu `cr_station_expand6` Crew>=6 / 15d, Voraus: cr_station_expand4).
-   - Luna-Basis: Ausbau auf **3** Crew (`cr_luna_base_expand` Crew>=3), optional zweite
-     Stufe Crew>=4.
-7. Alles uebrige aus v3 bleibt gueltig (Mond-Gate, Ganymed-Finale, Kategorie C, usw.).
-
-## UI-Hinweise
-- 4 Tabs (Sparten), darunter Unterkategorien (Koerper) als aufklappbare Gruppen.
-- Zweites Fenster: aktive Missionen mit Fortschritt/Status.
-- Aktiver Tab/Text klar lesbar (heller Text auf dunklem Grund). Dunkles, kontrastreiches
-  Theme, EIN starker Akzent (Hellblau oder grün). Kein Dunkelblau.
-
-## Verbote (hart)
-- KEINE Part-Anforderungen.
-- KEINE Kopplung an Kerbalism/Simplex-API (MITE/Scan bleiben rein narrativ in der
-  Beschreibung; geprueft wird nur Orbit/Landung).
-- KEINE hardcoded Body-Groessen/Atmosphaerenhoehen — immer aus der API.
-- KEINE erfundenen Body-Namen.
-
-## Arbeitsweise
-- Geruest zuerst (Datenmodell, ScenarioModule-Persistenz, Sparten-/Unterkategorie-Manager
-  mit Sichtbarkeits- und Aktiv-Limits, UI-Skelett), dann einfache Bedingungen, dann die
-  drei kniffligen.
-- Bei groesseren Architektur-Entscheidungen kurz Ruecksprache.
-- Contract-Titel/Beschreibungen auf Deutsch (Schweizer Hochdeutsch, "ss" statt "ss"),
-  Code/Kommentare Englisch ok.
+## Text / Stil
+Contract-Titel und Beschreibungen bleiben auf Deutsch in Schweizer Hochdeutsch
+mit `ss` statt `ß`. Code und Kommentare duerfen Englisch sein.
+Das UI darf vom alten "kein Dunkelblau"-Hinweis abweichen; die aktuelle dunkle
+Oberflaeche mit hellem Akzent ist gewollt.

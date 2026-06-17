@@ -8,7 +8,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOC = os.path.join(ROOT, "custom_science_contracts_missionsdesign.md")
 text = open(DOC, encoding="utf-8").read()
 
-SOL_BODIES = {  # aus Sol-Configs/Configs verifiziert
+SOL_BODIES = {  # bekannte interne Body-Namen aus SOL
  "Amalthea","Ariel","Arrokoth","Callisto","Ceres","Charon","Dactyl","Deimos","Dione",
  "Earth","Enceladus","Eros","Europa","Ganymede","Hydra","Hyperion","Iapetus","Ida","Io",
  "Jupiter","Kerberos","Mars","Mercury","Mimas","Miranda","Moon","Neptune","Nereid","Nix",

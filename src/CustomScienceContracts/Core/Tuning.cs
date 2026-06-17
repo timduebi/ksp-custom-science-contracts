@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CustomScienceContracts.Core
 {
-    /// <summary>Zentrale Stellschrauben aus CLAUDE.md / Spec. Defaults hier; zur Laufzeit aus
+    /// <summary>Zentrale Stellschrauben aus AGENTS.md / Designplan. Defaults hier; zur Laufzeit aus
     /// GameData/CustomScienceContracts/settings.cfg (Node CUSTOM_SCIENCE_CONTRACTS_SETTINGS)
     /// ueberschreibbar. Fehlt die Datei/ein Wert, gilt der Default.</summary>
     public static class Tuning

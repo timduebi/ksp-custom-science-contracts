@@ -1,0 +1,18 @@
+.DS_Store
+
+# Build output
+src/**/bin/
+src/**/obj/
+GameData/CustomScienceContracts/Plugins/*.dll
+GameData/CustomScienceContracts/Plugins/*.pdb
+*.user
+
+# Local release/export folders
+compiled/
+fertig/
+für mich/
+
+# Local KSP/log clutter
+KSP.log
+Player.log
+*.log

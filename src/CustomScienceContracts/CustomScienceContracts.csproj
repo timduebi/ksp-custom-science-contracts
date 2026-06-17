@@ -64,7 +64,7 @@
     <!-- FinePrint-Typen (Waypoint/ScenarioCustomWaypoints) sind in KSP 1.12 Teil von Assembly-CSharp. -->
   </ItemGroup>
 
-  <!-- DLL nach dem Build ins Mod-GameData kopieren (lt. CLAUDE.md). -->
+  <!-- DLL nach dem Build ins Mod-GameData kopieren. -->
   <Target Name="DeployToGameData" AfterTargets="Build">
     <MakeDir Directories="$(ModDeployDir)" />
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModDeployDir)" SkipUnchangedFiles="false" />
