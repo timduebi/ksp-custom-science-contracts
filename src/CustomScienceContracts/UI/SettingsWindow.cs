@@ -17,6 +17,7 @@ namespace CustomScienceContracts.UI
 
             GUILayout.Space(4);
             GUILayout.Label("Einstellungen", Theme.Title);
+            GUILayout.Label($"{ModInfo.Name} v{ModInfo.Version}", Theme.ItemSub);
 
             // --- Wissenschafts-Multiplikator (x0.1 – x3.0, 0.1er-Schritte) ---
             GUILayout.Space(8);

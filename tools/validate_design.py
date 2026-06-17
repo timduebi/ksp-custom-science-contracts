@@ -34,7 +34,7 @@ for blk in text.split("=== MISSION ===")[1:]:
         if s.startswith("=="): break
         if s.startswith("check:"):
             checks.append(s[len("check:"):].strip()); continue
-        mm = re.match(r"(id|sparte|body|prereq|reward|repeatable|recordStation|stationRef|beschreibung):\s*(.*)$", s)
+        mm = re.match(r"(id|sparte|body|prereq|reward|repeatable|recordStation|stationRef|beschreibung|icon):\s*(.*)$", s)
         if mm: m[mm.group(1)] = mm.group(2).strip()
     if "id" in m:
         m["checks"] = checks

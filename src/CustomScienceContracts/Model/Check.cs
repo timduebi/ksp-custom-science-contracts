@@ -54,6 +54,8 @@ namespace CustomScienceContracts.Model
         public double Amount = 0.0;  // FUEL_MIN / RESOURCE_MIN
         public double FracMin = 0.0; // ATMO_FRACTION
         public double FracMax = 1.0; // ATMO_FRACTION
+        public double LatAbsMin = 0.0;  // MARKER_LANDING: untere abs. Breiten-Bandgrenze (Default: aequatornah)
+        public double LatAbsMax = 15.0; // MARKER_LANDING: obere abs. Breiten-Bandgrenze (Default: +-15 Grad)
 
         /// <summary>Zeit-Check (HOLD/DURATION) — wird ueber den gemeinsamen Timer ausgewertet.</summary>
         public bool IsTimer => Kind == CheckKind.HOLD || Kind == CheckKind.DURATION;
@@ -90,6 +92,8 @@ namespace CustomScienceContracts.Model
             c.Amount  = GetD(node, "amount", 0.0);
             c.FracMin = GetD(node, "fracMin", 0.0);
             c.FracMax = GetD(node, "fracMax", 1.0);
+            c.LatAbsMin = GetD(node, "latMin", 0.0);
+            c.LatAbsMax = GetD(node, "latMax", 15.0);
             return c;
         }
 

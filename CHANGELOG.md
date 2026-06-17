@@ -3,6 +3,29 @@
 All notable changes to CustomScienceContracts are documented here.
 This project uses simple `MAJOR.MINOR.PATCH` versioning.
 
+## [0.1.2] - 2026-06-17
+
+### Added
+- Robotic **rover precision landings** for the Moon (`un_luna_rover`) and Mars
+  (`un_mars_rover`). Completing them is now required before the crewed landing on
+  that body.
+- Robotic **polar precision landings** for the Moon, Mars and Titan
+  (`un_luna_polar_landing`, `un_mars_polar_landing`, `un_titan_polar_landing`),
+  unlocked after the matching polar mapping (optional side branches).
+- The mod version is embedded in the build and shown in the log and the settings
+  window.
+
+### Changed
+- Precision-landing targets are now randomized per save (no longer the same spot
+  every playthrough) and constrained to within ±15° of the equator; polar landings
+  target latitudes ≥70°.
+- The "active missions" button now sits at the top of the screen (near the resource
+  display) instead of in the stock app-launcher cluster; position is configurable in
+  `settings.cfg`.
+- The crewed Mars landing is now gated behind the rover landing (`un_mars_rover`)
+  instead of `un_mars_precision_landing` (which remains as a separate robotic
+  precision landing).
+
 ## [0.1.1] - 2026-06-17
 
 ### Fixed

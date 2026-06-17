@@ -48,6 +48,7 @@ namespace CustomScienceContracts.Persistence
         private void EnsureInitialized()
         {
             if (_initialized) return;
+            Log.Info($"{ModInfo.Name} v{ModInfo.Version} geladen.");
             BodyResolver.RebuildCache();
             Tuning.Load();
 

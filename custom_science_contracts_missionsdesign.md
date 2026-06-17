@@ -274,6 +274,20 @@ check: INCLINATION_MIN Moon 75 | Orbit-Inklination über 75 Grad
 check: HOLD 10 | 10 Sekunden stabil halten
 
 === MISSION ===
+id: un_luna_polar_landing
+sparte: Robotische Erkunder
+body: Moon
+prereq: un_luna_polar_mapping
+reward: 160
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Setze eine Sonde punktgenau in der Polregion von Luna ab. Die Eis- und Schattenzonen der Pole sind für spätere Basen besonders interessant — und eine Landung dort ist deutlich anspruchsvoller als am Äquator.
+check: CREW_NONE | unbemannt
+check: LANDED Moon | auf Luna gelandet
+check: MARKER_LANDING Moon 8 70 90 | Pollandung im Umkreis von 8 km
+
+=== MISSION ===
 id: cr_luna_flyby_crewed
 sparte: Pioniere
 body: Moon
@@ -300,6 +314,21 @@ check: CREW_NONE | unbemannt
 check: LANDED Moon | auf Luna gelandet
 
 === MISSION ===
+id: un_luna_rover
+sparte: Robotische Erkunder
+body: Moon
+prereq: un_luna_landing
+reward: 140
+repeatable: no
+recordStation: -
+stationRef: -
+icon: TrackingStation_ButtonMapRover
+beschreibung: Setze einen unbemannten Rover punktgenau am vorbereiteten Mondgebiet ab. Erst diese kontrollierte Ziellandung beweist, dass auch die erste bemannte Crew sicher am geplanten Ort aufsetzen kann.
+check: CREW_NONE | unbemannt
+check: LANDED Moon | auf Luna gelandet
+check: MARKER_LANDING Moon 5 | Landung im Umkreis von 5 km
+
+=== MISSION ===
 id: cr_luna_orbit
 sparte: Pioniere
 body: Moon
@@ -317,7 +346,7 @@ check: HOLD 10 | 10 Sekunden stabil halten
 id: cr_luna_landing
 sparte: Pioniere
 body: Moon
-prereq: cr_luna_orbit
+prereq: cr_luna_orbit, un_luna_rover
 reward: 208
 repeatable: no
 recordStation: -
@@ -619,6 +648,20 @@ check: INCLINATION_MIN Mars 75 | Orbit-Inklination über 75 Grad
 check: HOLD 10 | 10 Sekunden stabil halten
 
 === MISSION ===
+id: un_mars_polar_landing
+sparte: Robotische Erkunder
+body: Mars
+prereq: un_mars_polar_mapping
+reward: 330
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Setze eine Sonde punktgenau in der Polregion des Mars ab. Die Eiskappen und Randzonen der Pole sind wissenschaftlich besonders ergiebig — und die Landung dort verlangt mehr Präzision als am Äquator.
+check: CREW_NONE | unbemannt
+check: LANDED Mars | auf Mars gelandet
+check: MARKER_LANDING Mars 12 70 90 | Pollandung im Umkreis von 12 km
+
+=== MISSION ===
 id: net_mars_comm_network
 sparte: Versorgungsnetz
 body: Mars
@@ -658,6 +701,21 @@ stationRef: -
 beschreibung: Lande eine Sonde auf dem Mars und berühre den roten Staub — lange bevor die erste Besatzung kommt. Ein robotischer Vorbote für das zweite grosse Kapitel.
 check: CREW_NONE | unbemannt
 check: LANDED Mars | auf Mars gelandet
+
+=== MISSION ===
+id: un_mars_rover
+sparte: Robotische Erkunder
+body: Mars
+prereq: un_mars_landing
+reward: 320
+repeatable: no
+recordStation: -
+stationRef: -
+icon: TrackingStation_ButtonMapRover
+beschreibung: Setze einen unbemannten Rover punktgenau am vorbereiteten Marsgebiet ab. Die kontrollierte Ziellandung sichert der späteren bemannten Crew einen klaren, erprobten Aufsetzpunkt — ohne sie bleibt die bemannte Marslandung gesperrt.
+check: CREW_NONE | unbemannt
+check: LANDED Mars | auf Mars gelandet
+check: MARKER_LANDING Mars 10 | Landung im Umkreis von 10 km
 
 === MISSION ===
 id: un_mars_precision_landing
@@ -880,7 +938,7 @@ check: FLYBY Ceres 500 | Vorbeiflug unter 500 km
 id: cr_mars_landing
 sparte: Pioniere
 body: Mars
-prereq: cr_mars_orbit, un_mars_precision_landing, cr_earth_station_longstay3, cr_luna_stay_7d
+prereq: cr_mars_orbit, un_mars_rover, cr_earth_station_longstay3, cr_luna_stay_7d
 reward: 540
 repeatable: no
 recordStation: -
@@ -1603,6 +1661,20 @@ stationRef: -
 beschreibung: Lande eine Sonde auf Titan. Der künftige letzte bemannte Landeort deines Programms bekommt seinen ersten sicheren Bodenkontakt.
 check: CREW_NONE | unbemannt
 check: LANDED Titan | auf Titan gelandet
+
+=== MISSION ===
+id: un_titan_polar_landing
+sparte: Robotische Erkunder
+body: Titan
+prereq: un_titan_landing, un_titan_polar_mapping
+reward: 620
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Setze eine Sonde punktgenau in der Polregion von Titan ab. Unter dichtem Dunst und bei wenig Sicht ist eine Ziellandung an Titans Polen die anspruchsvollste robotische Landung deines Programms.
+check: CREW_NONE | unbemannt
+check: LANDED Titan | auf Titan gelandet
+check: MARKER_LANDING Titan 15 70 90 | Pollandung im Umkreis von 15 km
 
 === MISSION ===
 id: un_enceladus_flyby

@@ -64,6 +64,9 @@ TITLE = {
  "un_sun_inner_probe": "Sonnennahe Sonde", "cr_luna_flyby_crewed": "Erster bemannter Mond-Vorbeiflug",
  "cr_titan_base4": "Titanbasis (4 Kerbals)", "cr_titan_base6": "Titanbasis-Ausbau (6 Kerbals)",
  "cr_titan_base8": "Titanbasis-Ausbau (8 Kerbals)",
+ "un_luna_rover": "Rover-Landung auf Luna", "un_mars_rover": "Rover-Landung auf Mars",
+ "un_luna_polar_landing": "Polarlandung auf Luna", "un_mars_polar_landing": "Polarlandung auf Mars",
+ "un_titan_polar_landing": "Polarlandung auf Titan",
 }
 
 # ---------------- Parsing ----------------
@@ -84,7 +87,8 @@ def parse_check(s):
     elif kind == "ATMO_FRACTION":
         kv = [("body", a[0]), ("fracMin", fpct(a[1])), ("fracMax", fpct(a[2]))]
     elif kind == "FLYBY": kv = [("body", a[0]), ("km", a[1])]
-    elif kind == "MARKER_LANDING": kv = [("body", a[0]), ("km", a[1])]
+    elif kind == "MARKER_LANDING":
+        kv = [("body", a[0]), ("km", a[1])] + ([("latMin", a[2]), ("latMax", a[3])] if len(a) > 3 else [])
     elif kind == "VESSEL_COUNT":
         kv = [("body", a[0]), ("count", a[1])] + ([("km", a[2])] if len(a) > 2 else [])
     elif kind == "VESSEL_COUNT_INCLINATION":
@@ -113,7 +117,7 @@ def parse_missions(text):
                 continue
             if s.startswith("check:"):
                 checks.append(parse_check(s[6:].strip())); continue
-            mm = re.match(r"(id|sparte|body|prereq|reward|repeatable|recordStation|stationRef|beschreibung):\s*(.*)$", s)
+            mm = re.match(r"(id|sparte|body|prereq|reward|repeatable|recordStation|stationRef|beschreibung|icon):\s*(.*)$", s)
             if mm: m[mm.group(1)] = mm.group(2).strip()
         if "id" in m:
             m["checks"] = checks
@@ -205,7 +209,7 @@ def mission_contract(m):
     sub = SUBCAT[m["body"]]
     reveal = REVEAL.get(sub) if m["sparte"] == "Robotische Erkunder" else None
     return contract(m["id"], title_for(m), m["beschreibung"], SPARTE[m["sparte"]], sub,
-                    icon_for(m), m["reward"], prereqs, m["checks"],
+                    m.get("icon") or icon_for(m), m["reward"], prereqs, m["checks"],
                     repeatable=(m.get("repeatable") == "yes"), reveal=reveal)
 
 HEADER = ("// ===========================================================================\n"

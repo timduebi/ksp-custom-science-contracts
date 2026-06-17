@@ -28,7 +28,7 @@ namespace CustomScienceContracts.UI
         private static Texture2D _barTex, _ringTex;
         public static GUIStyle Window, Title, TabActive, TabInactive, GroupHeader, GroupHeaderPlain, MoonHeader,
                                ItemBox, ItemBoxReady, ItemTitle, ItemSub, ItemDesc, Pill, Locked,
-                               AcceptBtn, ClaimBtn, CloseBtn, SettingsBtn, Border, CondOk, CondBad, CondNeutral,
+                               AcceptBtn, ClaimBtn, CloseBtn, SettingsBtn, TopIconButton, Border, CondOk, CondBad, CondNeutral,
                                ClaimInfo, Station, Bar, Warn, Reward, RewardIcon;
 
         public static void EnsureBuilt()
@@ -89,6 +89,8 @@ namespace CustomScienceContracts.UI
             ClaimBtn  = Btn(ClaimGreen, Color.black, 7); ClaimBtn.fontSize = 16; ClaimBtn.fontStyle = FontStyle.Bold; ClaimBtn.padding = new RectOffset(12, 12, 7, 7);
             CloseBtn  = Btn(AbortRed,   Color.white, 6); CloseBtn.fontSize = 16; CloseBtn.fontStyle = FontStyle.Bold; CloseBtn.alignment = TextAnchor.MiddleCenter;
             SettingsBtn = Btn(new Color(0.20f, 0.23f, 0.30f), TextBright, 6); SettingsBtn.fontSize = 15; SettingsBtn.fontStyle = FontStyle.Bold; SettingsBtn.alignment = TextAnchor.MiddleCenter;
+            // Eigenstaendiger Icon-Button oben (Aktive Missionen): dunkel-blaue Kachel, heller Akzent, hellblauer Rand.
+            TopIconButton = Btn(new Color(0.10f, 0.13f, 0.20f, 0.94f), TextBright, 6); TopIconButton.padding = new RectOffset(3, 3, 3, 3); TopIconButton.alignment = TextAnchor.MiddleCenter;
 
             Warn = Label(14, FontStyle.Bold, AbortRed, TextAnchor.UpperLeft); Warn.wordWrap = true;
 

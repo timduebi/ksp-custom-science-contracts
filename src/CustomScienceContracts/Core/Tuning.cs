@@ -32,6 +32,11 @@ namespace CustomScienceContracts.Core
         // --- Pruef-Loop ---
         public static float CheckIntervalSeconds = 1.0f;
 
+        // --- Aktive-Missionen-Button (eigener Button oben, nicht im Stock-AppLauncher) ---
+        public static float ActiveButtonX = -1f;     // -1 => automatisch oben mittig (links vom Hoehenmesser)
+        public static float ActiveButtonY = 2f;      // Abstand von oben (px)
+        public static float ActiveButtonSize = 32f;  // Kantenlaenge (px)
+
         // --- Vorschau gesperrter Missionen ---
         /// <summary>Ab Abschluss dieses Contracts wird je Koerper die naechste gesperrte Mission als
         /// ausgegraute Vorschau (mit roter Voraussetzungs-Zeile) angezeigt.</summary>
@@ -69,6 +74,9 @@ namespace CustomScienceContracts.Core
                 MarkerRadiusKmDefault = GetD(n, "markerRadiusKmDefault", MarkerRadiusKmDefault);
                 MarkerRadiusKmResupply= GetD(n, "markerRadiusKmResupply", MarkerRadiusKmResupply);
                 CheckIntervalSeconds  = GetF(n, "checkIntervalSeconds", CheckIntervalSeconds);
+                ActiveButtonX         = GetF(n, "activeButtonX", ActiveButtonX);
+                ActiveButtonY         = GetF(n, "activeButtonY", ActiveButtonY);
+                ActiveButtonSize      = GetF(n, "activeButtonSize", ActiveButtonSize);
                 LockedPreviewTrigger  = n.GetValue("lockedPreviewTrigger") ?? LockedPreviewTrigger;
                 VerboseLogging        = GetB(n, "verboseLogging", VerboseLogging);
                 UnlockAll             = GetB(n, "unlockAll", UnlockAll);

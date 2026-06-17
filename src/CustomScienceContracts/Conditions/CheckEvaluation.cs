@@ -299,20 +299,18 @@ namespace CustomScienceContracts.Conditions
             string pfx = $"ml{ci}_{j}_";
             string wpId = $"{c.Id}#{ci}_{j}";
 
-            // 1) Zielort einmal festlegen (persistiert).
+            // 1) Zielort einmal festlegen (persistiert). Pro Spielstand zufaellig (Game-Seed), aber innerhalb
+            //    eines Saves stabil; im absoluten Breiten-Band [LatAbsMin, LatAbsMax] mit zufaelliger Hemisphaere.
+            //    Default-Band 0..15 => aequatornah; Pol-Landungen setzen z.B. 70..90.
             if (GetI(c.Progress, pfx + "set", 0) != 1)
             {
-                double lat, lon;
-                var av = VesselQuery.Active;
-                bool atBase = av != null && VesselQuery.OnBody(av, body) &&
-                              (av.situation == Vessel.Situations.LANDED || av.situation == Vessel.Situations.SPLASHED);
-                if (atBase) { lat = av.latitude; lon = av.longitude; }
-                else
-                {
-                    var rng = new System.Random(($"{c.Id}#{ci}_{j}").GetHashCode());
-                    lat = rng.NextDouble() * 140.0 - 70.0;   // -70..70, Pole vermeiden
-                    lon = rng.NextDouble() * 360.0 - 180.0;
-                }
+                int gameSeed = HighLogic.CurrentGame != null ? HighLogic.CurrentGame.Seed : 0;
+                var rng = new System.Random(gameSeed ^ ($"{c.Id}#{ci}_{j}").GetHashCode());
+                double aMin = Math.Min(chk.LatAbsMin, chk.LatAbsMax);
+                double aMax = Math.Max(chk.LatAbsMin, chk.LatAbsMax);
+                double absLat = rng.NextDouble() * (aMax - aMin) + aMin;
+                double lat = rng.Next(2) == 0 ? absLat : -absLat;   // Nord- oder Suedhalbkugel
+                double lon = rng.NextDouble() * 360.0 - 180.0;
                 c.Progress.SetValue(pfx + "lat", lat.ToString("R", Inv), true);
                 c.Progress.SetValue(pfx + "lon", lon.ToString("R", Inv), true);
                 c.Progress.SetValue(pfx + "set", "1", true);
