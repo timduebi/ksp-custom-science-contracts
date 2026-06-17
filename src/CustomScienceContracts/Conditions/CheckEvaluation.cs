@@ -130,6 +130,8 @@ namespace CustomScienceContracts.Conditions
                     double minPe = chk.Km > 0 ? chk.Km * 1000.0 : body.atmosphereDepth;
                     return v.orbit.PeA > minPe;
                 }
+                case CheckKind.INCLINATION_MIN:
+                    return v.orbit != null && v.orbit.inclination >= chk.InclinationMin;
                 case CheckKind.ABOVE_ATMOSPHERE:
                     return body != null && v.orbit != null && v.orbit.PeA > body.atmosphereDepth;
                 case CheckKind.SUBORBITAL_ABOVE_ATMO:
@@ -182,7 +184,9 @@ namespace CustomScienceContracts.Conditions
             int count = VesselQuery.RealVessels(ctx.Vessels).Count(v =>
                 v.mainBody == body &&
                 v.situation == Vessel.Situations.ORBITING &&
-                (minM <= 0.0 || (v.orbit != null && v.orbit.PeA > minM)));
+                v.orbit != null &&
+                (minM <= 0.0 || v.orbit.PeA > minM) &&
+                (chk.Kind != CheckKind.VESSEL_COUNT_INCLINATION || v.orbit.inclination >= chk.InclinationMin));
             return count >= chk.Count;
         }
 

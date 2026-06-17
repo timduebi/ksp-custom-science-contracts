@@ -14,6 +14,8 @@ Luna ist der erste grosse Horizont. Nach der ersten EVA im Erdorbit wird der unb
 
 Nach der ersten bemannten Luna-Landung beginnt die echte Erdstation. Sie ist eine neue Stationskette und hat keine technische Verbindung zum temporären Ein-Modul-Labor. Die Erdstation wächst epochenweise: in Epoche 3 bis Crew 4, in Epoche 4 bis Crew 8 und in Epoche 5 bis Crew 12. Mondstation und Mondbasis starten in Epoche 3 mit Crew 2, wachsen in Epoche 3 auf 3, in Epoche 4 auf 4 und 6 und in Epoche 5 bis 6 auf 8 und 10. Eine Mondbasis setzt bemannte Luna-Präzisionslandung und 7 Tage auf Luna voraus. Das Erdorbit-Fuel-Depot ist ein optionaler Versorgungsnetz-Zweig, öffnet später als die Erdstation und blockiert keine bemannte Marsmission.
 
+Ab Epoche 3 wird das frühe Erd-Satellitennetz aus der Pionierzeit narrativ zu alt. Im Versorgungsnetz entsteht deshalb eine neue Kommunikations-Lebensader: zuerst Erde, dann Luna, danach Mars, ein interplanetarer Sonnenorbit-Ring und schliesslich die grossen Relais um Jupiter und Saturn. Erde und Luna bekommen je eine Grundkonstellation mit drei Satelliten und danach eine polare Ausbaustufe mit drei weiteren Satelliten.
+
 Das innere Sonnensystem öffnet sich robotisch nach dem bemannten Luna-Vorbeiflug. Venus bekommt Vorbeiflug, Orbit, Atmosphärensonde und Landung, bemannt nur Vorbeiflug und Orbit. Merkur bleibt komplett robotisch. Mars wird robotisch vorbereitet und erhält bereits in Epoche 4 einen bemannten Vorbeiflug und einen bemannten 10-Tage-Orbit. Für bemannten Mars-Vorbeiflug und bemannten Mars-Orbit reicht die normale Erdstation mit Longstay-Stufe 3.
 
 Mars ist der zweite grosse bemannte Hauptbogen. Nach bemanntem Mars-Orbit, robotischer Präzisionslandung und Langzeiterfahrung folgen bemannte Marslandung mit EVA, 10 Tage auf Mars und 30 Tage auf Mars. Phobos und Deimos werden nach bemannter Marslandung parallel als bemannter Orbit und bemannte Landung verfügbar; die Landung setzt den bemannten Orbit desselben Mondes nicht voraus. Marsstation und Marsbasis starten danach als neue Infrastruktur.
@@ -126,9 +128,9 @@ reward: 48
 repeatable: no
 recordStation: -
 stationRef: -
-beschreibung: Bringe zwei Satelliten gleichzeitig in die Erdumlaufbahn und halte beide einen Tag im Betrieb. Aus einzelnen Geräten wird ein erstes Netz — die Keimzelle künftiger Navigation und Kommunikation.
+beschreibung: Bringe drei Satelliten gleichzeitig in die Erdumlaufbahn und halte sie einen Tag im Betrieb. Aus einzelnen Geräten wird ein erstes Netz — die Keimzelle künftiger Navigation und Kommunikation.
 check: CREW_NONE | aktives Fahrzeug unbemannt
-check: VESSEL_COUNT Earth 2 | 2 Fahrzeuge gleichzeitig im Erdorbit
+check: VESSEL_COUNT Earth 3 | 3 Fahrzeuge gleichzeitig im Erdorbit
 check: DURATION 1 | 1 Tag ununterbrochen ausharren
 
 === MISSION ===
@@ -257,6 +259,21 @@ check: ORBIT_ABOVE Moon 20 | Periapsis über 20 km
 check: HOLD 10 | 10 Sekunden stabil halten
 
 === MISSION ===
+id: un_luna_polar_mapping
+sparte: Robotische Erkunder
+body: Moon
+prereq: un_luna_orbit
+reward: 130
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Bringe eine Sonde in einen polaren Mondorbit und kartiere Luna von Pol zu Pol. Die zusätzlichen Bahnen zeigen Landegebiete, Schattenzonen und Übergänge, die ein normaler Äquatororbit nur streift.
+check: CREW_NONE | unbemannt
+check: ORBIT_ABOVE Moon 100 | Periapsis über 100 km
+check: INCLINATION_MIN Moon 75 | Orbit-Inklination über 75 Grad
+check: HOLD 10 | 10 Sekunden stabil halten
+
+=== MISSION ===
 id: cr_luna_flyby_crewed
 sparte: Pioniere
 body: Moon
@@ -351,6 +368,64 @@ beschreibung: Halte eine Besatzung eine volle Woche auf Luna. Diese sieben Tage 
 check: CREW_MIN 1 | mindestens 1 Kerbal an Bord
 check: LANDED Moon | auf Luna gelandet
 check: DURATION 7 | 7 Tage ununterbrochen ausharren
+
+=== MISSION ===
+id: net_earth_comm_network3
+sparte: Versorgungsnetz
+body: Earth
+prereq: cr_earth_station_longstay3
+reward: 120
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Ersetze das erste, alternde Erdnetz durch eine neue Kommunikationskonstellation. Drei moderne Relais im Erdorbit geben Stationen, Depots und Langstreckenflügen wieder eine verlässliche Stimme.
+check: CREW_NONE | aktives Fahrzeug unbemannt
+check: VESSEL_COUNT Earth 3 2000 | 3 Satelliten gleichzeitig im Erdorbit, Periapsis über 2000 km
+check: DURATION 1 | 1 Tag ununterbrochen ausharren
+
+=== MISSION ===
+id: net_earth_polar_comm_network
+sparte: Versorgungsnetz
+body: Earth
+prereq: net_earth_comm_network3
+reward: 150
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Ergänze das neue Erdnetz um eine polare Relais-Schale. Drei weitere Satelliten decken hohe Breiten und schräge Missionsprofile ab, damit die alte Pionierkonstellation endgültig abgelöst werden kann.
+check: CREW_NONE | aktives Fahrzeug unbemannt
+check: VESSEL_COUNT Earth 6 2000 | 6 Satelliten gleichzeitig im Erdorbit, Periapsis über 2000 km
+check: VESSEL_COUNT_INCLINATION Earth 3 75 2000 | 3 Satelliten im Erdorbit mit Inklination über 75 Grad und Periapsis über 2000 km
+check: DURATION 1 | 1 Tag ununterbrochen ausharren
+
+=== MISSION ===
+id: net_luna_comm_network3
+sparte: Versorgungsnetz
+body: Moon
+prereq: net_earth_polar_comm_network, un_luna_orbit
+reward: 150
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Ziehe die Kommunikations-Lebensader bis Luna. Drei Relais im Mondorbit verbinden Orbiter, Landefähren und die kommende Infrastruktur mit dem erneuerten Erdnetz.
+check: CREW_NONE | aktives Fahrzeug unbemannt
+check: VESSEL_COUNT Moon 3 2000 | 3 Satelliten gleichzeitig im Mondorbit, Periapsis über 2000 km
+check: DURATION 1 | 1 Tag ununterbrochen ausharren
+
+=== MISSION ===
+id: net_luna_polar_comm_network
+sparte: Versorgungsnetz
+body: Moon
+prereq: net_luna_comm_network3
+reward: 185
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Baue das Mondnetz um polare Bahnen aus. Drei zusätzliche Relais machen Lunas Randzonen, hohe Breiten und spätere Basisstandorte leichter erreichbar.
+check: CREW_NONE | aktives Fahrzeug unbemannt
+check: VESSEL_COUNT Moon 6 2000 | 6 Satelliten gleichzeitig im Mondorbit, Periapsis über 2000 km
+check: VESSEL_COUNT_INCLINATION Moon 3 75 2000 | 3 Satelliten im Mondorbit mit Inklination über 75 Grad und Periapsis über 2000 km
+check: DURATION 1 | 1 Tag ununterbrochen ausharren
 
 === MISSION ===
 id: un_venus_flyby
@@ -460,6 +535,21 @@ check: ORBIT_ABOVE Mercury 20 | Periapsis über 20 km
 check: HOLD 10 | 10 Sekunden stabil halten
 
 === MISSION ===
+id: un_mercury_polar_mapping
+sparte: Robotische Erkunder
+body: Mercury
+prereq: un_mercury_orbit
+reward: 230
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Lege eine Sonde in eine polare Merkurumlaufbahn und kartiere die verbrannte Welt über beide Pole hinweg. Diese Bahn macht aus dem ersten Orbit eine echte Vermessung.
+check: CREW_NONE | unbemannt
+check: ORBIT_ABOVE Mercury 50 | Periapsis über 50 km
+check: INCLINATION_MIN Mercury 75 | Orbit-Inklination über 75 Grad
+check: HOLD 10 | 10 Sekunden stabil halten
+
+=== MISSION ===
 id: un_mercury_landing
 sparte: Robotische Erkunder
 body: Mercury
@@ -512,6 +602,49 @@ beschreibung: Bringe eine Sonde in den Marsorbit und kartiere die Landegebiete v
 check: CREW_NONE | unbemannt
 check: ORBIT_ABOVE Mars | stabiler Mars-Orbit
 check: HOLD 10 | 10 Sekunden stabil halten
+
+=== MISSION ===
+id: un_mars_polar_mapping
+sparte: Robotische Erkunder
+body: Mars
+prereq: un_mars_orbit
+reward: 245
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Bringe eine Sonde in einen polaren Marsorbit und vermesse den roten Planeten für spätere Landegebiete. Die polare Bahn verbindet Äquator, Hochland, Eiskappen und Randzonen zu einer vollständigen Karte.
+check: CREW_NONE | unbemannt
+check: ORBIT_ABOVE Mars 250 | Periapsis über 250 km
+check: INCLINATION_MIN Mars 75 | Orbit-Inklination über 75 Grad
+check: HOLD 10 | 10 Sekunden stabil halten
+
+=== MISSION ===
+id: net_mars_comm_network
+sparte: Versorgungsnetz
+body: Mars
+prereq: net_luna_polar_comm_network, un_mars_orbit
+reward: 210
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Verlängere die Kommunikationskette bis Mars. Drei Relais im Marsorbit schaffen die Infrastruktur, auf die Landefähren, Stationen und spätere Oberflächencrews angewiesen sein werden.
+check: CREW_NONE | aktives Fahrzeug unbemannt
+check: VESSEL_COUNT Mars 3 2000 | 3 Satelliten gleichzeitig im Marsorbit, Periapsis über 2000 km
+check: DURATION 1 | 1 Tag ununterbrochen ausharren
+
+=== MISSION ===
+id: net_solar_comm_network
+sparte: Versorgungsnetz
+body: Sun
+prereq: net_mars_comm_network, un_sun_inner_probe
+reward: 260
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Setze einen interplanetaren Kommunikationsring in Sonnenorbit. Drei Relais auf eigenen Bahnen machen aus einzelnen Planetennetzen ein zusammenhängendes Sonnensystem-Netz.
+check: CREW_NONE | aktives Fahrzeug unbemannt
+check: VESSEL_COUNT Sun 3 1000000 | 3 Relais im Sonnenorbit, Periapsis über 1000000 km
+check: DURATION 1 | 1 Tag ununterbrochen ausharren
 
 === MISSION ===
 id: un_mars_landing
@@ -660,6 +793,35 @@ beschreibung: Bringe eine Sonde in den Jupiterorbit und öffne damit ein ganzes 
 check: CREW_NONE | unbemannt
 check: ORBIT_ABOVE Jupiter | stabiler Jupiter-Orbit
 check: HOLD 10 | 10 Sekunden stabil halten
+
+=== MISSION ===
+id: un_jupiter_polar_mapping
+sparte: Robotische Erkunder
+body: Jupiter
+prereq: un_jupiter_orbit
+reward: 430
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Setze eine Sonde auf eine steile Bahn um Jupiter und kartiere das System aus hoher Inklination. Diese Perspektive verbindet Magnetosphäre, Polregionen und Monde zu einem besseren Gesamtbild.
+check: CREW_NONE | unbemannt
+check: ORBIT_ABOVE Jupiter 10000 | Periapsis über 10000 km
+check: INCLINATION_MIN Jupiter 75 | Orbit-Inklination über 75 Grad
+check: HOLD 10 | 10 Sekunden stabil halten
+
+=== MISSION ===
+id: net_jupiter_comm_network
+sparte: Versorgungsnetz
+body: Jupiter
+prereq: net_solar_comm_network, un_jupiter_orbit
+reward: 360
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Verankere das interplanetare Netz im Jupitersystem. Drei Relais um Jupiter halten die Verbindung zu den grossen Monden offen, bevor bemannte Missionen in diese gewaltige Distanz aufbrechen.
+check: CREW_NONE | aktives Fahrzeug unbemannt
+check: VESSEL_COUNT Jupiter 3 10000 | 3 Satelliten gleichzeitig im Jupiterorbit, Periapsis über 10000 km
+check: DURATION 1 | 1 Tag ununterbrochen ausharren
 
 === MISSION ===
 id: un_eros_flyby
@@ -1346,6 +1508,35 @@ check: ORBIT_ABOVE Saturn | stabiler Saturn-Orbit
 check: HOLD 10 | 10 Sekunden stabil halten
 
 === MISSION ===
+id: un_saturn_polar_mapping
+sparte: Robotische Erkunder
+body: Saturn
+prereq: un_saturn_orbit
+reward: 610
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Bringe eine Sonde in einen steilen Saturnorbit und vermesse Ringe, Polregionen und Monde aus einer neuen Geometrie. Das Ringsystem wird erst aus dieser Perspektive wirklich lesbar.
+check: CREW_NONE | unbemannt
+check: ORBIT_ABOVE Saturn 10000 | Periapsis über 10000 km
+check: INCLINATION_MIN Saturn 75 | Orbit-Inklination über 75 Grad
+check: HOLD 10 | 10 Sekunden stabil halten
+
+=== MISSION ===
+id: net_saturn_comm_network
+sparte: Versorgungsnetz
+body: Saturn
+prereq: net_jupiter_comm_network, un_saturn_orbit
+reward: 460
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Spanne das Kommunikationsnetz bis Saturn. Drei Relais im Saturnorbit sichern die Verbindung zu Ringplanet, Titan und den fernen Aussenposten der letzten grossen bemannten Reise.
+check: CREW_NONE | aktives Fahrzeug unbemannt
+check: VESSEL_COUNT Saturn 3 10000 | 3 Satelliten gleichzeitig im Saturnorbit, Periapsis über 10000 km
+check: DURATION 1 | 1 Tag ununterbrochen ausharren
+
+=== MISSION ===
 id: un_titan_flyby
 sparte: Robotische Erkunder
 body: Titan
@@ -1370,6 +1561,21 @@ stationRef: -
 beschreibung: Bringe eine Sonde in den Titanorbit und kartiere die Welt, auf der deine Kerbals eines Tages am weitesten draussen landen werden.
 check: CREW_NONE | unbemannt
 check: ORBIT_ABOVE Titan | stabiler Titan-Orbit
+check: HOLD 10 | 10 Sekunden stabil halten
+
+=== MISSION ===
+id: un_titan_polar_mapping
+sparte: Robotische Erkunder
+body: Titan
+prereq: un_titan_orbit
+reward: 540
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Kartiere Titan aus einem polaren Orbit. Die steile Bahn sammelt Daten über Seen, Dunstschichten und mögliche Landegebiete, bevor Kerbals sich an diese ferne Welt wagen.
+check: CREW_NONE | unbemannt
+check: ORBIT_ABOVE Titan 250 | Periapsis über 250 km
+check: INCLINATION_MIN Titan 75 | Orbit-Inklination über 75 Grad
 check: HOLD 10 | 10 Sekunden stabil halten
 
 === MISSION ===
@@ -1785,6 +1991,21 @@ check: ORBIT_ABOVE Triton 20 | Periapsis über 20 km
 check: HOLD 10 | 10 Sekunden stabil halten
 
 === MISSION ===
+id: un_triton_polar_mapping
+sparte: Robotische Erkunder
+body: Triton
+prereq: un_triton_orbit
+reward: 820
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Bringe eine Sonde in eine polare Tritonbahn und vermesse den grossen rückläufigen Mond von allen Breiten. Für die Schluss-Epoche ist das eine der wertvollsten Karten im Neptunsystem.
+check: CREW_NONE | unbemannt
+check: ORBIT_ABOVE Triton 50 | Periapsis über 50 km
+check: INCLINATION_MIN Triton 75 | Orbit-Inklination über 75 Grad
+check: HOLD 10 | 10 Sekunden stabil halten
+
+=== MISSION ===
 id: un_triton_landing
 sparte: Robotische Erkunder
 body: Triton
@@ -1848,6 +2069,21 @@ stationRef: -
 beschreibung: Bringe eine Sonde in den Orbit um Pluto und mach aus dem flüchtigen Vorbeiflug eine letzte grosse Untersuchung.
 check: CREW_NONE | unbemannt
 check: ORBIT_ABOVE Pluto 20 | Periapsis über 20 km
+check: HOLD 10 | 10 Sekunden stabil halten
+
+=== MISSION ===
+id: un_pluto_polar_mapping
+sparte: Robotische Erkunder
+body: Pluto
+prereq: un_pluto_orbit
+reward: 1020
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Lege eine Sonde in einen polaren Plutoorbit und mache aus dem fernen Lichtpunkt eine echte Weltkarte. Die hohe Inklination liefert die Daten, die ein einzelner Äquatororbit nie vollständig sieht.
+check: CREW_NONE | unbemannt
+check: ORBIT_ABOVE Pluto 50 | Periapsis über 50 km
+check: INCLINATION_MIN Pluto 75 | Orbit-Inklination über 75 Grad
 check: HOLD 10 | 10 Sekunden stabil halten
 
 === MISSION ===

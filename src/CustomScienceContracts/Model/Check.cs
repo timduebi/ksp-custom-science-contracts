@@ -16,6 +16,7 @@ namespace CustomScienceContracts.Model
         SITUATION,           // Situation == situation (ORBITING/LANDED/...)
         PERIAPSIS_MIN,       // orbit.PeA > km
         ORBIT_ABOVE,         // ORBITING um body + orbit.PeA > km (praeziser Ein-Zeilen-Orbitcheck)
+        INCLINATION_MIN,     // orbit.inclination >= inclinationMin
         ABOVE_ATMOSPHERE,    // orbit.PeA > atmosphereDepth (Orbit klar ueber der Atmosphaere)
         SUBORBITAL_ABOVE_ATMO, // altitude > atmosphereDepth (suborbitaler Scheitel ueber der Atmosphaere)
         SUBORBITAL,          // SUB_ORBITAL am body + altitude > atmosphereDepth (suborbitaler Raumflug)
@@ -29,6 +30,7 @@ namespace CustomScienceContracts.Model
         DOCK_STATION,        // Andocken an die gemerkte Station (stationKey)
         DOCK_ANY,            // beliebiges Andocken
         VESSEL_COUNT,        // >= count reale Vessels ORBITING um body (optional PeA > km)
+        VESSEL_COUNT_INCLINATION, // >= count reale Vessels ORBITING um body mit inclination >= inclinationMin (optional PeA > km)
         FLYBY,               // ein reales Vessel durchfliegt die SOI von body, orbitet nie (km = max. Annaeherung)
         MARKER_LANDING,      // aktives Vessel LANDED/SPLASHED am body, Distanz zum Zielpunkt <= km
         HOLD,                // alle uebrigen Checks zusammenhaengend seconds Sekunden halten
@@ -46,6 +48,7 @@ namespace CustomScienceContracts.Model
         public int Min = 0;          // Crew-Schwelle
         public int Count = 1;        // VESSEL_COUNT
         public double Km = 0.0;      // PERIAPSIS_MIN / VESSEL_COUNT / FLYBY (max. Annaeherung) / MARKER_LANDING (Radius)
+        public double InclinationMin = 0.0; // INCLINATION_MIN / VESSEL_COUNT_INCLINATION
         public double Seconds = 0.0; // HOLD
         public double Days = 0.0;    // DURATION
         public double Amount = 0.0;  // FUEL_MIN / RESOURCE_MIN
@@ -57,7 +60,7 @@ namespace CustomScienceContracts.Model
         /// <summary>Ereignisbasiert (Andocken) — wird gegen den Event-Puffer ausgewertet.</summary>
         public bool IsEvent => Kind == CheckKind.DOCK_STATION || Kind == CheckKind.DOCK_ANY;
         /// <summary>Flotten-Check (zaehlt mehrere Vessels) statt eines einzelnen Subjekts.</summary>
-        public bool IsFleet => Kind == CheckKind.VESSEL_COUNT;
+        public bool IsFleet => Kind == CheckKind.VESSEL_COUNT || Kind == CheckKind.VESSEL_COUNT_INCLINATION;
         /// <summary>Vorbeiflug — eigener, ueber mehrere Ticks laufender Flotten-State (rastet ein).</summary>
         public bool IsFlyby => Kind == CheckKind.FLYBY;
         /// <summary>Praezisionslandung — setzt/prueft einen persistenten Zielpunkt (Waypoint).</summary>
@@ -81,6 +84,7 @@ namespace CustomScienceContracts.Model
             c.Min     = GetI(node, "min", 0);
             c.Count   = GetI(node, "count", 1);
             c.Km      = GetD(node, "km", 0.0);
+            c.InclinationMin = GetD(node, "inclinationMin", 0.0);
             c.Seconds = GetD(node, "seconds", 0.0);
             c.Days    = GetD(node, "days", 0.0);
             c.Amount  = GetD(node, "amount", 0.0);

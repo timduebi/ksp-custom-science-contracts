@@ -229,6 +229,7 @@ namespace CustomScienceContracts.UI
                 case CheckKind.ORBIT_ABOVE: return chk.Km > 0
                     ? $"Stabiler Orbit um {body}, Periapsis über {chk.Km:0} km"
                     : $"Stabiler Orbit um {body} oberhalb der Atmosphäre";
+                case CheckKind.INCLINATION_MIN: return $"Orbit-Inklination mindestens {chk.InclinationMin:0} Grad";
                 case CheckKind.ABOVE_ATMOSPHERE: return "Umlaufbahn vollständig oberhalb der Atmosphäre";
                 case CheckKind.SUBORBITAL_ABOVE_ATMO: return "Scheitelpunkt oberhalb der Atmosphäre";
                 case CheckKind.ATMO_FRACTION: return $"In {chk.FracMin * 100:0}–{chk.FracMax * 100:0} % der Atmosphärenhöhe";
@@ -246,6 +247,8 @@ namespace CustomScienceContracts.UI
                     return nm != null ? $"An Station «{nm}» angedockt" : "An der Zielstation angedockt";
                 case CheckKind.DOCK_ANY:    return "Andockmanöver erfolgreich abgeschlossen";
                 case CheckKind.VESSEL_COUNT:return $"{chk.Count} Satelliten gleichzeitig im Orbit um {body}";
+                case CheckKind.VESSEL_COUNT_INCLINATION:
+                    return $"{chk.Count} Satelliten gleichzeitig im Orbit um {body}, Inklination mindestens {chk.InclinationMin:0} Grad";
                 case CheckKind.HOLD:        return $"Zustand {chk.Seconds:0} Sekunden stabil halten";
                 case CheckKind.DURATION:    return $"{chk.Days:0} Tage ununterbrochen halten";
                 default:                    return chk.Kind.ToString();

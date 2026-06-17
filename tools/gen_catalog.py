@@ -19,7 +19,7 @@ DISPLAY = {"Earth": "Erde", "Moon": "Luna", "Mercury": "Merkur", "Neptune": "Nep
            "Sun": "Sonne", "Ganymede": "Ganymed", "Callisto": "Kallisto"}
 def disp(b): return DISPLAY.get(b, b)
 
-SUBCAT = {"Earth": "Erde", "Moon": "Luna", "Mercury": "Merkur", "Sun": "Merkur",
+SUBCAT = {"Earth": "Erde", "Moon": "Luna", "Mercury": "Merkur", "Sun": "Interplanetar",
           "Venus": "Venus", "Mars": "Mars", "Phobos": "Mars", "Deimos": "Mars",
           "Jupiter": "Jupiter", "Io": "Jupiter", "Europa": "Jupiter", "Ganymede": "Jupiter",
           "Callisto": "Jupiter", "Saturn": "Saturn", "Titan": "Saturn", "Enceladus": "Saturn",
@@ -41,7 +41,23 @@ TITLE = {
  "un_earth_pad_clear": "Erster Testflug", "un_earth_upper_atmo": "Obere Erdatmosphäre",
  "un_earth_suborbital": "Unbemannter Suborbitalflug", "cr_earth_suborbital": "Erster bemannter Suborbitalflug",
  "un_earth_orbit": "Erster Erdorbit (unbemannt)", "un_earth_science_satellite": "Erster Forschungssatellit",
- "un_earth_satellite_pair": "Satellitenpaar im Erdorbit", "un_earth_high_satellite": "Satellit im Hochorbit",
+ "un_earth_satellite_pair": "Erstes Satellitennetz im Erdorbit", "un_earth_high_satellite": "Satellit im Hochorbit",
+ "un_luna_polar_mapping": "Polare Kartierung von Luna",
+ "un_mercury_polar_mapping": "Polare Kartierung von Merkur",
+ "un_mars_polar_mapping": "Polare Kartierung von Mars",
+ "un_jupiter_polar_mapping": "Polare Jupiter-Systemkartierung",
+ "un_saturn_polar_mapping": "Polare Saturn-Systemkartierung",
+ "un_titan_polar_mapping": "Polare Kartierung von Titan",
+ "un_triton_polar_mapping": "Polare Kartierung von Triton",
+ "un_pluto_polar_mapping": "Polare Kartierung von Pluto",
+ "net_earth_comm_network3": "Neues Erd-Kommunikationsnetz",
+ "net_earth_polar_comm_network": "Polare Erd-Relais",
+ "net_luna_comm_network3": "Luna-Kommunikationsnetz",
+ "net_luna_polar_comm_network": "Polare Luna-Relais",
+ "net_mars_comm_network": "Mars-Kommunikationsnetz",
+ "net_solar_comm_network": "Interplanetarer Relaisring",
+ "net_jupiter_comm_network": "Jupiter-Kommunikationsnetz",
+ "net_saturn_comm_network": "Saturn-Kommunikationsnetz",
  "cr_earth_orbit": "Erster bemannter Erdorbit", "cr_earth_orbit_eva": "Erste EVA im Erdorbit",
  "cr_earth_duration_3d": "Drei Tage im Erdorbit", "cr_earth_docking_demo": "Erstes Andockmanöver",
  "cr_earth_duration_7d": "Eine Woche im Erdorbit", "cr_earth_trial_station": "Ein-Modul-Labor im Orbit",
@@ -63,12 +79,16 @@ def parse_check(s):
     elif kind in ("SUBORBITAL", "LANDED", "ORE_SURFACE"): kv = [("body", a[0])]
     elif kind == "ORBIT_ABOVE":
         kv = [("body", a[0])] + ([("km", a[1])] if len(a) > 1 else [])
+    elif kind == "INCLINATION_MIN":
+        kv = [("body", a[0]), ("inclinationMin", a[1])]
     elif kind == "ATMO_FRACTION":
         kv = [("body", a[0]), ("fracMin", fpct(a[1])), ("fracMax", fpct(a[2]))]
     elif kind == "FLYBY": kv = [("body", a[0]), ("km", a[1])]
     elif kind == "MARKER_LANDING": kv = [("body", a[0]), ("km", a[1])]
     elif kind == "VESSEL_COUNT":
         kv = [("body", a[0]), ("count", a[1])] + ([("km", a[2])] if len(a) > 2 else [])
+    elif kind == "VESSEL_COUNT_INCLINATION":
+        kv = [("body", a[0]), ("count", a[1]), ("inclinationMin", a[2])] + ([("km", a[3])] if len(a) > 3 else [])
     elif kind == "EVA": kv = [("body", a[0])] + ([("situation", a[1])] if len(a) > 1 else [])
     elif kind == "FUEL_MIN": kv = [("amount", a[0])]
     elif kind == "RESOURCE_MIN": kv = [("resource", a[0]), ("amount", a[1])]
@@ -119,13 +139,15 @@ def title_for(m):
     elif "LANDED" in kinds:
         noun = f"{int(float(days))} Tage auf {body}" if days else f"Landung auf {body}"
     elif "FLYBY" in kinds: noun = f"Vorbeiflug an {body}"
-    elif "VESSEL_COUNT" in kinds:
-        noun = (f"Satellitennetz um {body}" if int(kv('VESSEL_COUNT').get('count', '1')) >= 2
+    elif "VESSEL_COUNT_INCLINATION" in kinds or "VESSEL_COUNT" in kinds:
+        fleet = "VESSEL_COUNT_INCLINATION" if "VESSEL_COUNT_INCLINATION" in kinds else "VESSEL_COUNT"
+        noun = (f"Satellitennetz um {body}" if int(kv(fleet).get('count', '1')) >= 2
                 else f"Satellit im Hochorbit um {body}")
     elif "ATMO_FRACTION" in kinds: noun = f"Atmosphärensonde {body}"
     elif "SUBORBITAL" in kinds: noun = f"Suborbitalflug über {body}"
     elif "ORBIT_ABOVE" in kinds:
-        noun = (f"Forschungssatellit um {body}" if (days and not crew) else f"Orbit um {body}")
+        noun = (f"Polarer Kartierungsorbit um {body}" if "INCLINATION_MIN" in kinds else
+                f"Forschungssatellit um {body}" if (days and not crew) else f"Orbit um {body}")
     else: noun = f"Mission bei {body}"
     if crew and not noun[0].isdigit():
         adj = "Bemannter" if noun.split()[0] in MASC else "Bemannte"
@@ -142,7 +164,7 @@ def icon_for(m):
     if "EVA" in kinds and "LANDED" not in kinds: return "TrackingStation_ButtonMapEVA"
     if "LANDED" in kinds: return "TrackingStation_ButtonMapBase" if has_dur else "TrackingStation_ButtonMapLander"
     if "FLYBY" in kinds: return "TrackingStation_ButtonMapProbe"
-    if "VESSEL_COUNT" in kinds: return "TrackingStation_ButtonMapCommunicationsRelay"
+    if "VESSEL_COUNT_INCLINATION" in kinds or "VESSEL_COUNT" in kinds: return "TrackingStation_ButtonMapCommunicationsRelay"
     if "ATMO_FRACTION" in kinds or "SUBORBITAL" in kinds: return "TrackingStation_ButtonMapAircraft"
     if "ORBIT_ABOVE" in kinds:
         if has_dur and crew: return "TrackingStation_ButtonMapStation"

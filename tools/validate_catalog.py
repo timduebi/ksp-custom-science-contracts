@@ -9,9 +9,9 @@ CDIR = os.path.join(ROOT, "GameData", "CustomScienceContracts", "Contracts")
 FILES = ["A_Pioniere.cfg", "B_Spaeher.cfg", "C_Lebensadern.cfg", "D_Stationen.cfg"]
 
 CHECK_KINDS = {"CREW_MIN","CREW_NONE","CREW_EXACT","ON_BODY","SITUATION","SUBORBITAL","LANDED",
-  "PERIAPSIS_MIN","ORBIT_ABOVE","ABOVE_ATMOSPHERE","SUBORBITAL_ABOVE_ATMO","ATMO_FRACTION",
+  "PERIAPSIS_MIN","ORBIT_ABOVE","INCLINATION_MIN","ABOVE_ATMOSPHERE","SUBORBITAL_ABOVE_ATMO","ATMO_FRACTION",
   "ORE_PRESENT","ORE_SURFACE","FUEL_MIN","RESOURCE_MIN","EVA","DOCK_STATION","DOCK_ANY",
-  "VESSEL_COUNT","FLYBY","MARKER_LANDING","HOLD","DURATION"}
+  "VESSEL_COUNT","VESSEL_COUNT_INCLINATION","FLYBY","MARKER_LANDING","HOLD","DURATION"}
 SPARTEN = {"Bemannt","UnbemannteErkundung","NetzwerkLogistik"}
 SOL_BODIES = {"Amalthea","Ariel","Arrokoth","Callisto","Ceres","Charon","Dactyl","Deimos","Dione",
   "Earth","Enceladus","Eros","Europa","Ganymede","Hydra","Hyperion","Iapetus","Ida","Io","Jupiter",
