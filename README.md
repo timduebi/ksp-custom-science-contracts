@@ -9,6 +9,10 @@ fernen robotischen Zielen.
 Der Mod prueft nur Stock-KSP-Zustaende und vergibt beim Abschluss Science-Boni.
 Er braucht keinen Contract Configurator und keine Kerbalism-/Simplex-API.
 
+Aktuell ist der Mod nur auf Deutsch verfuegbar. Eine englische Version ist in
+Arbeit. Die mitgelieferten Missionen sind fuer SOL Quarter-Scale geschrieben;
+Configs fuer Stock KSP sind ebenfalls in Arbeit.
+
 ## Installation
 
 1. Lade das Release-Zip herunter.
@@ -36,6 +40,11 @@ Zum Spielen:
 - Kerbal Space Program 1.12.x.
 - Eine SOL-Quarter-Scale-Installation mit passenden internen Body-Namen
   (`Earth`, `Moon`, `Mars`, `Jupiter`, `Saturn`, usw.).
+
+In Arbeit:
+
+- Englische Missions- und UI-Texte.
+- Alternative Configs fuer Stock KSP.
 
 Nicht benoetigt:
 
@@ -128,6 +137,16 @@ python3 tools/validate_catalog.py
 Zum Bauen werden die KSP-Managed-Assemblies aus einer lokalen KSP-Installation
 gebraucht. Details stehen in `DOKUMENTATION.md`.
 
-## Lizenz
+## License and third-party assets
 
-Noch nicht festgelegt.
+CustomScienceContracts is licensed under the GNU General Public License version
+3.0. See `LICENSE` and `LICENSES/GPL-3.0.txt`.
+
+Some included image assets are third-party assets and are not claimed as original
+CustomScienceContracts artwork:
+
+- Unmodified image assets from ZTheme, licensed under GNU GPL v3.0.
+- Unmodified image assets from Kerbal Planet Emblems, licensed under MIT.
+
+No code from ZTheme or Kerbal Planet Emblems is used. The third-party assets were
+not modified. See `THIRD_PARTY_NOTICES.md` for details.

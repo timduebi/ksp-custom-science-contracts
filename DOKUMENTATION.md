@@ -12,6 +12,11 @@ Der Mod ersetzt keine Stock-Science. Er gibt beim Abschluss definierter
 Missionen zusaetzliche Science-Punkte aus und fuehrt den Spieler dadurch durch
 eine lange, erzählerische Erkundungskampagne.
 
+Aktuell sind Missions- und UI-Texte nur auf Deutsch verfuegbar. Eine englische
+Version ist in Arbeit. Die bestehenden Missionsconfigs sind fuer SOL
+Quarter-Scale geschrieben; alternative Configs fuer Stock KSP sind ebenfalls in
+Arbeit.
+
 ## Kurzfassung
 
 - Spielmodus: KSP 1 Science Mode.
@@ -19,6 +24,8 @@ eine lange, erzählerische Erkundungskampagne.
 - Sprache der Missionen: Deutsch, Schweizer Hochdeutsch.
 - Laufzeit-Abhaengigkeiten: KSP 1.12.x und die SOL-Quarter-Scale-Umgebung, fuer
   die die Body-Namen geschrieben sind.
+- Sprache: aktuell Deutsch; Englisch ist in Arbeit.
+- Stock-KSP-Configs: in Arbeit, aber noch nicht Teil dieses Releases.
 - Keine Abhaengigkeit von Contract Configurator.
 - Keine Abhaengigkeit von Kerbalism, Simplex oder anderen Gameplay-APIs.
 - Pruefung erfolgt nur ueber Stock-KSP-Zustaende: Orbit, Landung, Crew,
@@ -75,6 +82,11 @@ kopieren und vorhandene Dateien zusammenfuehren.
 - Kerbal Space Program 1.12.x.
 - Eine SOL-Quarter-Scale-Installation mit den Body-Namen, die der Mod nutzt.
 - Keine weiteren Plugin-Abhaengigkeiten.
+
+Noch nicht enthalten:
+
+- englische Missions-/UI-Texte.
+- Stock-KSP-Body-Configs.
 
 Der Mod verwendet ausschliesslich KSP- und Unity-Klassen, die mit KSP 1.12.x
 geliefert werden. Es gibt keine Part-Anforderungen und keine API-Kopplung an
@@ -403,6 +415,26 @@ GameData/CustomScienceContracts/
 - Keine Kopplung an Kerbalism, Simplex oder andere Mod-APIs.
 - UI darf die aktuelle dunkle Optik behalten.
 - Contract-Titel und -Beschreibungen bleiben deutsch.
+
+## Lizenz und Drittanbieter-Assets
+
+Der Mod selbst ist unter GNU GPL v3.0 lizenziert. Die Hauptlizenz steht in
+`LICENSE`, der vollstaendige GPL-v3.0-Text in `LICENSES/GPL-3.0.txt`.
+
+Nicht alle Bilddateien sind eigenes Artwork:
+
+- Der Mod enthaelt unveraenderte Bild-Assets aus ZTheme. ZTheme ist unter GNU
+  GPL v3.0 lizenziert.
+- Der Mod enthaelt unveraenderte Bild-Assets aus Kerbal Planet Emblems. Kerbal
+  Planet Emblems ist unter MIT lizenziert.
+- Aus diesen Mods wurde kein Code verwendet.
+- Die verwendeten Drittanbieter-Assets wurden nicht veraendert.
+
+Details stehen in `THIRD_PARTY_NOTICES.md`. Der MIT-Lizenztext fuer Kerbal
+Planet Emblems (Autor: Chickenhunt) liegt unter
+`LICENSES/MIT-Kerbal-Planet-Emblems.txt`. Da der Upstream auf SpaceDock keine
+separate Lizenzdatei mitliefert, gibt diese Datei den Standard-MIT-Text mit der
+Autoren-Zuschreibung aus dem offiziellen SpaceDock-Eintrag wieder.
 
 ## Pruefstand
 
