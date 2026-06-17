@@ -11,10 +11,13 @@ namespace CustomScienceContracts.Core
         public struct DockEvent { public Vessel Vessel; }
         public struct SoiEvent { public Vessel Vessel; public CelestialBody From; public CelestialBody To; }
         public struct SituationEvent { public Vessel Vessel; public Vessel.Situations From; public Vessel.Situations To; }
+        /// <summary>Zwei Vessel-IDs, die durch Andocken fusionieren — fuer das Umhaengen einer Timer-Bindung.</summary>
+        public struct MergeEvent { public uint IdA; public uint IdB; }
 
         public readonly List<DockEvent> Dockings = new List<DockEvent>();
         public readonly List<SoiEvent> SoiChanges = new List<SoiEvent>();
         public readonly List<SituationEvent> SituationChanges = new List<SituationEvent>();
+        public readonly List<MergeEvent> Merges = new List<MergeEvent>();
 
         private bool _subscribed;
 
@@ -42,12 +45,18 @@ namespace CustomScienceContracts.Core
             Dockings.Clear();
             SoiChanges.Clear();
             SituationChanges.Clear();
+            Merges.Clear();
         }
 
         private void OnPartCouple(GameEvents.FromToAction<Part, Part> a)
         {
             Vessel v = a.to?.vessel ?? a.from?.vessel;
             if (v != null) Dockings.Add(new DockEvent { Vessel = v });
+            // Beide beteiligten Vessel-IDs merken: beim Andocken geht eines im anderen auf, und eine
+            // laufende Timer-Bindung muss aufs ueberlebende Schiff umgehaengt werden.
+            uint idA = a.from?.vessel?.persistentId ?? 0u;
+            uint idB = a.to?.vessel?.persistentId ?? 0u;
+            if (idA != 0u && idB != 0u && idA != idB) Merges.Add(new MergeEvent { IdA = idA, IdB = idB });
         }
 
         private void OnSoiChanged(GameEvents.HostedFromToAction<Vessel, CelestialBody> a)

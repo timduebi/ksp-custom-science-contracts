@@ -49,6 +49,27 @@ namespace CustomScienceContracts.Conditions
 
         public static int CrewCount(Vessel v) => v.GetCrewCount();
 
+        /// <summary>Effektive Crew eines Schiffs fuer Crew-Bedingungen: an Bord PLUS Kerbals, die
+        /// in unmittelbarer Naehe (gleiche SOI, &lt; ~2.5 km) auf EVA sind. So bricht ein kurzer
+        /// Aussenbordeinsatz neben der Station einen laufenden Crew-Halte-Timer NICHT ab. Funktioniert
+        /// auch ungeladen, da Position aus der Bahn kommt.</summary>
+        public static int EffectiveCrew(Vessel v)
+        {
+            if (v == null) return 0;
+            int crew = v.GetCrewCount();
+            var list = FlightGlobals.Vessels;
+            if (list == null) return crew;
+            const double nearM = 2500.0;
+            Vector3d pos = v.GetWorldPos3D();
+            foreach (var e in list)
+            {
+                if (e == null || !e.isEVA || ReferenceEquals(e, v)) continue;
+                if (e.mainBody != v.mainBody) continue;
+                if (Vector3d.Distance(e.GetWorldPos3D(), pos) <= nearM) crew++;
+            }
+            return crew;
+        }
+
         /// <summary>Stabiler Orbit oberhalb der Atmosphaere: ORBITING + PeA &gt; atmosphereDepth.</summary>
         public static bool InOrbitAboveAtmo(Vessel v, CelestialBody body)
         {

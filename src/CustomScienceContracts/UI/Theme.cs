@@ -26,7 +26,7 @@ namespace CustomScienceContracts.UI
 
         private static bool _built;
         private static Texture2D _barTex, _ringTex;
-        public static GUIStyle Window, Title, TabActive, TabInactive, GroupHeader, MoonHeader,
+        public static GUIStyle Window, Title, TabActive, TabInactive, GroupHeader, GroupHeaderPlain, MoonHeader,
                                ItemBox, ItemBoxReady, ItemTitle, ItemSub, ItemDesc, Pill, Locked,
                                AcceptBtn, ClaimBtn, CloseBtn, SettingsBtn, Border, CondOk, CondBad, CondNeutral,
                                ClaimInfo, Station, Bar, Warn, Reward, RewardIcon;
@@ -77,6 +77,8 @@ namespace CustomScienceContracts.UI
 
             GroupHeader = Btn(headCol, TextBright, 7); GroupHeader.fontSize = 15; GroupHeader.fontStyle = FontStyle.Bold;
             GroupHeader.alignment = TextAnchor.MiddleLeft; GroupHeader.padding = new RectOffset(38, 8, 7, 7);
+            // Wie GroupHeader, aber ohne Icon-Einzug (Aktive-Fenster zeigt im Header nur den Farbbalken).
+            GroupHeaderPlain = new GUIStyle(GroupHeader) { padding = new RectOffset(16, 8, 7, 7) };
             MoonHeader = new GUIStyle(GroupHeader) { fontStyle = FontStyle.Normal, fontSize = 14 };
             MoonHeader.padding = new RectOffset(54, 8, 6, 6);
 

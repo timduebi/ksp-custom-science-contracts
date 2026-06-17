@@ -41,10 +41,12 @@ namespace CustomScienceContracts.UI
                 string key = sparte.ToString();
                 bool open = !_collapsed.Contains(key);
                 string head = $"{(open ? "▼" : "▶")}  {SparteDisplay.Name(sparte)}   ({inSp.Count})";
-                if (GUILayout.Button(head, Theme.GroupHeader, GUILayout.Height(28)))
+                if (GUILayout.Button(head, Theme.GroupHeaderPlain, GUILayout.Height(28)))
                 { if (!_collapsed.Remove(key)) _collapsed.Add(key); }
+                // Im Header nur der farbige Sparten-Balken (kein Glyph) — das beschreibende Icon
+                // steht ausschliesslich auf der jeweiligen Missionskarte.
                 if (Event.current.type == EventType.Repaint)
-                    Theme.DrawLeftAccent(GUILayoutUtility.GetLastRect(), sv.Color, sv.Icon);
+                    Theme.DrawLeftAccent(GUILayoutUtility.GetLastRect(), sv.Color, null);
                 if (!open) continue;
 
                 foreach (var c in inSp) DrawActiveItem(mgr, c);

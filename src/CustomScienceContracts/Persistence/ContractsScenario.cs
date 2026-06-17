@@ -72,7 +72,13 @@ namespace CustomScienceContracts.Persistence
             {
                 yield return wait;
                 if (_manager == null) continue;
-                if (!(HighLogic.LoadedSceneIsFlight || HighLogic.LoadedScene == GameScenes.TRACKSTATION))
+                // In allen Mod-Szenen auswerten, damit Dauer-Timer ueberall abschliessen koennen.
+                // Ingame-Zeit bleibt massgeblich: im VAB/Editor steht die UT still -> der Timer waechst
+                // dort nicht, schliesst aber ab, wo die UT fortschreitet (Space Center/Tracking/Flug).
+                if (!(HighLogic.LoadedSceneIsFlight ||
+                      HighLogic.LoadedScene == GameScenes.TRACKSTATION ||
+                      HighLogic.LoadedScene == GameScenes.SPACECENTER ||
+                      HighLogic.LoadedScene == GameScenes.EDITOR))
                     continue;
 
                 try

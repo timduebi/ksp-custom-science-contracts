@@ -27,11 +27,17 @@ namespace CustomScienceContracts.Conditions
             for (int j = 0; j < n; j++) if (checks[j].IsTimer) timerIdx = j;
             bool hasTimer = timerIdx >= 0;
 
-            // Subjekt-Vessel fuer Einzel-Vessel-Checks (bei Timer: gemerktes Vessel weiterverfolgen).
-            uint oldVid = GetUInt(c.Progress, $"c{ci}_vid");
-            Vessel subject = ResolveSubject(c, ci, cond, ctx, hasTimer);
-            uint newVid = subject != null ? subject.persistentId : 0u;
-            if (hasTimer && newVid != oldVid) c.Progress.SetValue($"c{ci}_t0", "-1", true); // Vessel gewechselt -> Timer neu
+            // Gibt es ueberhaupt Einzel-Vessel-Checks? Nur dann ist ein Subjekt-Vessel relevant
+            // (reine FLEET/FLYBY/EVENT + Timer brauchen keins).
+            bool hasVesselChecks = false;
+            for (int j = 0; j < n; j++) if (!checks[j].IsSpecial) { hasVesselChecks = true; break; }
+
+            double t0 = GetD(c.Progress, $"c{ci}_t0", -1.0);
+            bool timerRunning = hasTimer && t0 >= 0.0;
+
+            // Subjekt-Vessel: bei laufendem Timer ist die Bindung GESPERRT (nur das gemerkte Schiff,
+            // kein Wechsel aufs aktive Vessel), damit EVA/Fokus-/Szenenwechsel den Timer nicht abbrechen.
+            Vessel subject = ResolveSubject(c, ci, cond, ctx, hasTimer, hasVesselChecks, timerRunning);
 
             bool allInstant = true;
             for (int j = 0; j < n; j++)
@@ -53,18 +59,28 @@ namespace CustomScienceContracts.Conditions
             {
                 var t = checks[timerIdx];
                 double required = t.Kind == CheckKind.HOLD ? t.Seconds : t.Days * VesselQuery.SecondsPerDay();
-                double t0 = GetD(c.Progress, $"c{ci}_t0", -1.0);
-                if (allInstant)
+
+                // Gebundenes Schiff nur transient nicht auffindbar (Szenenwechsel/Ladevorgang):
+                // t0 halten (Pause), NICHT zuruecksetzen — elapsed wird aus absoluter UT nachgeholt.
+                bool subjectMissing = timerRunning && hasVesselChecks && subject == null;
+
+                if (timerRunning)
                 {
-                    if (t0 < 0) { t0 = ctx.UniversalTime; c.Progress.SetValue($"c{ci}_t0", t0.ToString("R", Inv), true); }
+                    if (subjectMissing)  { /* t0 halten */ }
+                    else if (allInstant) { /* weiterzaehlen, t0 unveraendert */ }
+                    else { t0 = -1.0; c.Progress.SetValue($"c{ci}_t0", "-1", true); } // echte Unterbrechung -> neu
                 }
-                else { t0 = -1.0; c.Progress.SetValue($"c{ci}_t0", "-1", true); }
-                double elapsed = t0 >= 0 ? ctx.UniversalTime - t0 : 0.0;
+                else if (allInstant)
+                {
+                    t0 = ctx.UniversalTime; c.Progress.SetValue($"c{ci}_t0", t0.ToString("R", Inv), true); // Start
+                }
+
+                double elapsed = t0 >= 0.0 ? ctx.UniversalTime - t0 : 0.0;
                 double rem = Math.Max(0.0, required - elapsed);
                 c.Progress.SetValue($"c{ci}_rem", rem.ToString("0", Inv), true);
-                bool holdMet = allInstant && elapsed >= required;
+                bool holdMet = !subjectMissing && allInstant && t0 >= 0.0 && elapsed >= required;
                 met[timerIdx] = holdMet;
-                overall = allInstant && holdMet;
+                overall = holdMet;
             }
             else overall = allInstant;
 
@@ -77,15 +93,51 @@ namespace CustomScienceContracts.Conditions
         /// <summary>Marker-Waypoints aller Checks dieses Contracts entfernen (Abschluss/Verwerfen).</summary>
         public static void ClearMarkers(MissionContract c) => MarkerWaypoint.RemoveAll(c.Id);
 
-        private static Vessel ResolveSubject(MissionContract c, int ci, Condition cond, EvaluationContext ctx, bool hasTimer)
+        /// <summary>Haengt die Timer-Bindung (c{ci}_vid) auf das fusionierte Schiff um, wenn das gebundene
+        /// Schiff durch Andocken in einem anderen Vessel aufgegangen ist — sonst pausierte der Timer
+        /// dauerhaft, weil die alte persistentId nach dem Docking nicht mehr existiert.</summary>
+        public static void RemapDockedSubjects(MissionContract c, EvaluationContext ctx)
         {
-            if (!hasTimer) return VesselQuery.Active;
+            if (c.Progress == null || ctx.Events == null) return;
+            var merges = ctx.Events.Merges;
+            if (merges == null || merges.Count == 0) return;
+            for (int ci = 0; ci < c.Bedingungen.Count; ci++)
+            {
+                string key = $"c{ci}_vid";
+                uint vid = GetUInt(c.Progress, key);
+                if (vid == 0) continue;
+                if (ctx.Vessels.Any(v => v != null && v.persistentId == vid)) continue; // existiert noch
+                foreach (var m in merges)
+                {
+                    uint other = vid == m.IdA ? m.IdB : (vid == m.IdB ? m.IdA : 0u);
+                    if (other != 0u && ctx.Vessels.Any(v => v != null && v.persistentId == other))
+                    {
+                        c.Progress.SetValue(key, other.ToString(), true);
+                        break;
+                    }
+                }
+            }
+        }
+
+        private static Vessel ResolveSubject(MissionContract c, int ci, Condition cond, EvaluationContext ctx,
+                                             bool hasTimer, bool hasVesselChecks, bool timerRunning)
+        {
+            // Ohne Timer (oder ohne Einzel-Vessel-Checks): immer das aktive Vessel bewerten.
+            if (!hasTimer || !hasVesselChecks) return VesselQuery.Active;
 
             uint vid = GetUInt(c.Progress, $"c{ci}_vid");
-            Vessel tracked = vid != 0
+            Vessel bound = vid != 0
                 ? ctx.Vessels.FirstOrDefault(v => v != null && v.persistentId == vid)
                 : null;
-            if (tracked != null && SatisfiesVesselChecks(cond, tracked, ctx)) return tracked;
+
+            // Laeuft der Timer, ist die Bindung gesperrt: nur das gebundene Schiff zaehlt — auch
+            // unfokussiert/unloaded. Kein Fallback aufs aktive Vessel, kein Neubinden. Transient nicht
+            // gefunden -> null (der Aufrufer haelt dann t0, statt zurueckzusetzen).
+            if (timerRunning) return bound;
+
+            // Timer laeuft noch nicht: gebundenes Schiff behalten, solange es noch erfuellt; sonst das
+            // aktive Vessel pruefen und (falls erfuellend) neu binden.
+            if (bound != null && SatisfiesVesselChecks(cond, bound, ctx)) return bound;
 
             var act = VesselQuery.Active;
             if (act != null && SatisfiesVesselChecks(cond, act, ctx))
@@ -93,7 +145,6 @@ namespace CustomScienceContracts.Conditions
                 c.Progress.SetValue($"c{ci}_vid", act.persistentId.ToString(), true);
                 return act;
             }
-            c.Progress.SetValue($"c{ci}_vid", "0", true);
             return act;
         }
 
@@ -112,9 +163,9 @@ namespace CustomScienceContracts.Conditions
             CelestialBody body = string.IsNullOrEmpty(chk.Body) ? v.mainBody : BodyResolver.Resolve(chk.Body);
             switch (chk.Kind)
             {
-                case CheckKind.CREW_MIN:   return v.GetCrewCount() >= chk.Min;
+                case CheckKind.CREW_MIN:   return VesselQuery.EffectiveCrew(v) >= chk.Min;
                 case CheckKind.CREW_NONE:  return v.GetCrewCount() == 0;
-                case CheckKind.CREW_EXACT: return v.GetCrewCount() == chk.Min;
+                case CheckKind.CREW_EXACT: return VesselQuery.EffectiveCrew(v) == chk.Min;
                 case CheckKind.ON_BODY:    return body != null && v.mainBody == body;
                 case CheckKind.SITUATION:  return VesselQuery.MatchesSituation(v, chk.Situation);
                 case CheckKind.LANDED:

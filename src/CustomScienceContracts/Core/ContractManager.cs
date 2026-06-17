@@ -124,14 +124,19 @@ namespace CustomScienceContracts.Core
         {
             var active = Catalog.All.Where(c => c.Status == MissionStatus.Active).ToList();
             foreach (var c in active)
+            {
+                // Andock-Fusionen verarbeiten, bevor die Bindung gelesen wird (Timer ueberlebt Resupply).
+                Conditions.CheckEvaluation.RemapDockedSubjects(c, ctx);
                 if (EvaluateAll(c, ctx))
                 {
                     c.Status = MissionStatus.ReadyToClaim;
                     // "Station/Basis bauen"-Auftrag: das erfuellende (aktive) Vessel als Station merken.
-                    if (!string.IsNullOrEmpty(c.RecordStationKey))
+                    // Nur im Flug sinnvoll — im Space Center/Editor gibt es kein aktives Vessel.
+                    if (!string.IsNullOrEmpty(c.RecordStationKey) && Conditions.VesselQuery.Active != null)
                         Stations.Record(c.RecordStationKey, Conditions.VesselQuery.Active);
                     Log.Info($"Bereit zum Einloesen: {c.Id}");
                 }
+            }
             Events.ClearFrameBuffer();
         }
 
