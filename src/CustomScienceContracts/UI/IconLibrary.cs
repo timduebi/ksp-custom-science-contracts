@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using CustomScienceContracts.Core;
 using UnityEngine;
 
 namespace CustomScienceContracts.UI
@@ -10,6 +11,7 @@ namespace CustomScienceContracts.UI
     {
         private const string Base = "CustomScienceContracts/Icons";
         private static readonly Dictionary<string, Texture2D> _cache = new Dictionary<string, Texture2D>();
+        private static readonly HashSet<string> _missingLogged = new HashSet<string>();
 
         public static Texture2D UI(string name) => Load(Base + "/UI/" + name);
         public static Texture2D Body(string name) => Load(Base + "/Bodies/" + name);
@@ -17,11 +19,34 @@ namespace CustomScienceContracts.UI
 
         private static Texture2D Load(string url)
         {
-            if (_cache.TryGetValue(url, out var t)) return t;
+            if (_cache.TryGetValue(url, out var t))
+            {
+                if (t != null) return t;
+                _cache.Remove(url);
+                Log.V($"Icon-Cache erneuert, Textur war null/zerstoert: {url}");
+            }
+
             Texture2D tex = null;
-            try { tex = LoadPngFromDisk(url) ?? (GameDatabase.Instance != null ? GameDatabase.Instance.GetTexture(url, false) : null); }
-            catch { tex = null; }
-            _cache[url] = tex;
+            try
+            {
+                tex = LoadPngFromDisk(url) ??
+                      (GameDatabase.Instance != null ? GameDatabase.Instance.GetTexture(url, false) : null);
+            }
+            catch (System.Exception e)
+            {
+                Log.V($"Icon-Laden fehlgeschlagen: {url} ({e.Message})");
+                tex = null;
+            }
+
+            if (tex != null)
+            {
+                _cache[url] = tex;
+                _missingLogged.Remove(url);
+                return tex;
+            }
+
+            if (_missingLogged.Add(url))
+                Log.V($"Icon-Key liefert keine Textur: {url}");
             return tex;
         }
 

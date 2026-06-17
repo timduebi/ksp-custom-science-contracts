@@ -14,13 +14,48 @@ namespace CustomScienceContracts.Conditions
     public static class MarkerWaypoint
     {
         private static readonly Dictionary<string, Waypoint> _active = new Dictionary<string, Waypoint>();
+        private static bool _sceneKnown;
+        private static GameScenes _scene;
 
-        public static bool Has(string contractId) => _active.ContainsKey(contractId);
+        private static bool WaypointScene =>
+            HighLogic.LoadedSceneIsFlight ||
+            HighLogic.LoadedScene == GameScenes.TRACKSTATION;
+
+        private static bool SceneChanged =>
+            _sceneKnown && _scene != HighLogic.LoadedScene;
+
+        private static void NoteScene()
+        {
+            _scene = HighLogic.LoadedScene;
+            _sceneKnown = true;
+        }
+
+        public static bool Has(string contractId)
+        {
+            if (!WaypointScene) return false;
+            if (!_active.TryGetValue(contractId, out var wp) || wp == null)
+            {
+                _active.Remove(contractId);
+                return false;
+            }
+            if (SceneChanged)
+            {
+                Log.V($"Marker-Waypoint-Cache nach Szenenwechsel erneuern: {contractId}");
+                return false;
+            }
+            return true;
+        }
 
         public static void Set(string contractId, CelestialBody body, double lat, double lon, string label, int seed)
         {
             try
             {
+                if (!WaypointScene)
+                {
+                    Log.V($"Marker-Waypoint erst in Flight/Map/Tracking sichtbar: {contractId}");
+                    return;
+                }
+
                 Remove(contractId);
                 var wp = new Waypoint
                 {
@@ -36,6 +71,7 @@ namespace CustomScienceContracts.Conditions
                 };
                 ScenarioCustomWaypoints.AddWaypoint(wp);
                 _active[contractId] = wp;
+                NoteScene();
                 Log.Info($"Marker gesetzt: {wp.name} @ {lat:0.00}/{lon:0.00} auf {body.name}");
             }
             catch (Exception e) { Log.Warn($"Marker-Waypoint setzen fehlgeschlagen: {e.Message}"); }

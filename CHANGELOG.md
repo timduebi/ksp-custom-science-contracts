@@ -3,6 +3,18 @@
 All notable changes to CustomScienceContracts are documented here.
 This project uses simple `MAJOR.MINOR.PATCH` versioning.
 
+## [0.1.3] - 2026-06-17
+
+### Fixed
+- Moved the active-missions button back into the stock app-launcher column so it
+  no longer floats near the top middle of the screen.
+- Precision-landing waypoints are now only created in Flight/Map/Tracking and
+  are recreated after scene changes, while the v0.1.2 all-scene timer evaluation
+  remains intact.
+- Mission icons no longer permanently fall back to probe icons when a texture is
+  temporarily null or destroyed during scene changes; icon textures are reloaded
+  from disk as needed and missing icon keys are reported via verbose logging.
+
 ## [0.1.2] - 2026-06-17
 
 ### Added

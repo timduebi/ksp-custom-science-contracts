@@ -10,6 +10,7 @@ namespace CustomScienceContracts.UI
     public class CscUI : MonoBehaviour
     {
         private ContractManager _mgr;
+        private ApplicationLauncherButton _btnActive;  // "Aktive Missionen" im Stock-AppLauncher
         private ApplicationLauncherButton _btnAvail;   // nur "Verfuegbare Missionen" im Stock-AppLauncher
         private bool _activeOpen, _availOpen;
 
@@ -30,17 +31,24 @@ namespace CustomScienceContracts.UI
         private void OnDestroy()
         {
             GameEvents.onGUIApplicationLauncherReady.Remove(AddButtons);
+            Remove(ref _btnActive);
             Remove(ref _btnAvail);
         }
 
         private void AddButtons()
         {
             if (ApplicationLauncher.Instance == null) return;
+            var all = ApplicationLauncher.AppScenes.SPACECENTER | ApplicationLauncher.AppScenes.FLIGHT |
+                      ApplicationLauncher.AppScenes.MAPVIEW | ApplicationLauncher.AppScenes.TRACKSTATION |
+                      ApplicationLauncher.AppScenes.VAB | ApplicationLauncher.AppScenes.SPH;
             var planning = ApplicationLauncher.AppScenes.SPACECENTER | ApplicationLauncher.AppScenes.TRACKSTATION |
                            ApplicationLauncher.AppScenes.VAB | ApplicationLauncher.AppScenes.SPH;
 
-            // "Aktive Missionen" steht bewusst NICHT im Stock-AppLauncher, sondern als eigener Button oben
-            // (siehe DrawActiveButton). Hier nur der Planungs-Button "Verfuegbare Missionen".
+            if (_btnActive == null)
+                _btnActive = ApplicationLauncher.Instance.AddModApplication(
+                    () => _activeOpen = true, () => _activeOpen = false, null, null, null, null,
+                    all, IconApp("aktiv"));
+
             if (_btnAvail == null)
                 _btnAvail = ApplicationLauncher.Instance.AddModApplication(
                     () => _availOpen = true, () => _availOpen = false, null, null, null, null,
@@ -65,8 +73,6 @@ namespace CustomScienceContracts.UI
             {
                 Theme.EnsureBuilt();
                 GUI.skin = Theme.Skin;   // eigener Scrollbalken-Stil fuer unsere Fenster
-
-                DrawActiveButton();
 
                 if (_availOpen && AvailableSceneAllowed)
                 {
@@ -110,23 +116,7 @@ namespace CustomScienceContracts.UI
         }
 
         private void CloseAvail() { _availOpen = false; _btnAvail?.SetFalse(false); }
-        private void CloseActive() { _activeOpen = false; }
-
-        /// <summary>Eigener Aktive-Missionen-Button oben (nahe der Ressourcenanzeige), bewusst ausserhalb
-        /// des Stock-AppLaunchers. Position/Groesse aus settings.cfg; X=-1 => automatisch oben mittig.</summary>
-        private void DrawActiveButton()
-        {
-            float size = Tuning.ActiveButtonSize;
-            float x = Tuning.ActiveButtonX >= 0f ? Tuning.ActiveButtonX : (Screen.width * 0.5f - 260f);
-            float y = Tuning.ActiveButtonY;
-            var rect = new Rect(x, y, size, size);
-            var icon = IconLibrary.App("aktiv");
-            var content = icon != null
-                ? new GUIContent(icon, "Aktive Missionen")
-                : new GUIContent("AM", "Aktive Missionen");
-            if (GUI.Button(rect, content, Theme.TopIconButton))
-                _activeOpen = !_activeOpen;
-        }
+        private void CloseActive() { _activeOpen = false; _btnActive?.SetFalse(false); }
 
         private static Texture2D IconApp(string name)
         {
