@@ -51,7 +51,7 @@ namespace CustomScienceContracts.Data
                 Titel = node.GetValue("title") ?? id,
                 Beschreibung = node.GetValue("description") ?? "",
                 Unterkategorie = node.GetValue("subcategory") ?? "",
-                IconKey = node.GetValue("icon") ?? "",
+                IconKey = (node.GetValue("icon") ?? "").Trim(),
                 RevealAllAfter = node.GetValue("revealAllAfter") ?? "",
                 RecordStationKey = node.GetValue("recordStationKey") ?? "",
                 StationRef = node.GetValue("stationRef") ?? ""

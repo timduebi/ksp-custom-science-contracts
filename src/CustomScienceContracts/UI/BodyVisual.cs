@@ -142,8 +142,9 @@ namespace CustomScienceContracts.UI
             }
         }
 
-        /// <summary>Icon einer Mission: das pro Mission gewaehlte (icon=...), sonst Fallback nach
-        /// erstem Bedingungstyp. So zeigt jede Mission ein passendes Symbol statt nur "Sonde".</summary>
+        /// <summary>Icon einer Mission: zuerst das pro Mission gewaehlte (icon=...), sonst ein
+        /// Fallback aus allen Bedingungen/Checks. So landen Composite-Missionen nicht pauschal
+        /// beim Sonden-Icon.</summary>
         public static Texture2D MissionIcon(MissionContract c)
         {
             if (c != null && !string.IsNullOrEmpty(c.IconKey))
@@ -151,10 +152,143 @@ namespace CustomScienceContracts.UI
                 var t = IconLibrary.UI(c.IconKey);
                 if (t != null) return t;
             }
-            return ForCondition(c != null && c.Bedingungen.Count > 0 ? c.Bedingungen[0].Type : ConditionType.ORBIT);
+            return ForMissionShape(c);
         }
 
-        // Mission-Icon nach (erstem) Bedingungstyp
+        private static Texture2D ForMissionShape(MissionContract c)
+        {
+            if (c == null || c.Bedingungen.Count == 0)
+                return IconLibrary.UI("TrackingStation_ButtonMapProbe");
+
+            bool hasMarker = false;
+            bool hasBaseResource = false;
+            bool hasDock = false;
+            bool hasEva = false;
+            bool hasFlyby = false;
+            bool hasFleet = false;
+            bool hasAtmo = false;
+            bool hasDuration = false;
+            bool hasCrew = c.HeimatSparte == Sparte.Bemannt;
+            bool hasLanded = false;
+            bool hasOrbit = false;
+
+            foreach (var cond in c.Bedingungen)
+            {
+                if (cond.Type == ConditionType.COMPOSITE && cond.Checks.Count > 0)
+                {
+                    foreach (var ck in cond.Checks)
+                    {
+                        switch (ck.Kind)
+                        {
+                            case CheckKind.MARKER_LANDING:
+                                hasMarker = true;
+                                break;
+                            case CheckKind.FUEL_MIN:
+                            case CheckKind.RESOURCE_MIN:
+                            case CheckKind.ORE_SURFACE:
+                                hasBaseResource = true;
+                                break;
+                            case CheckKind.DOCK_ANY:
+                            case CheckKind.DOCK_STATION:
+                                hasDock = true;
+                                break;
+                            case CheckKind.EVA:
+                                hasEva = true;
+                                break;
+                            case CheckKind.FLYBY:
+                                hasFlyby = true;
+                                break;
+                            case CheckKind.VESSEL_COUNT:
+                            case CheckKind.VESSEL_COUNT_INCLINATION:
+                                hasFleet = true;
+                                break;
+                            case CheckKind.ATMO_FRACTION:
+                            case CheckKind.SUBORBITAL:
+                            case CheckKind.SUBORBITAL_ABOVE_ATMO:
+                                hasAtmo = true;
+                                break;
+                            case CheckKind.LANDED:
+                                hasLanded = true;
+                                break;
+                            case CheckKind.ORBIT_ABOVE:
+                            case CheckKind.SITUATION:
+                                hasOrbit = hasOrbit || ck.Situation == "ORBITING" || ck.Kind == CheckKind.ORBIT_ABOVE;
+                                break;
+                            case CheckKind.DURATION:
+                            case CheckKind.HOLD:
+                                hasDuration = true;
+                                break;
+                            case CheckKind.CREW_MIN:
+                            case CheckKind.CREW_EXACT:
+                                hasCrew = true;
+                                break;
+                        }
+                    }
+                    continue;
+                }
+
+                switch (cond.Type)
+                {
+                    case ConditionType.MARKER_LANDING:
+                        hasMarker = true;
+                        break;
+                    case ConditionType.FUEL_ORBIT:
+                    case ConditionType.ORE_SURFACE:
+                        hasBaseResource = true;
+                        break;
+                    case ConditionType.DOCK:
+                    case ConditionType.CREW_DURATION:
+                        hasDock = true;
+                        break;
+                    case ConditionType.EVA:
+                        hasEva = true;
+                        break;
+                    case ConditionType.FLYBY:
+                        hasFlyby = true;
+                        break;
+                    case ConditionType.VESSEL_COUNT_ORBIT:
+                        hasFleet = true;
+                        break;
+                    case ConditionType.ATMO_ENTRY:
+                    case ConditionType.ALT_FRACTION_ATMO:
+                    case ConditionType.ABOVE_ATMO_SUBORBITAL:
+                        hasAtmo = true;
+                        break;
+                    case ConditionType.LANDED:
+                        hasLanded = true;
+                        break;
+                    case ConditionType.ORBIT:
+                    case ConditionType.ORBIT_HIGH:
+                    case ConditionType.RENDEZVOUS:
+                        hasOrbit = true;
+                        break;
+                }
+            }
+
+            if (hasMarker)
+                return IconLibrary.UI("TrackingStation_ButtonMapFlag");
+            if (hasBaseResource)
+                return IconLibrary.UI("TrackingStation_ButtonMapBase");
+            if (hasDock)
+                return IconLibrary.UI("TrackingStation_ButtonMapStation");
+            if (hasEva && !hasLanded)
+                return IconLibrary.UI("TrackingStation_ButtonMapEVA");
+            if (hasLanded)
+                return IconLibrary.UI(hasDuration ? "TrackingStation_ButtonMapBase" : "TrackingStation_ButtonMapLander");
+            if (hasFlyby)
+                return IconLibrary.UI("TrackingStation_ButtonMapProbe");
+            if (hasFleet)
+                return IconLibrary.UI("TrackingStation_ButtonMapCommunicationsRelay");
+            if (hasAtmo)
+                return IconLibrary.UI("TrackingStation_ButtonMapAircraft");
+            if (hasOrbit)
+                return IconLibrary.UI(hasDuration && hasCrew
+                    ? "TrackingStation_ButtonMapStation"
+                    : hasCrew ? "TrackingStation_ButtonMapShips" : "TrackingStation_ButtonMapCommunicationsRelay");
+            return IconLibrary.UI("TrackingStation_ButtonMapProbe");
+        }
+
+        // Legacy-Fallback nach einem einzelnen Bedingungstyp.
         public static Texture2D ForCondition(ConditionType t)
         {
             switch (t)

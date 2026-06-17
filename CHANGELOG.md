@@ -3,6 +3,19 @@
 All notable changes to CustomScienceContracts are documented here.
 This project uses simple `MAJOR.MINOR.PATCH` versioning.
 
+## [0.1.4] - 2026-06-17
+
+### Fixed
+- Mission icons are now chosen more reliably in the mission list and active
+  mission window. Station, crewed-vessel, relay, EVA and atmospheric missions
+  should no longer unexpectedly show the generic probe icon.
+- Icon names from the mission catalog are cleaned up while loading, so small
+  formatting mistakes in config values do not break the displayed icon.
+
+### Notes
+- The mod continues to use the square UI icon files bundled in
+  `GameData/CustomScienceContracts/Icons/UI`.
+
 ## [0.1.3] - 2026-06-17
 
 ### Fixed
