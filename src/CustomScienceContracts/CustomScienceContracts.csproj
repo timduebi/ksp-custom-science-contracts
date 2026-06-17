@@ -1,0 +1,74 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Build:  dotnet build -c Release -p:KSPRoot="C:\Path\To\Kerbal Space Program"
+    KSPRoot kann auch lokal in CustomScienceContracts.csproj.user gesetzt werden,
+    damit nichts Maschinen-Spezifisches eingecheckt wird.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>CustomScienceContracts</AssemblyName>
+    <RootNamespace>CustomScienceContracts</RootNamespace>
+    <LangVersion>9</LangVersion>
+    <Deterministic>true</Deterministic>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <!-- net48 hat kein IsExternalInit: keine 'init'-Setter / records verwenden. -->
+
+    <!-- Entweder KSPRoot ODER KSPManaged setzen (CLI: -p:KSPManaged="...").
+         Windows:  <KSP>\KSP_x64_Data\Managed
+         macOS:    <KSP>/KSP.app/Contents/Resources/Data/Managed  (oder .../KSP_x64_Data/Managed)
+         Linux:    <KSP>/KSP_x64_Data/Managed -->
+    <KSPRoot Condition="'$(KSPRoot)' == ''"></KSPRoot>
+    <KSPManaged Condition="'$(KSPManaged)' == ''">$(KSPRoot)\KSP_x64_Data\Managed</KSPManaged>
+    <ModDeployDir>$(MSBuildProjectDirectory)\..\..\GameData\CustomScienceContracts\Plugins</ModDeployDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- net48-Referenz-Assemblies (nur fuer den Build; baut net48 auch auf macOS/Linux). -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(KSPManaged)\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(KSPManaged)\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(KSPManaged)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(KSPManaged)\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(KSPManaged)\UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AnimationModule">
+      <HintPath>$(KSPManaged)\UnityEngine.AnimationModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(KSPManaged)\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- FinePrint-Typen (Waypoint/ScenarioCustomWaypoints) sind in KSP 1.12 Teil von Assembly-CSharp. -->
+  </ItemGroup>
+
+  <!-- DLL nach dem Build ins Mod-GameData kopieren (lt. CLAUDE.md). -->
+  <Target Name="DeployToGameData" AfterTargets="Build">
+    <MakeDir Directories="$(ModDeployDir)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModDeployDir)" SkipUnchangedFiles="false" />
+    <Message Importance="high" Text="Deployed $(TargetFileName) -> $(ModDeployDir)" />
+  </Target>
+
+</Project>

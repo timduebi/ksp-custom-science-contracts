@@ -1,0 +1,9 @@
+/Users/tdue/Documents/ksp science contracts/src/CustomScienceContracts/obj/Release/CustomScienceContracts.csproj.AssemblyReference.cache
+/Users/tdue/Documents/ksp science contracts/src/CustomScienceContracts/obj/Release/CustomScienceContracts.GeneratedMSBuildEditorConfig.editorconfig
+/Users/tdue/Documents/ksp science contracts/src/CustomScienceContracts/obj/Release/CustomScienceContracts.AssemblyInfoInputs.cache
+/Users/tdue/Documents/ksp science contracts/src/CustomScienceContracts/obj/Release/CustomScienceContracts.AssemblyInfo.cs
+/Users/tdue/Documents/ksp science contracts/src/CustomScienceContracts/obj/Release/CustomScienceContracts.csproj.CoreCompileInputs.cache
+/Users/tdue/Documents/ksp science contracts/src/CustomScienceContracts/bin/Release/CustomScienceContracts.dll
+/Users/tdue/Documents/ksp science contracts/src/CustomScienceContracts/bin/Release/CustomScienceContracts.pdb
+/Users/tdue/Documents/ksp science contracts/src/CustomScienceContracts/obj/Release/CustomScienceContracts.dll
+/Users/tdue/Documents/ksp science contracts/src/CustomScienceContracts/obj/Release/CustomScienceContracts.pdb
