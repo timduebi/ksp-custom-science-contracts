@@ -188,15 +188,12 @@ def mission_action(m, title):
 
 
 def description_for(m, title):
-    action = mission_action(m, title)
-    branch = {
-        "Pioniere": "crewed exploration",
-        "Robotische Erkunder": "robotic exploration",
-        "Versorgungsnetz": "network and logistics",
-    }.get(m["sparte"], "exploration")
-    if m.get("repeatable") == "yes":
-        return f"{action} This repeatable {branch} contract keeps established infrastructure useful without blocking the main campaign."
-    return f"{action} This {branch} milestone pays a science bonus when all listed objectives are complete."
+    # Hand-written English translation lives next to the German one in the design plan
+    # (beschreibung_en). No templated/boilerplate text any more.
+    en = (m.get("beschreibung_en") or "").strip()
+    if not en:
+        raise SystemExit(f"[gen_catalog_en] mission '{m['id']}' is missing beschreibung_en")
+    return en
 
 
 def label_for(kind, kvl, mission):

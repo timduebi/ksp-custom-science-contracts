@@ -44,7 +44,7 @@ for blk in text.split("=== MISSION ===")[1:]:
         if s.startswith("=="): break
         if s.startswith("check:"):
             checks.append(s[len("check:"):].strip()); continue
-        mm = re.match(r"(id|sparte|body|prereq|reward|repeatable|recordStation|stationRef|beschreibung|description|icon):\s*(.*)$", s)
+        mm = re.match(r"(id|sparte|body|prereq|reward|repeatable|recordStation|stationRef|beschreibung_en|beschreibung|description|icon):\s*(.*)$", s)
         if mm: m[mm.group(1)] = mm.group(2).strip()
     if "id" in m:
         m["checks"] = checks
@@ -117,6 +117,10 @@ for m in missions: by_sparte[m.get("sparte","?")] = by_sparte.get(m.get("sparte"
 record_keys = {m["recordStation"] for m in missions if m.get("recordStation","-") != "-"}
 ref_keys    = {m["stationRef"]    for m in missions if m.get("stationRef","-") != "-"}
 
+# Every SOL mission must carry a hand-written English translation (beschreibung_en).
+# The stock design doc uses its own English `description` field instead.
+missing_en = sorted(m["id"] for m in missions if not m.get("beschreibung_en","").strip()) if PROFILE != "stock" else []
+
 # ---- Report ----
 print("Design file:", DOC)
 print("Profile:", PROFILE)
@@ -136,12 +140,13 @@ show("Dangling prerequisites", dangling)
 show("Unknown check types", unknown_checks)
 show("Unknown/invented bodies", unknown_bodies)
 show("Invalid branches", bad_sparte)
+show("Missions without beschreibung_en", missing_en)
 print()
 print("recordStation-Keys:", sorted(record_keys) or "—")
 print("stationRef-Keys:", sorted(ref_keys) or "—")
 print("Referenced generated station ids:",
       sorted({p for _,p in prereq_edges if p in gen_ids}))
 
-ok = not (dups or dangling or unknown_checks or unknown_bodies or bad_sparte)
+ok = not (dups or dangling or unknown_checks or unknown_bodies or bad_sparte or missing_en)
 print("\n==> " + ("VALIDATION OK" if ok else "VALIDATION HAS FINDINGS"))
 sys.exit(0 if ok else 1)

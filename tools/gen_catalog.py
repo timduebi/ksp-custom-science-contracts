@@ -120,7 +120,7 @@ def parse_missions(text):
                 continue
             if s.startswith("check:"):
                 checks.append(parse_check(s[6:].strip())); continue
-            mm = re.match(r"(id|sparte|body|prereq|reward|repeatable|recordStation|stationRef|beschreibung|icon):\s*(.*)$", s)
+            mm = re.match(r"(id|sparte|body|prereq|reward|repeatable|recordStation|stationRef|beschreibung_en|beschreibung|icon):\s*(.*)$", s)
             if mm: m[mm.group(1)] = mm.group(2).strip()
         if "id" in m:
             m["checks"] = checks
