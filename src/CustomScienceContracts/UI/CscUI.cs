@@ -4,14 +4,12 @@ using UnityEngine;
 
 namespace CustomScienceContracts.UI
 {
-    /// <summary>Zwei AppLauncher-Buttons: Aktive Missionen (ueberall) und Verfuegbare Missionen
-    /// (nur SpaceCenter/Editor/Ortungsstation — im Flug/Karte ausgeblendet). Zeichnet beide Fenster
-    /// mit abgerundetem, hellblau umrandetem Rahmen sowie den Abbruch-Bestaetigungsdialog.</summary>
+    /// <summary>Two app-launcher buttons: active missions and mission control.</summary>
     public class CscUI : MonoBehaviour
     {
         private ContractManager _mgr;
-        private ApplicationLauncherButton _btnActive;  // "Aktive Missionen" im Stock-AppLauncher
-        private ApplicationLauncherButton _btnAvail;   // nur "Verfuegbare Missionen" im Stock-AppLauncher
+        private ApplicationLauncherButton _btnActive;
+        private ApplicationLauncherButton _btnAvail;
         private bool _activeOpen, _availOpen;
 
         private readonly SelectionWindow _selection = new SelectionWindow();
@@ -72,12 +70,12 @@ namespace CustomScienceContracts.UI
             try
             {
                 Theme.EnsureBuilt();
-                GUI.skin = Theme.Skin;   // eigener Scrollbalken-Stil fuer unsere Fenster
+                GUI.skin = Theme.Skin;
 
                 if (_availOpen && AvailableSceneAllowed)
                 {
                     _selRect = GUILayout.Window(GetInstanceID(), _selRect,
-                        _ => _selection.Draw(_mgr, SelW, SelH, CloseAvail), "Missionskontrolle", Theme.Window,
+                        _ => _selection.Draw(_mgr, SelW, SelH, CloseAvail), "Mission Control", Theme.Window,
                         GUILayout.Width(SelW), GUILayout.Height(SelH));
                     Theme.DrawWindowBorder(new Rect(_selRect.x, _selRect.y, SelW, SelH));
 
@@ -88,7 +86,7 @@ namespace CustomScienceContracts.UI
                 if (_settingsOpen && AvailableSceneAllowed)
                 {
                     _setRect = GUILayout.Window(GetInstanceID() + 3, _setRect,
-                        _ => _settings.Draw(_mgr, SetW, SetH, () => _settingsOpen = false), "Einstellungen", Theme.Window,
+                        _ => _settings.Draw(_mgr, SetW, SetH, () => _settingsOpen = false), "Settings", Theme.Window,
                         GUILayout.Width(SetW), GUILayout.Height(SetH));
                     Theme.DrawWindowBorder(new Rect(_setRect.x, _setRect.y, SetW, SetH));
                 }
@@ -96,7 +94,7 @@ namespace CustomScienceContracts.UI
                 if (_activeOpen)
                 {
                     _actRect = GUILayout.Window(GetInstanceID() + 1, _actRect,
-                        _ => _activeWin.Draw(_mgr, ActW, ActH, CloseActive), "Aktive Missionen", Theme.Window,
+                        _ => _activeWin.Draw(_mgr, ActW, ActH, CloseActive), "Active Missions", Theme.Window,
                         GUILayout.Width(ActW), GUILayout.Height(ActH));
                     Theme.DrawWindowBorder(new Rect(_actRect.x, _actRect.y, ActW, ActH));
                 }
@@ -106,7 +104,7 @@ namespace CustomScienceContracts.UI
                     if (_activeWin.ConfirmRect.x <= 1f)
                         _activeWin.ConfirmRect = new Rect(Screen.width / 2f - ConfW / 2f, Screen.height / 2f - ConfH / 2f, ConfW, ConfH);
                     _activeWin.ConfirmRect = GUILayout.Window(GetInstanceID() + 2, _activeWin.ConfirmRect,
-                        _ => _activeWin.DrawConfirm(_mgr, ConfW), "Bestätigen", Theme.Window,
+                        _ => _activeWin.DrawConfirm(_mgr, ConfW), "Confirm", Theme.Window,
                         GUILayout.Width(ConfW), GUILayout.Height(ConfH));
                     Theme.DrawWindowBorder(new Rect(_activeWin.ConfirmRect.x, _activeWin.ConfirmRect.y, ConfW, ConfH));
                 }

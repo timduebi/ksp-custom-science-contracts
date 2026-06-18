@@ -4,37 +4,36 @@ using UnityEngine;
 
 namespace CustomScienceContracts.Model
 {
-    /// <summary>Atomares, einzeln bewertetes Teilziel innerhalb einer COMPOSITE-CONDITION.
-    /// Wird pro Mission von Hand in der cfg formuliert (eigenes <c>label</c>), damit die
-    /// Checkliste pro Mission individuell und gut lesbar ist (keine Massenware).</summary>
+    /// <summary>Atomic, individually evaluated goal inside a COMPOSITE condition. Each mission can
+    /// provide its own cfg label, keeping the checklist readable and mission-specific.</summary>
     public enum CheckKind
     {
-        CREW_MIN,            // Besatzung >= min
-        CREW_NONE,           // unbemannt (kein Kerbal an Bord)
-        CREW_EXACT,          // Besatzung == min
-        ON_BODY,             // am Zielkoerper (mainBody == body)
+        CREW_MIN,            // crew >= min
+        CREW_NONE,           // uncrewed, no Kerbals aboard
+        CREW_EXACT,          // crew == min
+        ON_BODY,             // at target body (mainBody == body)
         SITUATION,           // Situation == situation (ORBITING/LANDED/...)
         PERIAPSIS_MIN,       // orbit.PeA > km
-        ORBIT_ABOVE,         // ORBITING um body + orbit.PeA > km (praeziser Ein-Zeilen-Orbitcheck)
+        ORBIT_ABOVE,         // ORBITING around body + orbit.PeA > km
         INCLINATION_MIN,     // orbit.inclination >= inclinationMin
-        ABOVE_ATMOSPHERE,    // orbit.PeA > atmosphereDepth (Orbit klar ueber der Atmosphaere)
-        SUBORBITAL_ABOVE_ATMO, // altitude > atmosphereDepth (suborbitaler Scheitel ueber der Atmosphaere)
-        SUBORBITAL,          // SUB_ORBITAL am body + altitude > atmosphereDepth (suborbitaler Raumflug)
-        LANDED,              // LANDED/SPLASHED am body
+        ABOVE_ATMOSPHERE,    // orbit.PeA > atmosphereDepth
+        SUBORBITAL_ABOVE_ATMO, // altitude > atmosphereDepth
+        SUBORBITAL,          // SUB_ORBITAL at body + altitude > atmosphereDepth
+        LANDED,              // LANDED/SPLASHED at body
         ATMO_FRACTION,       // altitude in [fracMin,fracMax] * atmosphereDepth
         ORE_PRESENT,         // Ore an Bord > 0
-        ORE_SURFACE,         // LANDED/SPLASHED am body + Ore an Bord > 0 (Foerderung)
+        ORE_SURFACE,         // LANDED/SPLASHED at body + Ore aboard > 0
         FUEL_MIN,            // LiquidFuel+Oxidizer > amount
-        RESOURCE_MIN,        // resource-Menge > amount
-        EVA,                 // EVA (optional am body + Situation)
-        DOCK_STATION,        // Andocken an die gemerkte Station (stationKey)
-        DOCK_ANY,            // beliebiges Andocken
-        VESSEL_COUNT,        // >= count reale Vessels ORBITING um body (optional PeA > km)
+        RESOURCE_MIN,        // resource amount > amount
+        EVA,                 // EVA, optionally at body/situation
+        DOCK_STATION,        // dock with recorded station (stationKey)
+        DOCK_ANY,            // any docking event
+        VESSEL_COUNT,        // >= count real vessels ORBITING around body, optional PeA > km
         VESSEL_COUNT_INCLINATION, // >= count reale Vessels ORBITING um body mit inclination >= inclinationMin (optional PeA > km)
-        FLYBY,               // ein reales Vessel durchfliegt die SOI von body, orbitet nie (km = max. Annaeherung)
-        MARKER_LANDING,      // aktives Vessel LANDED/SPLASHED am body, Distanz zum Zielpunkt <= km
-        HOLD,                // alle uebrigen Checks zusammenhaengend seconds Sekunden halten
-        DURATION             // alle uebrigen Checks zusammenhaengend days Tage halten
+        FLYBY,               // a real vessel passes through the body's SOI without orbiting
+        MARKER_LANDING,      // active vessel landed/splashed at body within km of target point
+        HOLD,                // hold all other checks continuously for seconds
+        DURATION             // hold all other checks continuously for days
     }
 
     public class Check
@@ -45,29 +44,29 @@ namespace CustomScienceContracts.Model
         public string StationKey = "";
         public string Resource = "";
         public string Label = "";
-        public int Min = 0;          // Crew-Schwelle
+        public int Min = 0;          // crew threshold
         public int Count = 1;        // VESSEL_COUNT
-        public double Km = 0.0;      // PERIAPSIS_MIN / VESSEL_COUNT / FLYBY (max. Annaeherung) / MARKER_LANDING (Radius)
+        public double Km = 0.0;      // PERIAPSIS_MIN / VESSEL_COUNT / FLYBY closest approach / MARKER radius
         public double InclinationMin = 0.0; // INCLINATION_MIN / VESSEL_COUNT_INCLINATION
         public double Seconds = 0.0; // HOLD
         public double Days = 0.0;    // DURATION
         public double Amount = 0.0;  // FUEL_MIN / RESOURCE_MIN
         public double FracMin = 0.0; // ATMO_FRACTION
         public double FracMax = 1.0; // ATMO_FRACTION
-        public double LatAbsMin = 0.0;  // MARKER_LANDING: untere abs. Breiten-Bandgrenze (Default: aequatornah)
-        public double LatAbsMax = 15.0; // MARKER_LANDING: obere abs. Breiten-Bandgrenze (Default: +-15 Grad)
+        public double LatAbsMin = 0.0;  // MARKER_LANDING: lower absolute latitude band
+        public double LatAbsMax = 15.0; // MARKER_LANDING: upper absolute latitude band
 
-        /// <summary>Zeit-Check (HOLD/DURATION) — wird ueber den gemeinsamen Timer ausgewertet.</summary>
+        /// <summary>Timer check (HOLD/DURATION), evaluated through the shared timer.</summary>
         public bool IsTimer => Kind == CheckKind.HOLD || Kind == CheckKind.DURATION;
-        /// <summary>Ereignisbasiert (Andocken) — wird gegen den Event-Puffer ausgewertet.</summary>
+        /// <summary>Event-based docking check, evaluated against the event buffer.</summary>
         public bool IsEvent => Kind == CheckKind.DOCK_STATION || Kind == CheckKind.DOCK_ANY;
-        /// <summary>Flotten-Check (zaehlt mehrere Vessels) statt eines einzelnen Subjekts.</summary>
+        /// <summary>Fleet check that counts multiple vessels instead of one subject vessel.</summary>
         public bool IsFleet => Kind == CheckKind.VESSEL_COUNT || Kind == CheckKind.VESSEL_COUNT_INCLINATION;
-        /// <summary>Vorbeiflug — eigener, ueber mehrere Ticks laufender Flotten-State (rastet ein).</summary>
+        /// <summary>Flyby check with its own multi-tick fleet state.</summary>
         public bool IsFlyby => Kind == CheckKind.FLYBY;
-        /// <summary>Praezisionslandung — setzt/prueft einen persistenten Zielpunkt (Waypoint).</summary>
+        /// <summary>Precision landing that creates/checks a persistent target point.</summary>
         public bool IsMarker => Kind == CheckKind.MARKER_LANDING;
-        /// <summary>Checks mit Eigen-State/Eigen-Subjekt, die NICHT gegen ein einzelnes Subjekt laufen.</summary>
+        /// <summary>Checks with their own state/subject that do not run against one subject vessel.</summary>
         public bool IsSpecial => IsTimer || IsEvent || IsFleet || IsFlyby || IsMarker;
 
         public static Check Load(ConfigNode node)
@@ -75,7 +74,7 @@ namespace CustomScienceContracts.Model
             var c = new Check();
             if (!Enum.TryParse(node.GetValue("kind"), true, out c.Kind))
             {
-                Debug.LogWarning($"[CSC] Unbekannte CheckKind '{node.GetValue("kind")}' uebersprungen.");
+                Debug.LogWarning($"[CSC] Unknown CheckKind '{node.GetValue("kind")}' skipped.");
                 return null;
             }
             c.Body       = node.GetValue("body") ?? "";

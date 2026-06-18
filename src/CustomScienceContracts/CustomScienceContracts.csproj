@@ -2,29 +2,29 @@
 
   <!--
     Build:  dotnet build -c Release -p:KSPRoot="C:\Path\To\Kerbal Space Program"
-    KSPRoot kann auch lokal in CustomScienceContracts.csproj.user gesetzt werden,
-    damit nichts Maschinen-Spezifisches eingecheckt wird.
+    KSPRoot can also be set locally in CustomScienceContracts.csproj.user so no
+    machine-specific path is committed.
   -->
 
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
     <AssemblyName>CustomScienceContracts</AssemblyName>
     <RootNamespace>CustomScienceContracts</RootNamespace>
-    <!-- Mod-Version: bei Bumps zusammen mit Core/ModInfo.cs erhoehen. -->
-    <Version>0.1.4</Version>
-    <AssemblyVersion>0.1.4.0</AssemblyVersion>
-    <FileVersion>0.1.4.0</FileVersion>
+    <!-- Mod version: bump together with Core/ModInfo.cs. -->
+    <Version>0.2.0</Version>
+    <AssemblyVersion>0.2.0.0</AssemblyVersion>
+    <FileVersion>0.2.0.0</FileVersion>
     <LangVersion>9</LangVersion>
     <Deterministic>true</Deterministic>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
-    <!-- net48 hat kein IsExternalInit: keine 'init'-Setter / records verwenden. -->
+    <!-- net48 has no IsExternalInit: do not use init setters or records. -->
 
-    <!-- Entweder KSPRoot ODER KSPManaged setzen (CLI: -p:KSPManaged="...").
+    <!-- Set either KSPRoot or KSPManaged (CLI: -p:KSPManaged="...").
          Windows:  <KSP>\KSP_x64_Data\Managed
-         macOS:    <KSP>/KSP.app/Contents/Resources/Data/Managed  (oder .../KSP_x64_Data/Managed)
+         macOS:    <KSP>/KSP.app/Contents/Resources/Data/Managed  (or .../KSP_x64_Data/Managed)
          Linux:    <KSP>/KSP_x64_Data/Managed -->
     <KSPRoot Condition="'$(KSPRoot)' == ''"></KSPRoot>
     <KSPManaged Condition="'$(KSPManaged)' == ''">$(KSPRoot)\KSP_x64_Data\Managed</KSPManaged>
@@ -32,7 +32,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- net48-Referenz-Assemblies (nur fuer den Build; baut net48 auch auf macOS/Linux). -->
+    <!-- net48 reference assemblies (build-only; enables net48 builds on macOS/Linux). -->
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
   </ItemGroup>
 
@@ -69,10 +69,10 @@
       <HintPath>$(KSPManaged)\UnityEngine.TextRenderingModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <!-- FinePrint-Typen (Waypoint/ScenarioCustomWaypoints) sind in KSP 1.12 Teil von Assembly-CSharp. -->
+    <!-- FinePrint types (Waypoint/ScenarioCustomWaypoints) are part of Assembly-CSharp in KSP 1.12. -->
   </ItemGroup>
 
-  <!-- DLL nach dem Build ins Mod-GameData kopieren. -->
+  <!-- Copy the DLL into the mod GameData folder after each build. -->
   <Target Name="DeployToGameData" AfterTargets="Build">
     <MakeDir Directories="$(ModDeployDir)" />
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModDeployDir)" SkipUnchangedFiles="false" />

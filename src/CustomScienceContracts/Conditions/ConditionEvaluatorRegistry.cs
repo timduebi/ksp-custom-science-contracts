@@ -5,9 +5,8 @@ using UnityEngine;
 
 namespace CustomScienceContracts.Conditions
 {
-    /// <summary>Map ConditionType -> Evaluator. Im Gerüst sind alle Typen mit einem Stub belegt,
-    /// der false liefert. Schritt 4 (einfache) und Schritt 5 (FLYBY/MARKER_LANDING/RENDEZVOUS)
-    /// ueberschreiben die Eintraege via Register().</summary>
+    /// <summary>Maps ConditionType to evaluator. All types start with a stub that returns false;
+    /// concrete evaluators overwrite entries via Register().</summary>
     public class ConditionEvaluatorRegistry
     {
         private readonly Dictionary<ConditionType, IConditionEvaluator> _map =
@@ -24,7 +23,7 @@ namespace CustomScienceContracts.Conditions
         public IConditionEvaluator Get(ConditionType t) =>
             _map.TryGetValue(t, out var e) ? e : _map[ConditionType.ORBIT];
 
-        /// <summary>Alle Bedingungen eines Contracts erfuellt? (UND-Verknuepfung)</summary>
+        /// <summary>Whether all conditions of a contract are fulfilled.</summary>
         public bool AllSatisfied(MissionContract c, EvaluationContext ctx)
         {
             foreach (var cond in c.Bedingungen)
@@ -44,7 +43,7 @@ namespace CustomScienceContracts.Conditions
         }
     }
 
-    /// <summary>Platzhalter bis die echte Logik implementiert ist (Schritt 4/5).</summary>
+    /// <summary>Placeholder used when no concrete evaluator is registered.</summary>
     internal sealed class StubEvaluator : ConditionEvaluatorBase
     {
         private bool _warned;
@@ -54,7 +53,7 @@ namespace CustomScienceContracts.Conditions
         {
             if (!_warned)
             {
-                Debug.Log($"[CSC] ConditionType {Type} noch nicht implementiert (Stub) — Contract '{contract.Id}'.");
+                Debug.Log($"[CSC] ConditionType {Type} is not implemented (stub) - contract '{contract.Id}'.");
                 _warned = true;
             }
             return false;

@@ -6,8 +6,7 @@ using UnityEngine;
 
 namespace CustomScienceContracts.UI
 {
-    /// <summary>Auswahlfenster: Tabs (Sparten) -> aufklappbare Planeten-Gruppen -> Mond-Untergruppen
-    /// -> Missionen. Links farbiger Rand + Icon (Sparte/Planet/Mond color-coded, Mission-Icon nach Typ).</summary>
+    /// <summary>Mission selection window: tabs -> expandable body groups -> moon subgroups -> missions.</summary>
     public class SelectionWindow
     {
         private static readonly Sparte[] Tabs =
@@ -17,13 +16,13 @@ namespace CustomScienceContracts.UI
         private Vector2 _scroll;
         private readonly HashSet<string> _expanded = new HashSet<string>();
 
-        /// <summary>Vom Zahnrad gesetzt; CscUI liest es und schaltet das Einstellungsfenster um.</summary>
+        /// <summary>Set by the gear button; CscUI reads it and toggles the settings window.</summary>
         public bool SettingsToggleRequested;
 
         public void Draw(ContractManager mgr, float width, float height, System.Action onClose)
         {
             if (GUI.Button(new Rect(width - 30, 4, 22, 22), "✕", Theme.CloseBtn)) onClose();
-            DrawGear(new Rect(width - 58, 5, 22, 22));   // Zahnrad oben rechts (settings.png, grau)
+            DrawGear(new Rect(width - 58, 5, 22, 22));
 
             GUILayout.BeginHorizontal();
             for (int i = 0; i < Tabs.Length; i++)
@@ -44,10 +43,10 @@ namespace CustomScienceContracts.UI
             else DrawSparte(mgr, Tabs[_tab]);
 
             GUILayout.EndScrollView();
-            GUI.DragWindow(new Rect(8, 0, width - 70, 24));   // Zahnrad + X (rechts) frei lassen
+            GUI.DragWindow(new Rect(8, 0, width - 70, 24));
         }
 
-        /// <summary>Zahnrad (settings.png, grau; heller bei Hover) als Klickflaeche oben rechts.</summary>
+        /// <summary>Gear icon button in the top-right corner.</summary>
         private void DrawGear(Rect r)
         {
             var gear = IconLibrary.UI("settings");
@@ -66,7 +65,7 @@ namespace CustomScienceContracts.UI
         private void DrawSparte(ContractManager mgr, Sparte sparte)
         {
             var visible = VisibilityRules.ComputeVisible(mgr.Catalog);
-            GUILayout.Label($"Aktiv {ActiveLimits.ActiveCount(mgr.Catalog.All, sparte)}/{ActiveLimits.LimitFor(sparte)}",
+            GUILayout.Label($"Active {ActiveLimits.ActiveCount(mgr.Catalog.All, sparte)}/{ActiveLimits.LimitFor(sparte)}",
                 Theme.ItemSub);
 
             foreach (string sub in mgr.Catalog.Subcategories(sparte))
@@ -78,13 +77,13 @@ namespace CustomScienceContracts.UI
 
                 string key = sparte + "/" + sub;
                 bool open = _expanded.Contains(key);
-                string head = $"{(open ? "▼" : "▶")}  {sub}   ({shown.Count} offen, {locked} gesperrt)";
+                string head = $"{(open ? "▼" : "▶")}  {BodyVisual.DisplayName(sub)}   ({shown.Count} open, {locked} locked)";
                 if (GUILayout.Button(head, Theme.GroupHeader, GUILayout.Height(28))) Toggle(key);
                 if (Event.current.type == EventType.Repaint)
                     Theme.DrawLeftAccent(GUILayoutUtility.GetLastRect(), sv.Color, sv.Icon);
                 if (!open) continue;
 
-                // Aufteilen in Planet-direkt und Mond-Untergruppen
+                // Split direct planet contracts from moon subgroups.
                 CelestialBody subBody = BodyResolver.Resolve(BodyVisual.SubcatBodyName(sub));
                 var direct = new List<MissionContract>();
                 var moonOrder = new List<string>();
@@ -99,7 +98,7 @@ namespace CustomScienceContracts.UI
                 }
 
                 if (shown.Count == 0)
-                    GUILayout.Label("   — kein sichtbarer Contract —", Theme.Locked);
+                    GUILayout.Label("   - no visible contract -", Theme.Locked);
 
                 foreach (var c in direct) DrawItem(mgr, c, false);
 
@@ -116,7 +115,7 @@ namespace CustomScienceContracts.UI
                     foreach (var c in moons[moon]) DrawItem(mgr, c, true);
                 }
 
-                // Vorschau: naechste noch gesperrte Mission dieses Koerpers (ausgegraut, rote Voraussetzung)
+                // Preview: next locked mission for this body.
                 if (mgr.LockedPreviewActive)
                 {
                     var next = inSub.FirstOrDefault(x => x.Status == MissionStatus.Locked &&
@@ -132,7 +131,7 @@ namespace CustomScienceContracts.UI
             GUILayout.Label("🔒 " + c.Titel, Theme.Locked);
             var unmet = mgr.UnmetPrerequisiteTitles(c);
             if (unmet.Count > 0)
-                GUILayout.Label("Zuerst nötig: " + string.Join(", ", unmet.ToArray()), Theme.CondBad);
+                GUILayout.Label("Required first: " + string.Join(", ", unmet.ToArray()), Theme.CondBad);
             GUILayout.EndVertical();
             if (Event.current.type == EventType.Repaint)
                 Theme.DrawLeftAccent(GUILayoutUtility.GetLastRect(),
@@ -144,7 +143,7 @@ namespace CustomScienceContracts.UI
         {
             var pool = mgr.RepeatablePool().ToList();
             if (pool.Count == 0)
-            { GUILayout.Label("Noch keine wiederholbaren Missionen freigeschaltet.", Theme.Locked); return; }
+            { GUILayout.Label("No repeatable missions unlocked yet.", Theme.Locked); return; }
             foreach (var c in pool) DrawItem(mgr, c, false, isPool: true);
         }
 
@@ -167,7 +166,7 @@ namespace CustomScienceContracts.UI
             string stn = ActiveMissionsWindow.StationTarget(c, mgr);
             if (stn != null) GUILayout.Label(stn, Theme.Station);
 
-            // Teilziele — je eine pro Zeile (Anforderungen, neutrale Farbe).
+            // Objectives, one per line.
             if (c.Bedingungen.Count > 0)
             {
                 GUILayout.Space(2);
@@ -185,17 +184,17 @@ namespace CustomScienceContracts.UI
             if (isPool)
             {
                 int cd = mgr.RemainingCooldown(c);
-                GUILayout.Label(cd > 0 ? $"Cooldown: noch {cd} Mission(en)" : $"bereit · {c.TotalCompletions}x erledigt",
+                GUILayout.Label(cd > 0 ? $"Cooldown: {cd} mission(s) left" : $"ready - completed {c.TotalCompletions}x",
                     Theme.ItemSub);
             }
             GUILayout.FlexibleSpace();
             GUI.enabled = mgr.CanAccept(c);
-            if (GUILayout.Button("Annehmen", Theme.AcceptBtn, GUILayout.Height(30), GUILayout.MinWidth(120))) mgr.Accept(c.Id);
+            if (GUILayout.Button("Accept", Theme.AcceptBtn, GUILayout.Height(30), GUILayout.MinWidth(120))) mgr.Accept(c.Id);
             GUI.enabled = true;
             GUILayout.EndHorizontal();
 
             GUILayout.EndVertical();
-            // Linksrand + Mission-Icon ueber die Box-Zeile
+            // Left accent and mission icon over the row.
             if (Event.current.type == EventType.Repaint)
             {
                 Rect r = GUILayoutUtility.GetLastRect();
@@ -209,8 +208,7 @@ namespace CustomScienceContracts.UI
         // --- Helpers ---
         private void Toggle(string key) { if (!_expanded.Remove(key)) _expanded.Add(key); }
 
-        /// <summary>Mondname, falls der Zielkoerper ein Mond des Unterkategorie-Planeten ist
-        /// (und nicht der Planet selbst). Sonst null = Planet-direkt.</summary>
+        /// <summary>Moon name if the mission body is a moon of the subgroup body.</summary>
         private static string MoonOf(MissionContract c, CelestialBody subBody)
         {
             if (subBody == null) return null;

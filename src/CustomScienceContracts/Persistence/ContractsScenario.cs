@@ -8,9 +8,9 @@ using UnityEngine;
 
 namespace CustomScienceContracts.Persistence
 {
-    /// <summary>Lifecycle-Hook: laedt den Katalog (GameData) + Save-State, hostet den 1-s-Pruef-Loop,
-    /// abonniert GameEvents und besitzt die UI. Persistiert den Laufzeit-State in den Save-Ordner
-    /// (nicht ins .sfs). Aktiv im Science-Mode (Science-Sandbox).</summary>
+    /// <summary>Lifecycle hook: loads the GameData catalog and save state, hosts the 1-second check
+    /// loop, subscribes GameEvents and owns the UI. Runtime state is persisted in the save folder
+    /// instead of the .sfs. Active in Science Mode.</summary>
     [KSPScenario(
         ScenarioCreationOptions.AddToNewScienceSandboxGames | ScenarioCreationOptions.AddToExistingScienceSandboxGames,
         GameScenes.SPACECENTER, GameScenes.EDITOR, GameScenes.FLIGHT, GameScenes.TRACKSTATION)]
@@ -24,18 +24,18 @@ namespace CustomScienceContracts.Persistence
         public override void OnLoad(ConfigNode node)
         {
             EnsureInitialized();
-            // Laufzeit-State liegt im Save-Ordner (editierbar). Fehlt/kaputt -> frisch seeden.
+            // Runtime state lives in the save folder. Missing/broken file -> fresh seed.
             if (!SaveFolderStore.Load(_manager))
             {
                 _manager.RecomputeAvailability();
-                Debug.Log("[CSC] Kein State im Save-Ordner — frisch geseedet.");
+                Debug.Log("[CSC] No state in save folder; seeded fresh.");
             }
         }
 
         public override void OnSave(ConfigNode node)
         {
             if (_manager != null) SaveFolderStore.Save(_manager);
-            // bewusst NICHTS ins .sfs-node schreiben (Save-Ordner ist autoritativ).
+            // Intentionally write nothing to the .sfs node; the save-folder file is authoritative.
         }
 
         private void Start()
@@ -48,7 +48,7 @@ namespace CustomScienceContracts.Persistence
         private void EnsureInitialized()
         {
             if (_initialized) return;
-            Log.Info($"{ModInfo.Name} v{ModInfo.Version} geladen.");
+            Log.Info($"{ModInfo.Name} v{ModInfo.Version} loaded.");
             BodyResolver.RebuildCache();
             Tuning.Load();
 
@@ -56,7 +56,7 @@ namespace CustomScienceContracts.Persistence
             List<Model.MissionContract> catalog = CatalogLoader.LoadAll();
             _manager.Initialize(catalog);
 
-            // Schritt 4/5: hier die echten Evaluatoren registrieren, z.B.:
+            // Register the concrete evaluators here.
             //   _manager.Evaluators.Register(new OrbitEvaluator());
             ConditionRegistration.RegisterAll(_manager.Evaluators);
 
@@ -73,9 +73,8 @@ namespace CustomScienceContracts.Persistence
             {
                 yield return wait;
                 if (_manager == null) continue;
-                // In allen Mod-Szenen auswerten, damit Dauer-Timer ueberall abschliessen koennen.
-                // Ingame-Zeit bleibt massgeblich: im VAB/Editor steht die UT still -> der Timer waechst
-                // dort nicht, schliesst aber ab, wo die UT fortschreitet (Space Center/Tracking/Flug).
+                // Evaluate in all mod scenes so duration timers can complete everywhere. UT remains
+                // authoritative: in VAB/Editor it does not advance, but Space Center/Tracking/Flight do.
                 if (!(HighLogic.LoadedSceneIsFlight ||
                       HighLogic.LoadedScene == GameScenes.TRACKSTATION ||
                       HighLogic.LoadedScene == GameScenes.SPACECENTER ||
@@ -93,7 +92,7 @@ namespace CustomScienceContracts.Persistence
                     };
                     int active = 0;
                     foreach (var c in _manager.ActiveContracts()) active++;
-                    Log.V($"Tick: aktiv={active} szene={HighLogic.LoadedScene}");
+                    Log.V($"Tick: active={active} scene={HighLogic.LoadedScene}");
                     _manager.Tick(ctx);
                 }
                 catch (System.Exception e) { Log.Ex("CheckLoop", e); }

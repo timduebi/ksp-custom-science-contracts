@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
-"""Validiert die GENERIERTEN cfg-Dateien (A/B/C/D) als Gesamtkatalog gegen die Engine:
-Duplikate, haengende Voraussetzungen, revealAllAfter-Ziele, Check-Kinds (gegen CheckKind-Enum),
-Sparten, Bodies, Stations-Schluessel (recordStationKey vs. DOCK_STATION/stationRef)."""
+"""Validate generated cfg catalog files as one engine-facing mission catalog.
+
+Default target:
+  GameData/CustomScienceContracts/Contracts
+
+Optional target:
+  python3 tools/validate_catalog.py OptionalConfigs/English/GameData/CustomScienceContracts/Contracts
+"""
 import re, os, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CDIR = os.path.join(ROOT, "GameData", "CustomScienceContracts", "Contracts")
+CDIR = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "GameData", "CustomScienceContracts", "Contracts")
+if not os.path.isabs(CDIR):
+    CDIR = os.path.join(ROOT, CDIR)
 FILES = ["A_Pioniere.cfg", "B_Spaeher.cfg", "C_Lebensadern.cfg", "D_Stationen.cfg"]
 
 CHECK_KINDS = {"CREW_MIN","CREW_NONE","CREW_EXACT","ON_BODY","SITUATION","SUBORBITAL","LANDED",
@@ -25,8 +32,8 @@ ICONS = {  # in GameData/.../Icons/UI vorhanden
   "TrackingStation_ButtonMapAircraft","TrackingStation_ButtonMapRover"}
 
 def blocks(text, name):
-    """Alle '{name} { ... }'-Bloecke (brace-aware), liefert inneren Text. Der Knotenname muss eine
-    eigene Zeile sein — sonst matcht 'CONTRACT' faelschlich in 'CUSTOM_CONTRACT_CATALOG'."""
+    """Return all brace-aware '{name} { ... }' blocks. The node name must be on its own line so
+    CONTRACT does not accidentally match CUSTOM_CONTRACT_CATALOG."""
     out = []
     for mt in re.finditer(r'(?m)^[ \t]*' + re.escape(name) + r'[ \t]*$', text):
         b = text.find("{", mt.end())
@@ -51,7 +58,11 @@ all_ids, record_keys, ref_keys, dock_keys = set(), set(), set(), set()
 per_file = {}
 
 for fn in FILES:
-    text = open(os.path.join(CDIR, fn), encoding="utf-8").read()
+    path = os.path.join(CDIR, fn)
+    if not os.path.exists(path):
+        issues.append(f"missing file: {path}")
+        continue
+    text = open(path, encoding="utf-8").read()
     cs = blocks(text, "CONTRACT")
     per_file[fn] = len(cs)
     for c in cs:
@@ -62,27 +73,27 @@ for fn in FILES:
 
 for cid, (fn, c) in contracts.items():
     sp = val(c, "sparte")
-    if sp not in SPARTEN: issues.append(f"{cid}: Sparte '{sp}'")
-    if not val(c, "title"): issues.append(f"{cid}: kein title")
-    if not val(c, "description"): issues.append(f"{cid}: keine description")
+    if sp not in SPARTEN: issues.append(f"{cid}: branch '{sp}'")
+    if not val(c, "title"): issues.append(f"{cid}: missing title")
+    if not val(c, "description"): issues.append(f"{cid}: missing description")
     ic = val(c, "icon")
-    if ic and ic not in ICONS: issues.append(f"{cid}: unbekanntes icon '{ic}'")
+    if ic and ic not in ICONS: issues.append(f"{cid}: unknown icon '{ic}'")
     if val(c, "recordStationKey"): record_keys.add(val(c, "recordStationKey"))
     if val(c, "stationRef"): ref_keys.add(val(c, "stationRef"))
     for chk in blocks(c, "CHECK"):
         k = val(chk, "kind")
         if k not in CHECK_KINDS: issues.append(f"{cid}: Check-Kind '{k}'")
         b = val(chk, "body")
-        if b and b not in SOL_BODIES: issues.append(f"{cid}: Body '{b}'")
+        if b and b not in SOL_BODIES: issues.append(f"{cid}: body '{b}'")
         if k == "DOCK_STATION":
             sk = val(chk, "stationKey")
             if sk: dock_keys.add(sk)
-            else: issues.append(f"{cid}: DOCK_STATION ohne stationKey")
-    # COMPOSITE muss mind. 1 CHECK haben
+            else: issues.append(f"{cid}: DOCK_STATION without stationKey")
+    # COMPOSITE needs at least one CHECK.
     if "type = COMPOSITE" in c and not blocks(c, "CHECK"):
-        issues.append(f"{cid}: COMPOSITE ohne CHECK")
+        issues.append(f"{cid}: COMPOSITE without CHECK")
 
-# Voraussetzungen + revealAllAfter aufloesbar?
+# Prerequisites + revealAllAfter must resolve.
 dangling, bad_reveal = set(), set()
 for cid, (fn, c) in contracts.items():
     for p in vals(c, "prerequisite"):
@@ -90,7 +101,7 @@ for cid, (fn, c) in contracts.items():
     r = val(c, "revealAllAfter")
     if r and r not in all_ids: bad_reveal.add(f"{cid} -> {r}")
 
-# Stationsschluessel: jeder referenzierte (stationRef/DOCK_STATION) muss von genau einem recordStationKey erzeugt werden
+# Station keys: every referenced stationRef/DOCK_STATION must be produced by one recordStationKey.
 unrecorded = (ref_keys | dock_keys) - record_keys
 
 def show(t, items):
@@ -98,14 +109,15 @@ def show(t, items):
     print(f"[{'FAIL' if bad else 'OK'}] {t}: {sorted(items) if bad else '—'}")
     return bad
 
-print("Contracts gesamt:", len(all_ids), " pro Datei:", per_file)
+print("Catalog directory:", CDIR)
+print("Contracts total:", len(all_ids), " per file:", per_file)
 print("recordStationKeys:", sorted(record_keys))
 print()
 fail = False
-fail |= show("Doppelte IDs", dups)
-fail |= show("Haengende Voraussetzungen", dangling)
-fail |= show("Ungueltige revealAllAfter", bad_reveal)
-fail |= show("Stationsschluessel ohne recordStationKey", unrecorded)
-fail |= show("Sonstige Befunde", issues)
-print("\n==> " + ("KATALOG OK" if not fail else "KATALOG MIT BEFUNDEN"))
+fail |= show("Duplicate IDs", dups)
+fail |= show("Dangling prerequisites", dangling)
+fail |= show("Invalid revealAllAfter", bad_reveal)
+fail |= show("Station keys without recordStationKey", unrecorded)
+fail |= show("Other findings", issues)
+print("\n==> " + ("CATALOG OK" if not fail else "CATALOG HAS FINDINGS"))
 sys.exit(1 if fail else 0)

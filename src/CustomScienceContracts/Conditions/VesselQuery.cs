@@ -4,11 +4,11 @@ using UnityEngine;
 
 namespace CustomScienceContracts.Conditions
 {
-    /// <summary>Geteilte, API-getriebene Abfragen ueber Vessels und Koerper.
-    /// Keine hardcodeten Body-Werte: atmosphereDepth/Tageslaenge kommen aus der API.</summary>
+    /// <summary>Shared API-driven queries for vessels and bodies. No hardcoded body values:
+    /// atmosphereDepth and day length come from the API.</summary>
     public static class VesselQuery
     {
-        /// <summary>Situations-Filter aus dem Condition-String. Leer = beliebig.</summary>
+        /// <summary>Situation filter from the condition string. Empty means any.</summary>
         public static bool MatchesSituation(Vessel v, string sit)
         {
             if (string.IsNullOrEmpty(sit)) return true;
@@ -28,13 +28,13 @@ namespace CustomScienceContracts.Conditions
             }
         }
 
-        /// <summary>Das aktuell gesteuerte Fahrzeug (null in der Tracking Station / ohne Flug).</summary>
+        /// <summary>The currently controlled vessel, or null in Tracking Station / without flight.</summary>
         public static Vessel Active => FlightGlobals.ActiveVessel;
 
         public static bool OnBody(Vessel v, CelestialBody body) =>
             body != null && v != null && v.mainBody == body;
 
-        /// <summary>Grosskreis-Oberflaechendistanz (m) zwischen zwei Lat/Lon auf einem Koerper.</summary>
+        /// <summary>Great-circle surface distance in meters between two lat/lon positions on a body.</summary>
         public static double SurfaceDistance(CelestialBody body, double lat1, double lon1, double lat2, double lon2)
         {
             double r = body.Radius;
@@ -49,10 +49,8 @@ namespace CustomScienceContracts.Conditions
 
         public static int CrewCount(Vessel v) => v.GetCrewCount();
 
-        /// <summary>Effektive Crew eines Schiffs fuer Crew-Bedingungen: an Bord PLUS Kerbals, die
-        /// in unmittelbarer Naehe (gleiche SOI, &lt; ~2.5 km) auf EVA sind. So bricht ein kurzer
-        /// Aussenbordeinsatz neben der Station einen laufenden Crew-Halte-Timer NICHT ab. Funktioniert
-        /// auch ungeladen, da Position aus der Bahn kommt.</summary>
+        /// <summary>Effective crew for crew checks: onboard crew plus nearby EVA Kerbals in the same
+        /// SOI. This keeps a short EVA near a station from breaking a crew-duration timer.</summary>
         public static int EffectiveCrew(Vessel v)
         {
             if (v == null) return 0;
@@ -70,14 +68,14 @@ namespace CustomScienceContracts.Conditions
             return crew;
         }
 
-        /// <summary>Stabiler Orbit oberhalb der Atmosphaere: ORBITING + PeA &gt; atmosphereDepth.</summary>
+        /// <summary>Stable orbit above atmosphere: ORBITING + PeA &gt; atmosphereDepth.</summary>
         public static bool InOrbitAboveAtmo(Vessel v, CelestialBody body)
         {
             if (!OnBody(v, body) || v.situation != Vessel.Situations.ORBITING) return false;
             return v.orbit != null && v.orbit.PeA > body.atmosphereDepth;
         }
 
-        /// <summary>Summe einer Ressource auf dem Vessel (z.B. "Ore").</summary>
+        /// <summary>Total amount of a resource on the vessel, e.g. "Ore".</summary>
         public static double Resource(Vessel v, string resourceName)
         {
             var def = PartResourceLibrary.Instance?.GetDefinition(resourceName);
@@ -86,17 +84,17 @@ namespace CustomScienceContracts.Conditions
             return amount;
         }
 
-        /// <summary>LiquidFuel + Oxidizer als "Treibstoff" fuer FUEL_ORBIT.</summary>
+        /// <summary>LiquidFuel + Oxidizer as fuel for FUEL_ORBIT.</summary>
         public static double Fuel(Vessel v) => Resource(v, "LiquidFuel") + Resource(v, "Oxidizer");
 
-        /// <summary>Tageslaenge in Sekunden aus der API (respektiert Kronometer/Heimatkoerper).</summary>
+        /// <summary>Day length in seconds from the API.</summary>
         public static double SecondsPerDay()
         {
             int d = KSPUtil.dateTimeFormatter != null ? KSPUtil.dateTimeFormatter.Day : 21600;
             return d > 0 ? d : 21600;
         }
 
-        /// <summary>Vessels, die als "echte" Fahrzeuge zaehlen (kein Debris/Flag/Asteroid).</summary>
+        /// <summary>Vessels that count as real craft, excluding debris, flags and asteroids.</summary>
         public static IEnumerable<Vessel> RealVessels(IReadOnlyList<Vessel> vessels)
         {
             foreach (var v in vessels)

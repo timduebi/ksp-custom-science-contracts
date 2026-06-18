@@ -4,22 +4,22 @@ using UnityEngine;
 
 namespace CustomScienceContracts.UI
 {
-    /// <summary>Visuelle Zuordnung (Icon + Farbe) fuer Koerper, Sparten, Unterkategorien und
-    /// Bedingungstypen. Planet-Icons sind optisch passende Stock/OPM-Icons, eingefaerbt auf die
-    /// echte Koerperfarbe. Mission-Icons stammen aus dem TrackingStation_ButtonMap-Set.</summary>
+    /// <summary>Visual mapping (icon + color) for bodies, branches, subcategories and condition
+    /// types. Planet icons are stock/OPM-like icons tinted toward the real body color. Mission
+    /// icons come from the TrackingStation_ButtonMap set.</summary>
     public static class BodyVisual
     {
         public struct Visual { public Texture2D Icon; public Color Color; }
 
         private static Color RGB(int r, int g, int b) => new Color(r / 255f, g / 255f, b / 255f);
 
-        // body-name -> (planet-icon-key, farbe)
+        // body name -> (planet icon key, color)
         private static readonly Dictionary<string, (string icon, Color col)> _bodies =
             new Dictionary<string, (string, Color)>
         {
-            // Stern
+            // Star
             { "Sun",     ("pol",    RGB(255,210,80)) },
-            // Planeten
+            // Planets
             { "Earth",   ("kerbin", RGB(46,111,176)) },
             { "Moon",    ("mun",    RGB(158,158,158)) },
             { "Mars",    ("duna",   RGB(193,80,46)) },
@@ -30,17 +30,17 @@ namespace CustomScienceContracts.UI
             { "Uranus",  ("urlum",  RGB(143,217,212)) },
             { "Neptune", ("neidon", RGB(63,95,192)) },
             { "Pluto",   ("plock",  RGB(181,158,132)) },
-            // Mars-Monde
+            // Martian moons
             { "Phobos", ("gilly", RGB(110,102,90)) },
             { "Deimos", ("gilly", RGB(124,114,100)) },
-            // Jupiter-Monde
+            // Jovian moons
             { "Io",       ("pol",  RGB(215,194,75)) },
             { "Europa",   ("vall", RGB(207,216,224)) },
             { "Ganymede", ("tylo", RGB(142,133,118)) },
             { "Callisto", ("tylo", RGB(111,106,100)) },
             { "Amalthea", ("gilly",RGB(160,85,64)) },
             { "Thebe",    ("gilly",RGB(124,116,104)) },
-            // Saturn-Monde
+            // Saturnian moons
             { "Titan",     ("tekto", RGB(215,154,60)) },
             { "Enceladus", ("hale",  RGB(230,238,242)) },
             { "Rhea",      ("slate", RGB(194,200,204)) },
@@ -50,20 +50,20 @@ namespace CustomScienceContracts.UI
             { "Mimas",     ("ovok",  RGB(178,178,178)) },
             { "Hyperion",  ("gilly", RGB(168,152,120)) },
             { "Phoebe",    ("gilly", RGB(92,88,79)) },
-            // Uranus-Monde
+            // Uranian moons
             { "Titania", ("vall",  RGB(182,174,164)) },
             { "Oberon",  ("slate", RGB(153,142,130)) },
             { "Ariel",   ("vall",  RGB(200,200,200)) },
             { "Umbriel", ("mun",   RGB(110,106,100)) },
             { "Miranda", ("ovok",  RGB(174,178,182)) },
             { "Puck",    ("gilly", RGB(106,100,92)) },
-            // Neptun-Monde
+            // Neptunian moons
             { "Triton",  ("vall",  RGB(214,200,194)) },
             { "Nereid",  ("gilly", RGB(138,134,126)) },
             { "Proteus", ("gilly", RGB(94,90,82)) },
-            // Pluto-Mond
+            // Pluto's moon
             { "Charon",  ("mun",   RGB(154,147,138)) },
-            // Asteroiden
+            // Asteroids
             { "Ceres",    ("ovok",  RGB(156,150,140)) },
             { "Pallas",   ("gilly", RGB(122,118,108)) },
             { "Vesta",    ("ovok",  RGB(168,154,128)) },
@@ -75,31 +75,44 @@ namespace CustomScienceContracts.UI
             { "Arrokoth", ("gilly", RGB(156,90,70)) },
         };
 
-        // Unterkategorie-Label (UI) -> Koerpername fuer Icon/Farbe
+        // Subcategory label (UI) -> body name for icon/color. German labels are kept for
+        // backwards compatibility with the default German contract catalog.
         private static readonly Dictionary<string, string> _subToBody = new Dictionary<string, string>
         {
-            { "Erde", "Earth" }, { "Luna", "Moon" }, { "Mars", "Mars" }, { "Venus", "Venus" },
-            { "Merkur", "Mercury" }, { "Jupiter", "Jupiter" }, { "Saturn", "Saturn" },
-            { "Uranus", "Uranus" }, { "Neptun", "Neptune" }, { "Pluto", "Pluto" },
-            { "Asteroiden", "Ceres" },
+            { "Earth", "Earth" }, { "Erde", "Earth" },
+            { "Moon", "Moon" }, { "Luna", "Moon" },
+            { "Mars", "Mars" }, { "Venus", "Venus" },
+            { "Mercury", "Mercury" }, { "Merkur", "Mercury" },
+            { "Jupiter", "Jupiter" }, { "Saturn", "Saturn" },
+            { "Uranus", "Uranus" },
+            { "Neptune", "Neptune" }, { "Neptun", "Neptune" },
+            { "Pluto", "Pluto" },
+            { "Asteroids", "Ceres" }, { "Asteroiden", "Ceres" },
         };
 
-        /// <summary>Koerpername hinter einem Unterkategorie-Label (oder null).</summary>
+        /// <summary>Body name behind a subcategory label, or null.</summary>
         public static string SubcatBodyName(string label) =>
             _subToBody.TryGetValue(label, out string b) ? b : null;
 
-        // interner CelestialBody.name / Label -> deutscher Anzeigename
+        // Internal CelestialBody.name or legacy label -> English display name.
         private static readonly Dictionary<string, string> _display = new Dictionary<string, string>
         {
-            { "Earth", "Erde" }, { "Moon", "Luna" }, { "Mercury", "Merkur" }, { "Venus", "Venus" },
+            { "Earth", "Earth" }, { "Erde", "Earth" },
+            { "Moon", "Moon" }, { "Luna", "Moon" },
+            { "Mercury", "Mercury" }, { "Merkur", "Mercury" }, { "Venus", "Venus" },
             { "Mars", "Mars" }, { "Jupiter", "Jupiter" }, { "Saturn", "Saturn" }, { "Uranus", "Uranus" },
-            { "Neptune", "Neptun" }, { "Pluto", "Pluto" }, { "Sun", "Sonne" },
-            { "Ganymede", "Ganymed" }, { "Callisto", "Kallisto" }, { "Europa", "Europa" }, { "Io", "Io" },
+            { "Neptune", "Neptune" }, { "Neptun", "Neptune" }, { "Pluto", "Pluto" },
+            { "Sun", "Sun" }, { "Sonne", "Sun" },
+            { "Ganymede", "Ganymede" }, { "Ganymed", "Ganymede" },
+            { "Callisto", "Callisto" }, { "Kallisto", "Callisto" }, { "Europa", "Europa" }, { "Io", "Io" },
             { "Titan", "Titan" }, { "Charon", "Charon" }, { "Triton", "Triton" },
+            { "Asteroiden", "Asteroids" }, { "Asteroids", "Asteroids" },
+            { "Interplanetar", "Interplanetary" }, { "Interplanetary", "Interplanetary" },
+            { "Logistik", "Logistics" }, { "Logistics", "Logistics" },
         };
 
-        /// <summary>Deutscher Anzeigename eines (internen) Koerper- oder Unterkategorie-Namens.
-        /// Faellt auf die Eingabe zurueck, wenn nichts hinterlegt ist.</summary>
+        /// <summary>English display name for an internal body or subcategory name. Falls back to
+        /// the input when no mapping is registered.</summary>
         public static string DisplayName(string name)
         {
             if (string.IsNullOrEmpty(name)) return name;
@@ -116,15 +129,15 @@ namespace CustomScienceContracts.UI
         public static Visual ForSubcategory(string label)
         {
             if (_subToBody.TryGetValue(label, out string body)) return ForBody(body);
-            // Sonderkategorien ohne Koerper
-            if (label == "Interplanetar")
+            // Special categories without one exact body.
+            if (label == "Interplanetar" || label == "Interplanetary")
                 return new Visual { Icon = IconLibrary.UI("TrackingStation_ButtonMapShips"), Color = RGB(224,184,77) };
-            if (label == "Logistik")
+            if (label == "Logistik" || label == "Logistics")
                 return new Visual { Icon = IconLibrary.UI("TrackingStation_ButtonMapBase"), Color = RGB(102,187,106) };
             return new Visual { Icon = null, Color = RGB(150,150,150) };
         }
 
-        // Sparten: Farbe (frei gewaehlt) + Tab-Icon
+        // Branches: color + tab icon.
         public static Visual ForSparte(Sparte s)
         {
             switch (s)
@@ -142,9 +155,9 @@ namespace CustomScienceContracts.UI
             }
         }
 
-        /// <summary>Icon einer Mission: zuerst das pro Mission gewaehlte (icon=...), sonst ein
-        /// Fallback aus allen Bedingungen/Checks. So landen Composite-Missionen nicht pauschal
-        /// beim Sonden-Icon.</summary>
+        /// <summary>Mission icon: first the icon selected by the catalog (icon=...), otherwise a
+        /// fallback derived from all conditions/checks. This keeps composite missions from
+        /// collapsing to the probe icon.</summary>
         public static Texture2D MissionIcon(MissionContract c)
         {
             if (c != null && !string.IsNullOrEmpty(c.IconKey))
@@ -288,7 +301,7 @@ namespace CustomScienceContracts.UI
             return IconLibrary.UI("TrackingStation_ButtonMapProbe");
         }
 
-        // Legacy-Fallback nach einem einzelnen Bedingungstyp.
+        // Legacy fallback for a single condition type.
         public static Texture2D ForCondition(ConditionType t)
         {
             switch (t)

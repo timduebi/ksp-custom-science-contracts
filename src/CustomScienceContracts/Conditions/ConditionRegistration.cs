@@ -1,13 +1,11 @@
 namespace CustomScienceContracts.Conditions
 {
-    /// <summary>Zentrale Stelle, an der die konkreten Evaluatoren registriert werden.
-    /// Im Gerüst leer (alle Typen laufen ueber StubEvaluator).
-    /// Schritt 4: einfache Bedingungen. Schritt 5: FLYBY / MARKER_LANDING / RENDEZVOUS.</summary>
+    /// <summary>Central place where the concrete evaluators are registered.</summary>
     public static class ConditionRegistration
     {
         public static void RegisterAll(ConditionEvaluatorRegistry reg)
         {
-            // --- Schritt 4 (einfach) ---
+            // --- Simple evaluators ---
             reg.Register(new OrbitEvaluator());
             reg.Register(new OrbitHighEvaluator());
             reg.Register(new LandedEvaluator());
@@ -21,12 +19,12 @@ namespace CustomScienceContracts.Conditions
             reg.Register(new FuelOrbitEvaluator());
             reg.Register(new AtmoEntryEvaluator());
 
-            // --- Schritt 5 (knifflig) ---
+            // --- Stateful evaluators ---
             reg.Register(new FlybyEvaluator());
             reg.Register(new MarkerLandingEvaluator());
             reg.Register(new RendezvousEvaluator());
 
-            // --- COMPOSITE: Auswertung via CheckEvaluation; hier nur der Marker-Lifecycle-Haken ---
+            // --- COMPOSITE: evaluated via CheckEvaluation; this only provides lifecycle hooks ---
             reg.Register(new CompositeEvaluator());
         }
     }

@@ -4,8 +4,7 @@ using CustomScienceContracts.Model;
 
 namespace CustomScienceContracts.Core
 {
-    /// <summary>Aktiv-Limits pro Sparte (gleichzeitig angenommene Missionen): 3 / 10 / 5.
-    /// Wiederholbare zaehlen gegen das Limit ihrer Heimatsparte.</summary>
+    /// <summary>Active limits per branch: 3 / 10 / 5. Repeatables count against the limit of their home branch.</summary>
     public static class ActiveLimits
     {
         public static int LimitFor(Sparte s)
@@ -15,7 +14,7 @@ namespace CustomScienceContracts.Core
                 case Sparte.Bemannt: return Tuning.ActiveBemannt;
                 case Sparte.UnbemannteErkundung: return Tuning.ActiveErkundung;
                 case Sparte.NetzwerkLogistik: return Tuning.ActiveNetzwerk;
-                default: return Tuning.ActiveErkundung; // Wiederholbar -> Heimatsparte zaehlt
+                default: return Tuning.ActiveErkundung; // Wiederholbar -> home branch counts
             }
         }
 
@@ -23,7 +22,7 @@ namespace CustomScienceContracts.Core
             all.Count(c => (c.Status == MissionStatus.Active || c.Status == MissionStatus.ReadyToClaim)
                            && c.HeimatSparte == heimat);
 
-        /// <summary>Darf ein Available-Contract angenommen werden, ohne das Limit zu sprengen?</summary>
+        /// <summary>Whether an Available contract can be accepted without exceeding the limit.</summary>
         public static bool CanAccept(IReadOnlyList<MissionContract> all, MissionContract candidate)
         {
             if (candidate.Status != MissionStatus.Available) return false;

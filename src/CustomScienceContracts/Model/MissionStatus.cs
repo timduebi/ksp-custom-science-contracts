@@ -1,18 +1,18 @@
 namespace CustomScienceContracts.Model
 {
-    /// <summary>Laufzeit-Status einer Mission im Flow Locked -> Available -> Active -> CompletedOnce.</summary>
+    /// <summary>Runtime status of a mission in the flow Locked -> Available -> Active -> CompletedOnce.</summary>
     public enum MissionStatus
     {
-        /// <summary>Nicht alle Voraussetzungen erfuellt.</summary>
+        /// <summary>Not all prerequisites are complete.</summary>
         Locked,
-        /// <summary>Alle Voraussetzungen erfuellt, im Auswahlfenster sichtbar (Sichtbarkeitsregeln), nicht getrackt.</summary>
+        /// <summary>Prerequisites complete, visible in the selection window, not tracked yet.</summary>
         Available,
-        /// <summary>Vom Spieler angenommen, wird getrackt, zaehlt gegen das Aktiv-Limit.</summary>
+        /// <summary>Accepted by the player, tracked, counts against the active limit.</summary>
         Active,
-        /// <summary>Bedingungen erfuellt (gruen), aber noch NICHT eingeloest. Reward steht zum Abholen
-        /// bereit; Folgemissionen werden erst beim Einloesen freigeschaltet. Zaehlt noch als aktiv.</summary>
+        /// <summary>Conditions fulfilled, but not claimed yet. Reward is ready; follow-up missions
+        /// unlock only when claimed. Still counts as active.</summary>
         ReadyToClaim,
-        /// <summary>Eingeloest, Reward ausgezahlt.</summary>
+        /// <summary>Claimed and reward paid.</summary>
         CompletedOnce
     }
 }

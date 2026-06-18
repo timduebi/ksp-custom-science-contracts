@@ -6,6 +6,8 @@ src/**/obj/
 GameData/CustomScienceContracts/Plugins/*.dll
 GameData/CustomScienceContracts/Plugins/*.pdb
 *.user
+__pycache__/
+*.pyc
 
 # Local release/export folders
 compiled/

@@ -3,35 +3,34 @@ using UnityEngine;
 
 namespace CustomScienceContracts.Core
 {
-    /// <summary>Merkt sich pro Schluessel (z.B. "earth_station") den Namen + persistentId des
-    /// Vessels, das einen "Station/Basis bauen"-Auftrag erfuellt hat. Wiederhol-Versorgungs-
-    /// auftraege referenzieren denselben Schluessel und koennen so gezielt diese Station nennen
-    /// und ihr Andocken/Rendezvous gegen genau dieses Vessel pruefen. Wird im Save-Ordner
-    /// mitpersistiert (STATION-Nodes).</summary>
+    /// <summary>Stores the name and persistentId of the vessel that fulfilled a build station/base
+    /// contract for each key. Repeatable resupply contracts reference the same key so they can name
+    /// that exact station and check docking/rendezvous against that vessel. Persisted in the save
+    /// folder as STATION nodes.</summary>
     public class StationRegistry
     {
         public class Entry { public string Name = ""; public uint PersistentId; }
 
         private readonly Dictionary<string, Entry> _map = new Dictionary<string, Entry>();
 
-        /// <summary>Eintrag fuer einen Schluessel (oder null).</summary>
+        /// <summary>Entry for a key, or null.</summary>
         public Entry Get(string key) =>
             !string.IsNullOrEmpty(key) && _map.TryGetValue(key, out var e) ? e : null;
 
-        /// <summary>Anzeigename der Station (oder null).</summary>
+        /// <summary>Display name of the station, or null.</summary>
         public string Name(string key) => Get(key)?.Name;
 
-        /// <summary>Speichert/aktualisiert die Station eines Schluessels aus einem Vessel.</summary>
+        /// <summary>Stores/updates the station for a key from a vessel.</summary>
         public void Record(string key, Vessel v)
         {
             if (string.IsNullOrEmpty(key) || v == null) return;
             _map[key] = new Entry { Name = v.vesselName ?? key, PersistentId = v.persistentId };
-            Debug.Log($"[CSC] Station '{key}' = \"{_map[key].Name}\" (id {_map[key].PersistentId}) gemerkt.");
+            Debug.Log($"[CSC] Recorded station '{key}' = \"{_map[key].Name}\" (id {_map[key].PersistentId}).");
         }
 
         public void Clear() => _map.Clear();
 
-        // --- Persistenz (STATION-Nodes unter dem State-Root) ---
+        // --- Persistence (STATION nodes below the state root) ---
         public void Save(ConfigNode root)
         {
             foreach (var kv in _map)

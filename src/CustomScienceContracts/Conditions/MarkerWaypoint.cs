@@ -7,10 +7,9 @@ using UnityEngine;
 
 namespace CustomScienceContracts.Conditions
 {
-    /// <summary>Setzt/entfernt einen sichtbaren Stock-Wegpunkt (FinePrint) fuer Praezisionslandungen.
-    /// Nutzt die getypte ScenarioCustomWaypoints-API (zuverlaessiger als Reflection). Der Wegpunkt-
-    /// Objektzustand lebt nur zur Laufzeit — nach einem Neuladen wird er aus den persistierten
-    /// Lat/Lon neu erzeugt (siehe MarkerLandingEvaluator.EnsureMarker).</summary>
+    /// <summary>Creates/removes a visible stock waypoint (FinePrint) for precision landings. Uses
+    /// the typed ScenarioCustomWaypoints API. Waypoint object state only lives at runtime; after a
+    /// reload it is recreated from persisted lat/lon values.</summary>
     public static class MarkerWaypoint
     {
         private static readonly Dictionary<string, Waypoint> _active = new Dictionary<string, Waypoint>();
@@ -40,7 +39,7 @@ namespace CustomScienceContracts.Conditions
             }
             if (SceneChanged)
             {
-                Log.V($"Marker-Waypoint-Cache nach Szenenwechsel erneuern: {contractId}");
+                Log.V($"Refreshing marker waypoint cache after scene change: {contractId}");
                 return false;
             }
             return true;
@@ -52,7 +51,7 @@ namespace CustomScienceContracts.Conditions
             {
                 if (!WaypointScene)
                 {
-                    Log.V($"Marker-Waypoint erst in Flight/Map/Tracking sichtbar: {contractId}");
+                    Log.V($"Marker waypoint visible only in Flight/Map/Tracking: {contractId}");
                     return;
                 }
 
@@ -63,18 +62,18 @@ namespace CustomScienceContracts.Conditions
                     latitude = lat,
                     longitude = lon,
                     altitude = 0.0,
-                    name = string.IsNullOrEmpty(label) ? "Ziel" : label,
-                    id = "report",          // Icon
-                    seed = seed,            // Farbe
+                    name = string.IsNullOrEmpty(label) ? "Target" : label,
+                    id = "report",          // icon
+                    seed = seed,            // color
                     isOnSurface = true,
                     isNavigatable = true
                 };
                 ScenarioCustomWaypoints.AddWaypoint(wp);
                 _active[contractId] = wp;
                 NoteScene();
-                Log.Info($"Marker gesetzt: {wp.name} @ {lat:0.00}/{lon:0.00} auf {body.name}");
+                Log.Info($"Marker set: {wp.name} @ {lat:0.00}/{lon:0.00} on {body.name}");
             }
-            catch (Exception e) { Log.Warn($"Marker-Waypoint setzen fehlgeschlagen: {e.Message}"); }
+            catch (Exception e) { Log.Warn($"Marker waypoint creation failed: {e.Message}"); }
         }
 
         public static void Remove(string contractId)
@@ -87,11 +86,11 @@ namespace CustomScienceContracts.Conditions
                     _active.Remove(contractId);
                 }
             }
-            catch (Exception e) { Log.Warn($"Marker-Waypoint entfernen fehlgeschlagen: {e.Message}"); }
+            catch (Exception e) { Log.Warn($"Marker waypoint removal failed: {e.Message}"); }
         }
 
-        /// <summary>Entfernt alle Waypoints eines Contracts (Schluessel == id oder beginnt mit "id#",
-        /// z.B. mehrere MARKER_LANDING-Checks). Fuer Claim/Abandon einer COMPOSITE-Mission.</summary>
+        /// <summary>Removes all waypoints of a contract (key == id or starts with "id#", e.g. several
+        /// MARKER_LANDING checks). Used for claim/abandon of composite missions.</summary>
         public static void RemoveAll(string contractId)
         {
             var hit = new List<string>();

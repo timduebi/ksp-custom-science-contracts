@@ -4,8 +4,8 @@ using CustomScienceContracts.Model;
 
 namespace CustomScienceContracts.Data
 {
-    /// <summary>In-Memory-Sicht auf alle geladenen Contracts mit Lookups nach Id, Sparte,
-    /// Unterkategorie. Haelt die MissionContract-Instanzen (Definition + Laufzeit-State).</summary>
+    /// <summary>In-memory view of all loaded contracts with lookups by id, branch and subcategory.
+    /// Holds MissionContract instances with definition and runtime state.</summary>
     public class ContractCatalog
     {
         private readonly List<MissionContract> _all = new List<MissionContract>();

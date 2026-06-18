@@ -1,7 +1,7 @@
 namespace CustomScienceContracts.Model
 {
-    /// <summary>Die vier Hauptsparten. Wiederholbar ist dynamisch: ein Repeatable-Contract
-    /// wandert nach Erstabschluss aus seiner Heimatsparte hierher.</summary>
+    /// <summary>The four main branches. Wiederholbar is dynamic: after its first completion a
+    /// repeatable contract moves here from its home branch.</summary>
     public enum Sparte
     {
         Bemannt,

@@ -3,42 +3,42 @@ using UnityEngine;
 
 namespace CustomScienceContracts.Model
 {
-    /// <summary>Eine Mission. Definition stammt aus dem .cfg-Katalog (GameData);
-    /// der Laufzeit-State liegt editierbar im Save-Ordner.</summary>
+    /// <summary>A mission. Definition comes from the .cfg catalog in GameData; runtime state is
+    /// stored in the save folder.</summary>
     public class MissionContract
     {
-        // --- Definition (aus dem Katalog, unveraenderlich zur Laufzeit) ---
+        // --- Definition from the catalog, immutable at runtime ---
         public string Id = "";
         public string Titel = "";
         public string Beschreibung = "";
         public Sparte HeimatSparte;            // Bemannt / UnbemannteErkundung / NetzwerkLogistik
-        public string Unterkategorie = "";     // Koerper-Name (Luna=eigene Kat.; Monde unter Planet)
-        /// <summary>Optionales, pro Mission gewaehltes UI-Icon (Dateiname in Icons/UI ohne Endung,
-        /// z.B. "TrackingStation_ButtonMapLander"). Leer -> Fallback nach erstem Bedingungstyp.</summary>
+        public string Unterkategorie = "";     // body/category label
+        /// <summary>Optional UI icon selected per mission, as filename in Icons/UI without
+        /// extension, e.g. "TrackingStation_ButtonMapLander". Empty means fallback by mission shape.</summary>
         public string IconKey = "";
-        public List<string> Voraussetzungen = new List<string>();  // IDs, muessen alle CompletedOnce sein
+        public List<string> Voraussetzungen = new List<string>();  // ids that must all be completed once
         public List<Condition> Bedingungen = new List<Condition>();
         public float ScienceReward = 0f;
         public bool Repeatable = false;
-        /// <summary>Nur Erkundung/aeusseres System: ist diese Contract-ID CompletedOnce,
-        /// werden alle Contracts der Unterkategorie sichtbar (4er-Limit faellt weg).</summary>
+        /// <summary>Exploration/outer system only: when this contract id is CompletedOnce, all
+        /// contracts in the subcategory become visible and the 4-item cap is lifted.</summary>
         public string RevealAllAfter = "";
-        /// <summary>Ist gesetzt, merkt sich der Mod beim Erfuellen das erfuellende Vessel als "Station"
-        /// unter diesem Schluessel. Versorgungsauftraege referenzieren ihn via CONDITION.stationKey.</summary>
+        /// <summary>When set, the mod records the fulfilling vessel as a station/base under this
+        /// key. Resupply contracts reference it through CONDITION.stationKey.</summary>
         public string RecordStationKey = "";
-        /// <summary>Verweist (nur fuer Anzeige) auf eine gemerkte Station/Basis, ohne sie zu erfassen —
-        /// damit Folgeauftraege deren Namen in Titel/%station% zeigen koennen.</summary>
+        /// <summary>Display-only reference to a recorded station/base without recording it again, so
+        /// follow-up contracts can show its name in titles/%station%.</summary>
         public string StationRef = "";
 
-        // --- Laufzeit-State (persistiert im Save-Ordner) ---
+        // --- Runtime state, persisted in the save folder ---
         public MissionStatus Status = MissionStatus.Locked;
-        /// <summary>Fuer Repeatable-Cooldown: reset 0 beim Einloesen, +1 bei jedem anderen Abschluss,
-        /// wieder annehmbar wenn &gt;= Tuning.RepeatableCooldown.</summary>
+        /// <summary>Repeatable cooldown: reset to 0 when claimed, +1 on every other completion,
+        /// accept again when &gt;= Tuning.RepeatableCooldown.</summary>
         public int CompletionsSinceLastClaim = 0;
-        /// <summary>Wie oft insgesamt abgeschlossen (Statistik / UI).</summary>
+        /// <summary>Total completion count for statistics/UI.</summary>
         public int TotalCompletions = 0;
-        /// <summary>Scratch-State der Condition-Evaluatoren (FLYBY-Phase, CREW_DURATION-Startzeit,
-        /// gesetzte Marker-Waypoints ...). Nur fuer Active-Contracts relevant, wird mitpersistiert.</summary>
+        /// <summary>Scratch state for condition evaluators (flyby phase, crew-duration start time,
+        /// marker waypoint state, ...). Relevant for active contracts and persisted with the save.</summary>
         public ConfigNode Progress = new ConfigNode("PROGRESS");
 
         public bool IsRepeatableInPool => Repeatable && TotalCompletions > 0;

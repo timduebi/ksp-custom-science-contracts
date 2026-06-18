@@ -1,26 +1,36 @@
 # CustomScienceContracts
 
-CustomScienceContracts ist ein KSP-1.12.x-Plugin fuer den Science Mode. Es fuegt
-ein eigenes Missionssystem hinzu, das parallel zum Stock-Contractsystem laeuft.
-Die Missionen fuehren durch eine SOL-Quarter-Scale-Kampagne von den ersten
-unbemannten Erdtests bis zu Luna, Mars, Asteroiden, Jupiter, Saturn, Titan und
-fernen robotischen Zielen.
+CustomScienceContracts is a Kerbal Space Program 1.12.x plugin for Science Mode.
+It adds its own mission and objective system that runs alongside the stock game
+without using Contract Configurator.
 
-Der Mod prueft nur Stock-KSP-Zustaende und vergibt beim Abschluss Science-Boni.
-Er braucht keinen Contract Configurator und keine Kerbalism-/Simplex-API.
+The current mission campaign is built for a SOL Quarter-Scale installation. It
+starts with early uncrewed Earth tests and grows into crewed lunar and Martian
+exploration, stations, bases, logistics chains, communication networks,
+asteroid branches, outer-planet probes and late-game Titan infrastructure.
 
-Aktuell ist der Mod nur auf Deutsch verfuegbar. Eine englische Version ist in
-Arbeit. Die mitgelieferten Missionen sind fuer SOL Quarter-Scale geschrieben;
-Configs fuer Stock KSP sind ebenfalls in Arbeit.
+## Languages
+
+The main release ships with the original German contract catalog.
+
+An optional English contract catalog is published as a separate release asset.
+Install the main mod first, then install the English contract pack over it to
+replace only the mission text/config files:
+
+```text
+GameData/CustomScienceContracts/Contracts/
+```
+
+The plugin UI, repository documentation and release notes are English from
+version 0.2.0 onward. Stock KSP contract configs are planned but not included yet.
 
 ## Installation
 
-1. Lade das Release-Zip herunter.
-2. Entpacke es.
-3. Kopiere den enthaltenen `GameData`-Ordner in deine KSP-Installation.
-4. Starte KSP im Science Mode.
+1. Download `CustomScienceContracts-vX.Y.Z.zip` from the release page.
+2. Extract it into your Kerbal Space Program folder.
+3. Start a Science Mode save.
 
-Die Zielstruktur sieht danach so aus:
+The installed structure should look like this:
 
 ```text
 Kerbal Space Program/
@@ -33,111 +43,86 @@ Kerbal Space Program/
         └── settings.cfg
 ```
 
-## Abhaengigkeiten
+To use the English mission texts, download the matching
+`CustomScienceContracts-EnglishContracts-vX.Y.Z.zip` asset and copy its
+`GameData` folder over the main installation.
 
-Zum Spielen:
+## Dependencies
+
+Required for play:
 
 - Kerbal Space Program 1.12.x.
-- Eine SOL-Quarter-Scale-Installation mit passenden internen Body-Namen
-  (`Earth`, `Moon`, `Mars`, `Jupiter`, `Saturn`, usw.).
+- A SOL Quarter-Scale setup with matching internal body names such as `Earth`,
+  `Moon`, `Mars`, `Jupiter`, `Saturn`, and so on.
 
-In Arbeit:
-
-- Englische Missions- und UI-Texte.
-- Alternative Configs fuer Stock KSP.
-
-Nicht benoetigt:
+Not required:
 
 - Contract Configurator.
 - Kerbalism.
 - Simplex.
-- Part-Packs fuer Missionsbedingungen.
+- Any part pack for mission checks.
 
-Der Mod stellt keine Part-Anforderungen. Antennen, Scanner und wissenschaftliche
-Nutzlasten sind im Text teilweise erzählerisch gemeint; technisch geprueft
-werden nur KSP-Zustaende wie Orbit, Landung, Crew, Vessel-Anzahl, Ressourcen,
-Inklination, Flyby und Zeit.
+The mod does not require specific parts. Antennas, scanners and payloads are
+sometimes mentioned narratively, but the actual checks use stock KSP state only:
+orbit, landing, crew, vessel count, resources, inclination, flyby state and time.
 
-## Was der Mod macht
+## What It Adds
 
-- Fuegt eigene Missionslisten mit vier Sparten hinzu:
-  - Pioniere
-  - Robotische Erkunder
-  - Versorgungsnetz
-  - Wiederholbar
-- Laesst Missionen aktiv annehmen.
-- Prueft aktive Missionen etwa einmal pro Sekunde.
-- Zeigt Teilziele und Fortschritt in einer eigenen UI.
-- Speichert Fortschritt im aktuellen Save.
-- Vergibt Science-Boni beim Einloesen.
-- Verschiebt wiederholbare Missionen nach Erstabschluss in die Sparte
-  `Wiederholbar`.
+- Four mission branches:
+  - Pioneers
+  - Robotic Explorers
+  - Lifelines
+  - Repeatable
+- A mission control window for selecting missions.
+- An active missions window with objective progress.
+- Save-specific progress outside the `.sfs` file.
+- Science rewards paid when completed missions are claimed.
+- Repeatable logistics missions with a cooldown after first completion.
 
-## Wichtige Missionsketten
+## Gameplay Notes
 
-- Fruehe unbemannte Erdtests und erster Erdorbit.
-- Erstes 3-Satelliten-Netz im Erdorbit.
-- Bemannte Erdfluege, EVA, Docking und temporäres Ein-Modul-Labor.
-- Luna-Flyby, Luna-Orbit, Luna-Landung und Mondinfrastruktur.
-- Neue Kommunikations-Lebensader ab Epoche 3:
-  - Erde
-  - polare Erd-Relais
-  - Luna
-  - polare Luna-Relais
-  - Mars
-  - interplanetarer Sonnenorbit-Ring
-  - Jupiter
-  - Saturn
-- Optionale Polar-Kartierungen nach erfolgreichen normalen Orbits.
-- Mars-Hauptbogen mit Landung, Station und Basis.
-- Asteroiden-Bonuszweige.
-- Jupiter-, Saturn-, Titan- und Schluss-Epochen-Ziele.
+- Height requirements are minimum values. A mission that says `periapsis above
+  2000 km` requires the periapsis to be greater than 2000 km.
+- Polar missions require at least 75 degrees inclination.
+- Communication networks count real vessels in orbit. Debris, flags, asteroids
+  and deployed science objects do not count.
+- Repeatable missions become available again after two other mission completions.
 
-## Spielhinweise
+## Save Data
 
-- Hoehenangaben sind Mindestwerte. Wenn eine Mission `Periapsis ueber 2000 km`
-  verlangt, muss die Periapsis wirklich groesser als 2000 km sein.
-- Polarorbit-Missionen verlangen mindestens 75 Grad Inklination.
-- Kommunikationsnetze zaehlen echte Vessels im Orbit. Debris, Flags,
-  Asteroiden und Deployed-Science-Objekte zaehlen nicht.
-- Wiederholbare Missionen haben einen Cooldown: nach dem Einloesen muessen erst
-  zwei andere Missionen abgeschlossen werden.
-
-## Fortschritt und Save-Dateien
-
-Der Mod speichert pro Spielstand:
+Progress is stored per save at:
 
 ```text
 saves/<SaveName>/CustomScienceContracts/contracts_state.cfg
 ```
 
-Darin stehen aktive Missionen, abgeschlossene Missionen, Timer, Flyby-State,
-Waypoint-State, Repeatable-Cooldowns und registrierte Stationen/Basen.
+This file stores active missions, completed missions, timers, flyby state,
+waypoint state, repeatable cooldowns and registered stations/bases.
 
-## Entwicklung
+## Development
 
-Die Missionsquelle ist:
+The German mission design source is:
 
 ```text
 custom_science_contracts_missionsdesign.md
 ```
 
-Die Contract-Dateien in `GameData/CustomScienceContracts/Contracts/*.cfg` werden
-generiert. Nicht von Hand editieren.
+Generated catalog files must not be edited by hand.
 
-Typischer Entwicklungsablauf:
+Common workflow:
 
 ```bash
 python3 tools/validate_design.py
 python3 tools/gen_catalog.py
 python3 tools/validate_catalog.py
+python3 tools/gen_catalog_en.py
+python3 tools/validate_catalog.py OptionalConfigs/English/GameData/CustomScienceContracts/Contracts
 ./build.sh
 ```
 
-Zum Bauen werden die KSP-Managed-Assemblies aus einer lokalen KSP-Installation
-gebraucht. Details stehen in `DOKUMENTATION.md`.
+See `DOKUMENTATION.md` for the architecture, runtime flow and release process.
 
-## License and third-party assets
+## License and Third-Party Assets
 
 CustomScienceContracts is licensed under the GNU General Public License version
 3.0. See `LICENSE` and `LICENSES/GPL-3.0.txt`.

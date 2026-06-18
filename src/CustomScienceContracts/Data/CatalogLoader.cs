@@ -5,9 +5,9 @@ using UnityEngine;
 
 namespace CustomScienceContracts.Data
 {
-    /// <summary>Laedt die Missionsdefinitionen aus allen CUSTOM_CONTRACT_CATALOG-Nodes
-    /// (GameData/CustomScienceContracts/Contracts/*.cfg). Nutzt GameDatabase, damit beliebig
-    /// viele .cfg-Dateien zusammengefuehrt werden. NICHT hardcoded.</summary>
+    /// <summary>Loads mission definitions from all CUSTOM_CONTRACT_CATALOG nodes
+    /// (GameData/CustomScienceContracts/Contracts/*.cfg). Uses GameDatabase so any number of
+    /// catalog files can be merged. Not hardcoded.</summary>
     public static class CatalogLoader
     {
         public const string CatalogNodeName = "CUSTOM_CONTRACT_CATALOG";
@@ -17,7 +17,7 @@ namespace CustomScienceContracts.Data
             var result = new List<MissionContract>();
             if (GameDatabase.Instance == null)
             {
-                Debug.LogError("[CSC] GameDatabase nicht verfuegbar, Katalog leer.");
+                Debug.LogError("[CSC] GameDatabase unavailable, catalog is empty.");
                 return result;
             }
 
@@ -32,7 +32,7 @@ namespace CustomScienceContracts.Data
             }
 
             DetectDuplicateIds(result);
-            Debug.Log($"[CSC] Katalog geladen: {result.Count} Contracts aus {catalogs.Length} Katalog-Node(s).");
+            Debug.Log($"[CSC] Catalog loaded: {result.Count} contracts from {catalogs.Length} catalog node(s).");
             return result;
         }
 
@@ -41,7 +41,7 @@ namespace CustomScienceContracts.Data
             string id = node.GetValue("id");
             if (string.IsNullOrEmpty(id))
             {
-                Debug.LogWarning("[CSC] CONTRACT ohne 'id' uebersprungen.");
+                Debug.LogWarning("[CSC] Skipped CONTRACT without 'id'.");
                 return null;
             }
 
@@ -60,13 +60,13 @@ namespace CustomScienceContracts.Data
             string sparteStr = node.GetValue("sparte");
             if (!Enum.TryParse(sparteStr, true, out mc.HeimatSparte))
             {
-                Debug.LogWarning($"[CSC] Contract '{id}': unbekannte Sparte '{sparteStr}', uebersprungen.");
+                Debug.LogWarning($"[CSC] Contract '{id}': unknown branch '{sparteStr}', skipped.");
                 return null;
             }
             if (mc.HeimatSparte == Sparte.Wiederholbar)
             {
-                Debug.LogWarning($"[CSC] Contract '{id}': Heimatsparte darf nicht Wiederholbar sein. " +
-                                 "Repeatable=true setzen statt sparte=Wiederholbar.");
+                Debug.LogWarning($"[CSC] Contract '{id}': home branch cannot be Wiederholbar. " +
+                                 "Use repeatable=true instead of sparte=Wiederholbar.");
                 return null;
             }
 
@@ -89,7 +89,7 @@ namespace CustomScienceContracts.Data
             }
 
             if (mc.Bedingungen.Count == 0)
-                Debug.LogWarning($"[CSC] Contract '{id}' hat keine gueltige CONDITION.");
+                Debug.LogWarning($"[CSC] Contract '{id}' has no valid CONDITION.");
 
             return mc;
         }
@@ -99,7 +99,7 @@ namespace CustomScienceContracts.Data
             var seen = new HashSet<string>();
             foreach (var mc in list)
                 if (!seen.Add(mc.Id))
-                    Debug.LogError($"[CSC] Doppelte Contract-Id '{mc.Id}' im Katalog!");
+                    Debug.LogError($"[CSC] Duplicate contract id '{mc.Id}' in catalog.");
         }
     }
 }

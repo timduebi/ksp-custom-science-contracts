@@ -7,9 +7,9 @@ using UnityEngine;
 
 namespace CustomScienceContracts.Persistence
 {
-    /// <summary>Liest/schreibt den Laufzeit-State als editierbare Datei im Save-Ordner:
-    /// saves/&lt;save&gt;/CustomScienceContracts/contracts_state.cfg. Diese Datei ist autoritativ;
-    /// fehlt oder bricht sie, wird frisch aus dem Katalog neu geseedet (alles Locked/Available).</summary>
+    /// <summary>Reads/writes runtime state as an editable file in the save folder:
+    /// saves/&lt;save&gt;/CustomScienceContracts/contracts_state.cfg. This file is authoritative;
+    /// if it is missing or broken, state is seeded fresh from the catalog.</summary>
     public static class SaveFolderStore
     {
         private const string RootNode = "CUSTOM_SCIENCE_CONTRACTS_STATE";
@@ -42,16 +42,16 @@ namespace CustomScienceContracts.Persistence
                 }
                 mgr.Stations.Save(root);
                 root.Save(StateFilePath);
-                Debug.Log($"[CSC] State gespeichert -> {StateFilePath}");
+                Debug.Log($"[CSC] State saved -> {StateFilePath}");
             }
             catch (Exception e)
             {
-                Debug.LogError($"[CSC] Speichern fehlgeschlagen: {e}");
+                Debug.LogError($"[CSC] Save failed: {e}");
             }
         }
 
-        /// <summary>Wendet den gespeicherten State auf den bereits initialisierten Manager an.
-        /// Gibt false zurueck, wenn keine (gueltige) Datei existiert -> frisch seeden.</summary>
+        /// <summary>Applies saved state to the initialized manager. Returns false when no valid
+        /// file exists, which causes a fresh seed.</summary>
         public static bool Load(ContractManager mgr)
         {
             try
@@ -70,7 +70,7 @@ namespace CustomScienceContracts.Persistence
                 {
                     string id = n.GetValue("id");
                     var c = mgr.Catalog.Get(id);
-                    if (c == null) { Debug.LogWarning($"[CSC] State fuer unbekannte Id '{id}' ignoriert."); continue; }
+                    if (c == null) { Debug.LogWarning($"[CSC] Ignored state for unknown id '{id}'."); continue; }
 
                     if (Enum.TryParse(n.GetValue("status"), true, out MissionStatus st)) c.Status = st;
                     c.TotalCompletions = ParseInt(n.GetValue("totalCompletions"));
@@ -81,14 +81,14 @@ namespace CustomScienceContracts.Persistence
 
                 mgr.Stations.Load(root);
 
-                // Nach dem Laden Verfuegbarkeit neu ableiten (falls Katalog sich geaendert hat).
+                // Recompute availability after load in case the catalog changed.
                 mgr.RecomputeAvailability();
-                Debug.Log($"[CSC] State geladen aus {StateFilePath}");
+                Debug.Log($"[CSC] State loaded from {StateFilePath}");
                 return true;
             }
             catch (Exception e)
             {
-                Debug.LogError($"[CSC] Laden fehlgeschlagen, seede frisch: {e}");
+                Debug.LogError($"[CSC] Load failed, using fresh state: {e}");
                 return false;
             }
         }

@@ -7,8 +7,8 @@ using UnityEngine;
 
 namespace CustomScienceContracts.Core
 {
-    /// <summary>Steuert Status-Flow, Voraussetzungen, Annehmen/Abschluss, Reward-Auszahlung und
-    /// die Repeatable-Cooldown-Buchhaltung. Wird vom ScenarioModule pro Tick getickt.</summary>
+    /// <summary>Controls status flow, prerequisites, acceptance/completion, reward payout and
+    /// repeatable cooldown bookkeeping. Ticked by the ScenarioModule.</summary>
     public class ContractManager
     {
         public ContractCatalog Catalog { get; } = new ContractCatalog();
@@ -16,10 +16,10 @@ namespace CustomScienceContracts.Core
         public GameEventBridge Events { get; } = new GameEventBridge();
         public StationRegistry Stations { get; } = new StationRegistry();
 
-        /// <summary>Globaler Faktor auf alle ausgezahlten Wissenschaftspunkte (Einstellungen, 0.1–3.0).</summary>
+        /// <summary>Global factor for all paid science rewards (settings, 0.1-3.0).</summary>
         public double ScienceMultiplier = 1.0;
 
-        /// <summary>Gilt der Contract als (mindestens einmal) abgeschlossen? Auch Repeatables im Pool.</summary>
+        /// <summary>Whether a contract counts as completed at least once, including repeatables in the pool.</summary>
         public static bool IsCompleted(MissionContract c) =>
             c != null && (c.TotalCompletions > 0 || c.Status == MissionStatus.CompletedOnce);
 
@@ -29,11 +29,10 @@ namespace CustomScienceContracts.Core
             RecomputeAvailability();
         }
 
-        // --- Verfuegbarkeit ---
+        // --- Availability ---
 
-        /// <summary>Setzt Locked-Contracts mit erfuellten Voraussetzungen auf Available.
-        /// Beruehrt Active/CompletedOnce nicht.</summary>
-        /// <summary>Letzte Einloesung (fuer die transiente "+X Wissenschaft"-Anzeige).</summary>
+        /// <summary>Sets locked contracts with fulfilled prerequisites to Available. Does not touch Active/CompletedOnce.</summary>
+        /// <summary>Last claim, used for the transient "+X science" display.</summary>
         public string LastClaimId { get; private set; }
         public float LastClaimAmount { get; private set; }
         public float LastClaimRealtime { get; private set; }
@@ -53,11 +52,11 @@ namespace CustomScienceContracts.Core
         public bool CanAccept(MissionContract c)
         {
             if (c == null || c.Status != MissionStatus.Available) return false;
-            // Freischalt-/Testmodus: keine Aktiv-Limits und kein Repeatable-Cooldown.
+            // Unlock/test mode: no active limits and no repeatable cooldown.
             if (Tuning.UnlockAll) return true;
             if (ActiveLimits.ActiveCount(Catalog.All, c.HeimatSparte) >= ActiveLimits.LimitFor(c.HeimatSparte))
                 return false;
-            // Repeatable im Pool: Cooldown muss abgelaufen sein.
+            // Repeatable in the pool: cooldown must be over.
             if (c.IsRepeatableInPool && c.CompletionsSinceLastClaim < Tuning.RepeatableCooldown)
                 return false;
             return true;
@@ -70,11 +69,11 @@ namespace CustomScienceContracts.Core
             c.Status = MissionStatus.Active;
             c.Progress = new ConfigNode("PROGRESS");
             Evaluators.NotifyAccepted(c);
-            Debug.Log($"[CSC] Angenommen: {c.Id}");
+            Debug.Log($"[CSC] Accepted: {c.Id}");
             return true;
         }
 
-        /// <summary>Wissenschaftsstrafe beim Abbrechen: halbe (multiplizierte) Belohnung, gerundet.</summary>
+        /// <summary>Abort penalty: half of the multiplied reward, rounded.</summary>
         public float AbortPenalty(MissionContract c) =>
             c == null ? 0f : Mathf.Round(c.ScienceReward * 0.5f * (float)ScienceMultiplier);
 
@@ -83,7 +82,7 @@ namespace CustomScienceContracts.Core
             var c = Catalog.Get(id);
             if (c == null || c.Status != MissionStatus.Active) return false;
 
-            // Strafe: halbe Belohnung vom aktuellen Punktestand abziehen (nicht unter 0).
+            // Penalty: subtract half the reward from the current science balance, never below zero.
             float penalty = AbortPenalty(c);
             if (penalty > 0f && ResearchAndDevelopment.Instance != null)
             {
@@ -93,15 +92,15 @@ namespace CustomScienceContracts.Core
 
             Evaluators.NotifyCleared(c);
             c.Progress = new ConfigNode("PROGRESS");
-            // zurueck in den richtigen Pool: Pool-Repeatable bleibt annehmbar, sonst Available/Locked
+            // Back into the correct pool: pool repeatables remain available, others return to Available/Locked.
             c.Status = MissionStatus.Available;
             RecomputeAvailability();
-            Debug.Log($"[CSC] Verworfen: {c.Id} (-{penalty} Wissenschaft)");
+            Debug.Log($"[CSC] Abandoned: {c.Id} (-{penalty} science)");
             return true;
         }
 
-        /// <summary>Notausgang aus dem Einstellungsfenster: aktive Mission als erledigt markieren
-        /// (schaltet Folgemissionen frei), aber OHNE Wissenschaftsauszahlung.</summary>
+        /// <summary>Emergency exit from the settings window: mark an active mission as complete
+        /// to unlock follow-ups, but without paying science.</summary>
         public bool Skip(string id)
         {
             var c = Catalog.Get(id);
@@ -111,37 +110,37 @@ namespace CustomScienceContracts.Core
             c.TotalCompletions++;
             if (c.Repeatable) { c.CompletionsSinceLastClaim = 0; c.Status = MissionStatus.Available; }
             else c.Status = MissionStatus.CompletedOnce;
-            Log.Info($"Übersprungen ohne Punkte: {c.Id}");
+            Log.Info($"Skipped without reward: {c.Id}");
             RecomputeAvailability();
             return true;
         }
 
-        // --- Pruef-Loop ---
+        // --- Check loop ---
 
-        /// <summary>Prueft Active-Contracts; bei Erfuellung -> ReadyToClaim (gruen, aber noch nicht
-        /// ausgezahlt). Speichert pro Bedingung den Erfuellt-Status fuer die UI.</summary>
+        /// <summary>Checks active contracts; fulfilled contracts become ReadyToClaim, but are not
+        /// paid yet. Stores the fulfilled state per condition for the UI.</summary>
         public void Tick(EvaluationContext ctx)
         {
             var active = Catalog.All.Where(c => c.Status == MissionStatus.Active).ToList();
             foreach (var c in active)
             {
-                // Andock-Fusionen verarbeiten, bevor die Bindung gelesen wird (Timer ueberlebt Resupply).
+                // Process docking merges before reading bindings, so timers survive resupply docking.
                 Conditions.CheckEvaluation.RemapDockedSubjects(c, ctx);
                 if (EvaluateAll(c, ctx))
                 {
                     c.Status = MissionStatus.ReadyToClaim;
-                    // "Station/Basis bauen"-Auftrag: das erfuellende (aktive) Vessel als Station merken.
-                    // Nur im Flug sinnvoll — im Space Center/Editor gibt es kein aktives Vessel.
+                    // "Build station/base" contract: remember the active vessel that fulfilled it.
+                    // Only meaningful in flight; Space Center/Editor have no active vessel.
                     if (!string.IsNullOrEmpty(c.RecordStationKey) && Conditions.VesselQuery.Active != null)
                         Stations.Record(c.RecordStationKey, Conditions.VesselQuery.Active);
-                    Log.Info($"Bereit zum Einloesen: {c.Id}");
+                    Log.Info($"Ready to claim: {c.Id}");
                 }
             }
             Events.ClearFrameBuffer();
         }
 
-        /// <summary>Wertet ALLE Bedingungen aus (ohne Kurzschluss), legt cond{i}_met in Progress ab
-        /// und liefert true, wenn alle erfuellt sind.</summary>
+        /// <summary>Evaluates all conditions without short-circuiting, writes cond{i}_met to
+        /// progress and returns true when all are fulfilled.</summary>
         private bool EvaluateAll(MissionContract c, EvaluationContext ctx)
         {
             bool all = c.Bedingungen.Count > 0;
@@ -149,29 +148,29 @@ namespace CustomScienceContracts.Core
             {
                 var cond = c.Bedingungen[i];
                 bool met = cond.Checks.Count > 0
-                    ? Conditions.CheckEvaluation.Evaluate(c, i, cond, ctx)            // hand-komponierte Checkliste
-                    : Evaluators.Get(cond.Type).Evaluate(c, cond, ctx);              // Legacy-Einzeltyp
+                    ? Conditions.CheckEvaluation.Evaluate(c, i, cond, ctx)            // hand-composed checklist
+                    : Evaluators.Get(cond.Type).Evaluate(c, cond, ctx);              // legacy single condition
                 c.Progress.SetValue($"cond{i}_met", met ? "1" : "0", true);
                 if (!met) all = false;
             }
             return all;
         }
 
-        /// <summary>Ist Bedingung i (laut letztem Tick) erfuellt? Fuer die UI-Anzeige rot/gruen.</summary>
+        /// <summary>Whether condition i was fulfilled in the last tick. Used for red/green UI state.</summary>
         public bool IsConditionMet(MissionContract c, int i) =>
             c.Status == MissionStatus.ReadyToClaim || c.Progress.GetValue($"cond{i}_met") == "1";
 
-        /// <summary>Ist Teilziel j von Bedingung i erfuellt? (COMPOSITE-Checkliste, UI rot/gruen).</summary>
+        /// <summary>Whether checklist item j of condition i is fulfilled. Used for red/green UI state.</summary>
         public bool IsCheckMet(MissionContract c, int i, int j) =>
             c.Status == MissionStatus.ReadyToClaim || c.Progress.GetValue($"c{i}_{j}") == "1";
 
-        /// <summary>Restzeit (Sekunden) eines Timer-Checks von Bedingung i (oder -1).</summary>
+        /// <summary>Remaining seconds for a timer check of condition i, or -1.</summary>
         public double CheckRemaining(MissionContract c, int i) =>
             double.TryParse(c.Progress.GetValue($"c{i}_rem"),
                 System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture,
                 out double r) ? r : -1.0;
 
-        /// <summary>Loest eine bereitstehende Mission ein: zahlt Reward, schaltet Folgemissionen frei.</summary>
+        /// <summary>Claims a ready mission: pays reward and unlocks follow-up missions.</summary>
         public bool Claim(string id)
         {
             var c = Catalog.Get(id);
@@ -184,7 +183,7 @@ namespace CustomScienceContracts.Core
             Evaluators.NotifyCleared(c);
             c.Progress = new ConfigNode("PROGRESS");
 
-            // Cooldown-Buchhaltung: jeder ANDERE Pool-Repeatable bekommt +1.
+            // Cooldown bookkeeping: every other pool repeatable gets +1.
             foreach (var other in Catalog.All)
                 if (!ReferenceEquals(other, c) && other.IsRepeatableInPool)
                     other.CompletionsSinceLastClaim++;
@@ -196,7 +195,7 @@ namespace CustomScienceContracts.Core
             }
             else c.Status = MissionStatus.CompletedOnce;
 
-            Log.Info($"Eingeloest: {c.Id} (+{c.ScienceReward} Wissenschaft)");
+            Log.Info($"Claimed: {c.Id} (+{c.ScienceReward} science)");
             RecomputeAvailability();
             return true;
         }
@@ -207,10 +206,10 @@ namespace CustomScienceContracts.Core
             if (ResearchAndDevelopment.Instance != null)
                 ResearchAndDevelopment.Instance.AddScience(amount, TransactionReasons.Cheating);
             else
-                Debug.LogWarning("[CSC] Kein ResearchAndDevelopment (kein Science/Career?) — Reward verfaellt.");
+                Debug.LogWarning("[CSC] No ResearchAndDevelopment instance (not Science/Career?) - reward lost.");
         }
 
-        // --- Queries fuer die UI ---
+        // --- UI queries ---
 
         public IEnumerable<MissionContract> ActiveContracts() =>
             Catalog.All.Where(c => c.Status == MissionStatus.Active || c.Status == MissionStatus.ReadyToClaim);
@@ -221,11 +220,11 @@ namespace CustomScienceContracts.Core
         public int RemainingCooldown(MissionContract c) =>
             Mathf.Max(0, Tuning.RepeatableCooldown - c.CompletionsSinceLastClaim);
 
-        /// <summary>Ist die Vorschau gesperrter Missionen aktiv? (Trigger-Contract abgeschlossen.)</summary>
+        /// <summary>Whether locked mission previews are active because the trigger contract is completed.</summary>
         public bool LockedPreviewActive =>
             IsCompleted(Catalog.Get(Tuning.LockedPreviewTrigger));
 
-        /// <summary>Titel der noch nicht erfuellten Voraussetzungen eines Contracts (fuer die rote Zeile).</summary>
+        /// <summary>Titles of unmet prerequisites for the red UI line.</summary>
         public List<string> UnmetPrerequisiteTitles(MissionContract c)
         {
             var list = new List<string>();

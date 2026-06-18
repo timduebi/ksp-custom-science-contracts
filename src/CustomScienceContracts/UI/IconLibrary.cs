@@ -5,8 +5,8 @@ using UnityEngine;
 
 namespace CustomScienceContracts.UI
 {
-    /// <summary>Laedt die mitgelieferten Icons direkt aus unserem Modordner. GameDatabase bleibt nur
-    /// Fallback, damit gleichnamige Stock- oder Cache-Texturen nicht versehentlich gewinnen.</summary>
+    /// <summary>Loads bundled icons directly from the mod folder. GameDatabase is only a
+    /// fallback so stock or cached textures with the same name do not accidentally win.</summary>
     public static class IconLibrary
     {
         private const string Base = "CustomScienceContracts/Icons";
@@ -23,7 +23,7 @@ namespace CustomScienceContracts.UI
             {
                 if (t != null) return t;
                 _cache.Remove(url);
-                Log.V($"Icon-Cache erneuert, Textur war null/zerstoert: {url}");
+                Log.V($"Icon cache refreshed because texture was null/destroyed: {url}");
             }
 
             Texture2D tex = null;
@@ -34,7 +34,7 @@ namespace CustomScienceContracts.UI
             }
             catch (System.Exception e)
             {
-                Log.V($"Icon-Laden fehlgeschlagen: {url} ({e.Message})");
+                Log.V($"Icon load failed: {url} ({e.Message})");
                 tex = null;
             }
 
@@ -46,7 +46,7 @@ namespace CustomScienceContracts.UI
             }
 
             if (_missingLogged.Add(url))
-                Log.V($"Icon-Key liefert keine Textur: {url}");
+                Log.V($"Icon key returned no texture: {url}");
             return tex;
         }
 

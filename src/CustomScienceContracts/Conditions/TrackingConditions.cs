@@ -8,14 +8,12 @@ using UnityEngine;
 namespace CustomScienceContracts.Conditions
 {
     // ============================================================================
-    //  Knifflige Bedingungen (Schritt 5) — State-Tracking ueber mehrere Frames.
-    //  State liegt in contract.Progress und wird mitpersistiert.
+    //  Stateful conditions. State lives in contract.Progress and is persisted.
     // ============================================================================
 
-    /// <summary>FLYBY: irgendein reales Vessel betritt die SOI des Zielkoerpers, orbitet/landet dort
-    /// NIE und verlaesst die SOI wieder. Optional muss die Annaeherung (kleinste PeA waehrend des
-    /// Durchflugs) &lt;= flybyAltitudeKm liegen. Pro-Vessel-State in Progress (VESSEL-Subnodes), damit
-    /// mehrere Sonden parallel verfolgt werden koennen — funktioniert auch unbeaufsichtigt/unloaded.</summary>
+    /// <summary>FLYBY: any real vessel enters the target body's SOI, never orbits/lands there, and
+    /// leaves again. Optional closest approach must be &lt;= flybyAltitudeKm. Per-vessel state lives
+    /// in Progress so multiple probes can be tracked while unfocused/unloaded.</summary>
     public sealed class FlybyEvaluator : ConditionEvaluatorBase
     {
         private const double Huge = 1e30;
@@ -54,7 +52,7 @@ namespace CustomScienceContracts.Conditions
                 }
                 else if (node != null && NInt(node, "inSOI") == 1)
                 {
-                    // SOI verlassen -> auswerten
+                    // Left the SOI -> evaluate.
                     bool altOk = thr <= 0.0 || NDouble(node, "minPeA", Huge) <= thr;
                     bool success = NInt(node, "orbited") == 0 && altOk;
                     Write(node, 0, 0, Huge);
@@ -92,9 +90,8 @@ namespace CustomScienceContracts.Conditions
             n != null && double.TryParse(n.GetValue(k), NumberStyles.Float, CultureInfo.InvariantCulture, out double r) ? r : def;
     }
 
-    /// <summary>MARKER_LANDING: Beim Annehmen wird ein Zielpunkt gesetzt (Basisstandort, falls das
-    /// aktive Vessel beim Annehmen auf dem Koerper steht — sonst ein deterministischer Zufallspunkt).
-    /// Erfuellt, sobald LANDED/SPLASHED und Grosskreisdistanz &lt;= R.</summary>
+    /// <summary>MARKER_LANDING: sets a target point when accepted. Fulfilled once landed/splashed
+    /// within the target radius.</summary>
     public sealed class MarkerLandingEvaluator : ConditionEvaluatorBase
     {
         public override ConditionType Type => ConditionType.MARKER_LANDING;
@@ -107,9 +104,9 @@ namespace CustomScienceContracts.Conditions
             var body = VesselQuery.Body(cond.Body);
             if (body == null) return false;
 
-            EnsureMarker(c, cond);                       // Marker (neu) erzeugen, auch ohne aktives Vessel
+            EnsureMarker(c, cond);                       // create/recreate marker, even without active vessel
             var v = VesselQuery.Active;
-            if (v == null) return false;                 // gelandet erfordert ein aktives Vessel
+            if (v == null) return false;                 // landed state requires an active vessel
 
             double mLat = GetD(c.Progress, "ml_lat");
             double mLon = GetD(c.Progress, "ml_lon");
@@ -130,7 +127,7 @@ namespace CustomScienceContracts.Conditions
             var body = VesselQuery.Body(cond.Body);
             if (body == null) return;
 
-            // 1) Zielort einmalig festlegen (persistiert in ml_lat/ml_lon, ml_set).
+            // 1) Pick target once and persist it in ml_lat/ml_lon/ml_set.
             if (GetInt(c.Progress, "ml_set") != 1)
             {
                 double lat, lon;
@@ -139,14 +136,14 @@ namespace CustomScienceContracts.Conditions
                               (v.situation == Vessel.Situations.LANDED || v.situation == Vessel.Situations.SPLASHED);
                 if (atBase)
                 {
-                    // Versorgung/Rotation: Marker auf den aktuellen (Basis-)Standort.
+                    // Resupply/rotation: marker at the current base location.
                     lat = v.latitude; lon = v.longitude;
                 }
                 else
                 {
-                    // Frische Praezisionslandung: deterministischer Zufallspunkt (stabil pro Contract-Id).
+                    // Fresh precision landing: deterministic random point, stable per contract id.
                     var rng = new System.Random(c.Id.GetHashCode());
-                    lat = rng.NextDouble() * 140.0 - 70.0;     // -70..70, Pole vermeiden
+                    lat = rng.NextDouble() * 140.0 - 70.0;     // -70..70, avoid poles
                     lon = rng.NextDouble() * 360.0 - 180.0;
                 }
                 c.Progress.SetValue("ml_lat", lat.ToString("R", CultureInfo.InvariantCulture), true);
@@ -154,7 +151,7 @@ namespace CustomScienceContracts.Conditions
                 c.Progress.SetValue("ml_set", "1", true);
             }
 
-            // 2) Sichtbaren Wegpunkt sicherstellen — auch nach einem Neuladen (Objekt lebt nur zur Laufzeit).
+            // 2) Ensure visible waypoint after reloads; object state only lives at runtime.
             if (!MarkerWaypoint.Has(c.Id))
             {
                 double lat = GetD(c.Progress, "ml_lat");
@@ -168,8 +165,8 @@ namespace CustomScienceContracts.Conditions
             double.TryParse(n.GetValue(k), NumberStyles.Float, CultureInfo.InvariantCulture, out double r) ? r : 0.0;
     }
 
-    /// <summary>RENDEZVOUS: aktives Vessel und ein weiteres reales Vessel beide in der Ziel-Situation
-    /// am Zielkoerper, raeumliche Distanz &lt; D km.</summary>
+    /// <summary>RENDEZVOUS: active vessel and another real vessel are both in the target situation
+    /// at the target body with distance &lt; D km.</summary>
     public sealed class RendezvousEvaluator : ConditionEvaluatorBase
     {
         public override ConditionType Type => ConditionType.RENDEZVOUS;
@@ -185,7 +182,7 @@ namespace CustomScienceContracts.Conditions
             double dMeters = (cond.RendezvousKm > 0 ? cond.RendezvousKm : 2.0) * 1000.0;
             Vector3d posA = v.GetWorldPos3D();
 
-            // Konkrete Station als Ziel? Dann zaehlt nur die Annaeherung an genau dieses Vessel.
+            // Concrete station target? Then only approach to that exact vessel counts.
             var station = ctx.Stations?.Get(cond.StationKey);
             if (!string.IsNullOrEmpty(cond.StationKey) && station == null) return false;
 

@@ -1,62 +1,115 @@
 # AGENTS.md - CustomScienceContracts
 
-## Was wir bauen
-Ein KSP1-Plugin in C# fuer KSP 1.12.x. Es stellt im Science Mode ein eigenes
-Missions-/Zielsystem bereit, parallel und unabhaengig vom Stock-Contractsystem.
-Erfuellte Missionen geben einen Science-Bonus ueber
-`ResearchAndDevelopment.AddScience(amount, TransactionReasons.Cheating)`.
+## Project Goal
 
-## Aktuelle Quelle der Missionen
-**Single Source of Truth:** `custom_science_contracts_missionsdesign.md`.
+CustomScienceContracts is a C# plugin for Kerbal Space Program 1.12.x. It adds a
+standalone mission/objective system for Science Mode, running independently from
+the stock career contract system.
 
-Die Dateien in `GameData/CustomScienceContracts/Contracts/*.cfg` sind generiert.
-Sie werden nicht von Hand editiert, sondern ueber `tools/gen_catalog.py` neu erzeugt.
-Die alte v3-Spec, alte SOL-Config-Kopien und alte Auslieferungsordner sind bewusst
-nicht mehr Teil des Arbeitsordners.
+Completed missions grant a science bonus through:
 
-## Saubere Ordnerstruktur
-- `src/CustomScienceContracts/` - C#-Quellcode.
-- `GameData/CustomScienceContracts/` - KSP-Moddaten: generierter Katalog, Icons, Settings.
-- `tools/` - Generator und Validatoren fuer Missionsdesign und Katalog.
-- `custom_science_contracts_missionsdesign.md` - Ablauf und Missionsdesign.
-- `customScienceContracts Logo.png` - Logo/Artwork, bewusst behalten.
-- `DOKUMENTATION.md` - Architektur- und Workflow-Dokumentation.
+```csharp
+ResearchAndDevelopment.AddScience(amount, TransactionReasons.Cheating)
+```
 
-## Build / Workflow
-1. Missionsdesign aendern: `custom_science_contracts_missionsdesign.md`.
-2. Design pruefen: `python3 tools/validate_design.py`.
-3. Katalog erzeugen: `python3 tools/gen_catalog.py`.
-4. Katalog pruefen: `python3 tools/validate_catalog.py`.
-5. Plugin bauen/deployen: `./build.sh`.
+## Mission Sources
 
-Build-Ausgaben wie `bin/`, `obj/`, DLLs und Release-Exportordner werden nicht als
-Quellbestand gepflegt. Sie sind regenerierbar.
+The German mission design source is:
 
-## Laufzeitregeln
-- Persistenz ueber `ScenarioModule` und eine editierbare Save-Datei:
+```text
+custom_science_contracts_missionsdesign.md
+```
+
+Generated German catalogs live in:
+
+```text
+GameData/CustomScienceContracts/Contracts/*.cfg
+```
+
+Generated English replacement catalogs live in:
+
+```text
+OptionalConfigs/English/GameData/CustomScienceContracts/Contracts/*.cfg
+```
+
+Never hand-edit generated `.cfg` files. Change the mission design or generator,
+then regenerate and validate.
+
+## Folder Structure
+
+- `src/CustomScienceContracts/` - C# plugin source.
+- `GameData/CustomScienceContracts/` - deployable mod folder with generated
+  German contracts, icons, plugin DLL and settings.
+- `OptionalConfigs/English/` - optional English replacement contract pack.
+- `tools/` - design/catalog generators and validators.
+- `custom_science_contracts_missionsdesign.md` - German campaign flow and
+  mission source.
+- `customScienceContracts Logo.png` - project logo/artwork, intentionally kept.
+- `DOKUMENTATION.md` - architecture and workflow documentation.
+
+## Build and Validation
+
+Use the local KSP managed assemblies. On this machine `dotnet` is available at:
+
+```bash
+/usr/local/share/dotnet/dotnet
+```
+
+Build without copying into a live KSP install:
+
+```bash
+/usr/local/share/dotnet/dotnet build -c Release \
+  -p:KSPManaged="$HOME/Library/Application Support/Steam/steamapps/common/Kerbal Space Program/KSP.app/Contents/Resources/Data/Managed" \
+  CustomScienceContracts.sln
+```
+
+Design/catalog workflow:
+
+```bash
+python3 tools/validate_design.py
+python3 tools/gen_catalog.py
+python3 tools/validate_catalog.py
+python3 tools/gen_catalog_en.py
+python3 tools/validate_catalog.py OptionalConfigs/English/GameData/CustomScienceContracts/Contracts
+```
+
+Do not treat `bin/`, `obj/`, generated DLLs or release archives as source.
+
+## Runtime Rules
+
+- Progress is persisted through `ScenarioModule` into:
   `saves/<save>/CustomScienceContracts/contracts_state.cfg`.
-- UI ueber `ApplicationLauncher` und IMGUI-Fenster.
-- Pruef-Loop nicht jeden Frame, sondern per Coroutine etwa alle 1 s ueber aktive Missionen.
-- Body-Groessen, Atmosphaerenhoehen und Tageslaenge immer aus der KSP-API ziehen.
+- UI is built with KSP `ApplicationLauncher` plus IMGUI windows.
+- The check loop runs roughly once per second over active missions.
+- Body sizes, atmosphere heights and day length must always come from the KSP API.
+- No hardcoded body dimensions.
+- No invented body names.
 
-## Contract-Flow
-- `Locked`: Voraussetzungen fehlen.
-- `Available`: Voraussetzungen erfuellt, sichtbar nach Sichtbarkeitsregeln.
-- `Active`: angenommen und im Pruef-Loop.
-- `ReadyToClaim`: Bedingungen erfuellt, Reward noch nicht ausgezahlt.
-- `CompletedOnce`: abgeschlossen.
+## Contract Flow
 
-Repeatables wandern nach Erstabschluss in die Sparte `Wiederholbar` und brauchen
-den Cooldown von zwei anderen Abschluessen.
+- `Locked`: prerequisites are missing.
+- `Available`: prerequisites are complete and visibility rules allow display.
+- `Active`: accepted and tracked.
+- `ReadyToClaim`: objectives are complete; reward is not paid yet.
+- `CompletedOnce`: claimed and counted as completed.
 
-## Harte Verbote
-- Keine Part-Anforderungen.
-- Keine Kopplung an Kerbalism/Simplex-APIs.
-- Keine hardcodeten Body-Groessen oder Atmosphaerenhoehen.
-- Keine erfundenen Body-Namen.
+Repeatable missions move into the `Wiederholbar` pool after their first
+completion. They become available again after two other mission completions.
 
-## Text / Stil
-Contract-Titel und Beschreibungen bleiben auf Deutsch in Schweizer Hochdeutsch
-mit `ss` statt `ß`. Code und Kommentare duerfen Englisch sein.
-Das UI darf vom alten "kein Dunkelblau"-Hinweis abweichen; die aktuelle dunkle
-Oberflaeche mit hellem Akzent ist gewollt.
+## Hard Rules
+
+- No part requirements.
+- No dependency on Kerbalism or Simplex APIs.
+- No hardcoded body sizes or atmosphere heights.
+- No hand-editing generated contract cfg files.
+- Keep the German default catalog intact when adding English text.
+
+## Text and Style
+
+The plugin UI, documentation and release notes are English from version 0.2.0.
+The default shipped contract catalog remains German. The optional English catalog
+is generated separately and uses the same contract ids, prerequisites and checks.
+
+Code comments should be English. Contract enum names such as `Bemannt` and
+`NetzwerkLogistik` are stable technical keys and must not be renamed without a
+migration plan.

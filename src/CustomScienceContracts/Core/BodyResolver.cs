@@ -4,16 +4,15 @@ using UnityEngine;
 
 namespace CustomScienceContracts.Core
 {
-    /// <summary>Loest interne Body-Namen (CelestialBody.name aus den configs) zur Laufzeit auf.
-    /// Liefert NIE hardcodete Groessen/Atmosphaerenhoehen — die kommen aus dem CelestialBody.
-    /// Standalone: ist ein referenzierter Body nicht vorhanden (kein SOL installiert),
-    /// gibt Resolve null zurueck und der zugehoerige Contract bleibt inert.</summary>
+    /// <summary>Resolves internal body names (CelestialBody.name from configs) at runtime. Never
+    /// provides hardcoded body sizes or atmosphere heights; those come from CelestialBody. If a
+    /// referenced body is missing, Resolve returns null and the contract stays inert.</summary>
     public static class BodyResolver
     {
         private static readonly Dictionary<string, CelestialBody> _cache =
             new Dictionary<string, CelestialBody>();
 
-        /// <summary>Bei Szenenwechsel / nach Kopernicus-Load aufrufen.</summary>
+        /// <summary>Call on scene change or after Kopernicus load.</summary>
         public static void RebuildCache()
         {
             _cache.Clear();
@@ -21,7 +20,7 @@ namespace CustomScienceContracts.Core
             foreach (var b in FlightGlobals.Bodies)
             {
                 if (b == null) continue;
-                _cache[b.name] = b;            // interner Name (configs)
+                _cache[b.name] = b;            // internal config name
                 if (!_cache.ContainsKey(b.bodyName)) _cache[b.bodyName] = b; // Display-Fallback
             }
         }
@@ -32,10 +31,10 @@ namespace CustomScienceContracts.Core
             if (_cache.Count == 0) RebuildCache();
             if (_cache.TryGetValue(name, out var b) && b != null) return b;
 
-            // letzter Versuch direkt ueber FlightGlobals (Cache evtl. veraltet)
+            // Last attempt directly through FlightGlobals in case the cache is stale.
             b = FlightGlobals.Bodies?.FirstOrDefault(x => x != null && (x.name == name || x.bodyName == name));
             if (b != null) _cache[name] = b;
-            else Debug.LogWarning($"[CSC] Body '{name}' nicht gefunden (Mod ohne passenden Planetenpack?).");
+            else Debug.LogWarning($"[CSC] Body '{name}' not found (missing or incompatible planet pack?).");
             return b;
         }
 

@@ -7,12 +7,11 @@ using UnityEngine;
 
 namespace CustomScienceContracts.UI
 {
-    /// <summary>Aktive Missionen: Bedingungsliste mit rot/gruen-Status, gruener Einloese-Haken sobald
-    /// erfuellt, roter Abbruch-X (mit Bestaetigung) solange offen, transiente "+X"-Anzeige.</summary>
+    /// <summary>Active missions window with objective status, claim/abort actions and transient reward feedback.</summary>
     public class ActiveMissionsWindow
     {
         private Vector2 _scroll;
-        public string PendingAbortId;   // != null => Bestaetigungsdialog offen
+        public string PendingAbortId;
         public Rect ConfirmRect = new Rect(0, 0, 340, 175);
 
         private static readonly Sparte[] Groups =
@@ -24,14 +23,14 @@ namespace CustomScienceContracts.UI
             DrawClose(width, onClose);
 
             var active = mgr.ActiveContracts().ToList();
-            GUILayout.Label($"Aktive Missionen: {active.Count}", Theme.Title);
+            GUILayout.Label($"Active Missions: {active.Count}", Theme.Title);
             DrawClaimInfo(mgr);
 
             _scroll = GUILayout.BeginScrollView(_scroll, GUILayout.Width(width - 8), GUILayout.Height(height - 96));
             if (active.Count == 0)
-                GUILayout.Label("Du hast aktuell keine Mission angenommen.", Theme.Locked);
+                GUILayout.Label("No missions are currently active.", Theme.Locked);
 
-            // Nach Sparte gruppiert (gestapelt wie die Planeten), je Gruppe aufklappbar.
+            // Grouped by branch, each branch collapsible.
             foreach (var sparte in Groups)
             {
                 var inSp = active.Where(c => c.HeimatSparte == sparte).ToList();
@@ -43,8 +42,7 @@ namespace CustomScienceContracts.UI
                 string head = $"{(open ? "▼" : "▶")}  {SparteDisplay.Name(sparte)}   ({inSp.Count})";
                 if (GUILayout.Button(head, Theme.GroupHeaderPlain, GUILayout.Height(28)))
                 { if (!_collapsed.Remove(key)) _collapsed.Add(key); }
-                // Im Header nur der farbige Sparten-Balken (kein Glyph) — das beschreibende Icon
-                // steht ausschliesslich auf der jeweiligen Missionskarte.
+                // The group header only shows the colored branch bar; mission icons live on mission cards.
                 if (Event.current.type == EventType.Repaint)
                     Theme.DrawLeftAccent(GUILayoutUtility.GetLastRect(), sv.Color, null);
                 if (!open) continue;
@@ -57,8 +55,7 @@ namespace CustomScienceContracts.UI
             GUI.DragWindow(new Rect(0, 0, width - 34, 24));
         }
 
-        /// <summary>Wissenschaftswert MIT Multiplikator + blaues Science-Symbol, rechtsbündig.
-        /// Oeffentlich, damit auch das Auswahlfenster denselben Wert/Stil nutzt.</summary>
+        /// <summary>Science reward with multiplier and science icon, right-aligned.</summary>
         public static void DrawReward(float baseReward, ContractManager mgr)
         {
             float val = baseReward * (float)mgr.ScienceMultiplier;
@@ -77,7 +74,7 @@ namespace CustomScienceContracts.UI
             bool ready = c.Status == MissionStatus.ReadyToClaim;
             GUILayout.BeginVertical(ready ? Theme.ItemBoxReady : Theme.ItemBox);
 
-            // Titel + Wissenschafts-Belohnung
+            // Title + science reward.
             GUILayout.BeginHorizontal();
             GUILayout.Label(c.Titel, ready ? Theme.CondOk : Theme.ItemTitle);
             GUILayout.FlexibleSpace();
@@ -91,7 +88,7 @@ namespace CustomScienceContracts.UI
             string stn = StationTarget(c, mgr);
             if (stn != null) GUILayout.Label(stn, Theme.Station);
 
-            // Teilziele — je eine Zeile in ihrer Farbe (gruen erfuellt / rot offen)
+            // Objectives, one per line and colored by status.
             GUILayout.Space(2);
             DrawChecklist(mgr, c, ready);
             string prog = ProgressLine(c);
@@ -99,7 +96,7 @@ namespace CustomScienceContracts.UI
 
             GUILayout.EndVertical();
             Rect r = GUILayoutUtility.GetLastRect();
-            // Linksbalken: planet-/mondfarbig (gruen sobald einlösbar), Mission-Icon.
+            // Left bar: body-colored, green when claimable, with mission icon.
             if (Event.current.type == EventType.Repaint)
                 Theme.DrawLeftAccent(r, ready ? Theme.ClaimGreen : BodyVisual.ForBody(PrimaryBody(c)).Color,
                     BodyVisual.MissionIcon(c), 6f, 22f);
@@ -115,22 +112,22 @@ namespace CustomScienceContracts.UI
             GUILayout.Space(5);
         }
 
-        /// <summary>Bestaetigungs-Dialog (als eigenes Fenster von CscUI gezeichnet).</summary>
+        /// <summary>Abort confirmation dialog drawn as its own CscUI window.</summary>
         public void DrawConfirm(ContractManager mgr, float width)
         {
             var c = mgr.Catalog.Get(PendingAbortId);
             GUILayout.Space(6);
-            GUILayout.Label("Mission wirklich abbrechen?", Theme.Title);
+            GUILayout.Label("Abort this mission?", Theme.Title);
             GUILayout.Label(c != null ? c.Titel : PendingAbortId, Theme.ItemSub);
             float pen = mgr.AbortPenalty(c);
             if (pen > 0f)
-                GUILayout.Label($"⚠ Abbruch kostet dich {pen:0} Wissenschaftspunkte (halbe Belohnung).", Theme.Warn);
+                GUILayout.Label($"Abort penalty: {pen:0} science points (half reward).", Theme.Warn);
             GUILayout.FlexibleSpace();
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Ja, abbrechen", Theme.CloseBtn, GUILayout.Height(28)))
+            if (GUILayout.Button("Yes, abort", Theme.CloseBtn, GUILayout.Height(28)))
             { mgr.Abandon(PendingAbortId); PendingAbortId = null; }
             GUILayout.Space(8);
-            if (GUILayout.Button("Nein", Theme.AcceptBtn, GUILayout.Height(28))) PendingAbortId = null;
+            if (GUILayout.Button("No", Theme.AcceptBtn, GUILayout.Height(28))) PendingAbortId = null;
             GUILayout.EndHorizontal();
             GUILayout.Space(6);
             GUI.DragWindow(new Rect(0, 0, width, 24));
@@ -145,11 +142,10 @@ namespace CustomScienceContracts.UI
         {
             if (string.IsNullOrEmpty(mgr.LastClaimId)) return;
             if (Time.realtimeSinceStartup - mgr.LastClaimRealtime > 6f) return;
-            GUILayout.Label($"+{mgr.LastClaimAmount:0} Wissenschaft erhalten", Theme.ClaimInfo);
+            GUILayout.Label($"+{mgr.LastClaimAmount:0} science received", Theme.ClaimInfo);
         }
 
-        /// <summary>Zeichnet die Teilziel-Checkliste eines Auftrags (COMPOSITE: pro CHECK eine Zeile;
-        /// sonst die Legacy-Bedingungen als je eine Zeile).</summary>
+        /// <summary>Draws a mission objective checklist.</summary>
         private static void DrawChecklist(ContractManager mgr, MissionContract c, bool ready)
         {
             for (int i = 0; i < c.Bedingungen.Count; i++)
@@ -175,14 +171,13 @@ namespace CustomScienceContracts.UI
             }
         }
 
-        /// <summary>Beschreibung mit ersetztem %station%-Platzhalter (echter Stationsname oder generisch).
-        /// Achtung: KEINE geschweiften Klammern als Token nehmen — ConfigNode interpretiert { } als Node.</summary>
+        /// <summary>Description with the %station% placeholder resolved to a vessel name or generic text.</summary>
         public static string RenderDescription(MissionContract c, ContractManager mgr)
         {
             string d = c.Beschreibung ?? "";
             if (d.IndexOf("%station%", System.StringComparison.Ordinal) < 0) return d;
             string name = StationName(c, mgr);
-            return d.Replace("%station%", name != null ? $"«{name}»" : "deiner Raumstation");
+            return d.Replace("%station%", name != null ? $"\"{name}\"" : "your station");
         }
 
         private static string StationName(MissionContract c, ContractManager mgr)
@@ -199,74 +194,73 @@ namespace CustomScienceContracts.UI
             return string.IsNullOrEmpty(key) ? null : mgr.Stations.Name(key);
         }
 
-        /// <summary>Fortschrittszähler eines Timer-Checks, z. B. "  (3/15 Tage)" bzw. "  (4/10 s)".</summary>
+        /// <summary>Timer progress, for example "  (3/15 days)" or "  (4/10 s)".</summary>
         private static string TimerProgress(double remSeconds, Check chk)
         {
             if (chk.Kind == CheckKind.DURATION)
             {
                 double total = chk.Days;
                 double done = remSeconds < 0 ? 0.0 : System.Math.Max(0.0, total - remSeconds / Conditions.VesselQuery.SecondsPerDay());
-                return $"  ({done:0.0}/{total:0} Tage)";
+                return $"  ({done:0.0}/{total:0} days)";
             }
             double tot = chk.Seconds;
             double d = remSeconds < 0 ? 0.0 : System.Math.Max(0.0, tot - remSeconds);
             return $"  ({d:0}/{tot:0} s)";
         }
 
-        /// <summary>Anzeigetext eines Checks: handgeschriebenes Label, sonst generierter Fallback.</summary>
+        /// <summary>Display text for a check: catalog label first, generated fallback otherwise.</summary>
         public static string CheckLabel(Check chk, StationRegistry stations)
         {
             if (!string.IsNullOrEmpty(chk.Label)) return chk.Label;
             string body = BodyVisual.DisplayName(chk.Body);
             switch (chk.Kind)
             {
-                case CheckKind.CREW_MIN:   return $"Bemannt mit mindestens {chk.Min} Kerbal{(chk.Min == 1 ? "" : "s")} an Bord";
-                case CheckKind.CREW_NONE:  return "Unbemannt – kein Kerbal an Bord";
-                case CheckKind.CREW_EXACT: return $"Genau {chk.Min} Kerbal{(chk.Min == 1 ? "" : "s")} an Bord";
-                case CheckKind.ON_BODY:    return $"Beim Zielkörper {body}";
-                case CheckKind.SITUATION:  return $"Zustand: {SituationText(chk.Situation)}";
-                case CheckKind.LANDED:     return $"Auf {body} gelandet";
-                case CheckKind.SUBORBITAL: return $"Suborbitaler Raumflug über {body}";
-                case CheckKind.PERIAPSIS_MIN: return $"Periapsis oberhalb von {chk.Km:0} km";
+                case CheckKind.CREW_MIN:   return $"Crewed with at least {chk.Min} Kerbal{(chk.Min == 1 ? "" : "s")} aboard";
+                case CheckKind.CREW_NONE:  return "Uncrewed - no Kerbal aboard";
+                case CheckKind.CREW_EXACT: return $"Exactly {chk.Min} Kerbal{(chk.Min == 1 ? "" : "s")} aboard";
+                case CheckKind.ON_BODY:    return $"At target body {body}";
+                case CheckKind.SITUATION:  return $"Situation: {SituationText(chk.Situation)}";
+                case CheckKind.LANDED:     return $"Landed on {body}";
+                case CheckKind.SUBORBITAL: return $"Suborbital spaceflight over {body}";
+                case CheckKind.PERIAPSIS_MIN: return $"Periapsis above {chk.Km:0} km";
                 case CheckKind.ORBIT_ABOVE: return chk.Km > 0
-                    ? $"Stabiler Orbit um {body}, Periapsis über {chk.Km:0} km"
-                    : $"Stabiler Orbit um {body} oberhalb der Atmosphäre";
-                case CheckKind.INCLINATION_MIN: return $"Orbit-Inklination mindestens {chk.InclinationMin:0} Grad";
-                case CheckKind.ABOVE_ATMOSPHERE: return "Umlaufbahn vollständig oberhalb der Atmosphäre";
-                case CheckKind.SUBORBITAL_ABOVE_ATMO: return "Scheitelpunkt oberhalb der Atmosphäre";
-                case CheckKind.ATMO_FRACTION: return $"In {chk.FracMin * 100:0}–{chk.FracMax * 100:0} % der Atmosphärenhöhe";
-                case CheckKind.ORE_PRESENT: return "Erz (Ore) an Bord gefördert";
-                case CheckKind.ORE_SURFACE: return $"Erz (Ore) an der Oberfläche von {body} fördern";
+                    ? $"Stable orbit around {body}, periapsis above {chk.Km:0} km"
+                    : $"Stable orbit around {body} above the atmosphere";
+                case CheckKind.INCLINATION_MIN: return $"Orbital inclination at least {chk.InclinationMin:0} degrees";
+                case CheckKind.ABOVE_ATMOSPHERE: return "Orbit entirely above the atmosphere";
+                case CheckKind.SUBORBITAL_ABOVE_ATMO: return "Apoapsis above the atmosphere";
+                case CheckKind.ATMO_FRACTION: return $"Within {chk.FracMin * 100:0}-{chk.FracMax * 100:0}% of atmosphere height";
+                case CheckKind.ORE_PRESENT: return "Ore mined aboard";
+                case CheckKind.ORE_SURFACE: return $"Mine Ore on the surface of {body}";
                 case CheckKind.FLYBY:       return chk.Km > 0
-                    ? $"Vorbeiflug an {body} mit Annäherung unter {chk.Km:0} km"
-                    : $"Vorbeiflug an {body}";
-                case CheckKind.MARKER_LANDING: return $"Präzisionslandung bei {body} im Umkreis von {(chk.Km > 0 ? chk.Km : 15):0} km";
-                case CheckKind.FUEL_MIN:    return $"Mehr als {chk.Amount:0} Einheiten Treibstoff an Bord";
-                case CheckKind.RESOURCE_MIN:return $"Mehr als {chk.Amount:0} {chk.Resource} an Bord";
-                case CheckKind.EVA:         return "Kerbal im Aussenbordeinsatz (EVA)";
+                    ? $"Fly by {body} with closest approach below {chk.Km:0} km"
+                    : $"Fly by {body}";
+                case CheckKind.MARKER_LANDING: return $"Precision landing at {body} within {(chk.Km > 0 ? chk.Km : 15):0} km";
+                case CheckKind.FUEL_MIN:    return $"More than {chk.Amount:0} units of fuel aboard";
+                case CheckKind.RESOURCE_MIN:return $"More than {chk.Amount:0} {chk.Resource} aboard";
+                case CheckKind.EVA:         return "Kerbal on EVA";
                 case CheckKind.DOCK_STATION:
                     string nm = stations?.Name(chk.StationKey);
-                    return nm != null ? $"An Station «{nm}» angedockt" : "An der Zielstation angedockt";
-                case CheckKind.DOCK_ANY:    return "Andockmanöver erfolgreich abgeschlossen";
-                case CheckKind.VESSEL_COUNT:return $"{chk.Count} Satelliten gleichzeitig im Orbit um {body}";
+                    return nm != null ? $"Docked to station \"{nm}\"" : "Docked to the target station";
+                case CheckKind.DOCK_ANY:    return "Docking maneuver completed";
+                case CheckKind.VESSEL_COUNT:return $"{chk.Count} satellites simultaneously in orbit around {body}";
                 case CheckKind.VESSEL_COUNT_INCLINATION:
-                    return $"{chk.Count} Satelliten gleichzeitig im Orbit um {body}, Inklination mindestens {chk.InclinationMin:0} Grad";
-                case CheckKind.HOLD:        return $"Zustand {chk.Seconds:0} Sekunden stabil halten";
-                case CheckKind.DURATION:    return $"{chk.Days:0} Tage ununterbrochen halten";
+                    return $"{chk.Count} satellites simultaneously in orbit around {body}, inclination at least {chk.InclinationMin:0} degrees";
+                case CheckKind.HOLD:        return $"Hold state for {chk.Seconds:0} seconds";
+                case CheckKind.DURATION:    return $"Hold continuously for {chk.Days:0} days";
                 default:                    return chk.Kind.ToString();
             }
         }
 
-        /// <summary>"Ziel: Station …"-Zeile, wenn der Auftrag eine konkrete (benannte) Station ansteuert.</summary>
+        /// <summary>"Target: Station ..." line for missions aimed at a named station.</summary>
         public static string StationTarget(MissionContract c, ContractManager mgr)
         {
             if (!HasStationKey(c)) return null;
             string name = StationName(c, mgr);
-            return name != null ? $"Ziel: Station «{name}»" : "Ziel: Station (noch nicht gebaut)";
+            return name != null ? $"Target: Station \"{name}\"" : "Target: Station (not built yet)";
         }
 
-        // Eine Mission "zielt" auf eine Station (zeigt "Ziel: Station …"), wenn sie sie REFERENZIERT —
-        // nicht beim Bau-Auftrag (recordStationKey), der die Station erst erschafft.
+        // A mission targets a station when it references it, not when it creates it.
         public static bool HasStationKey(MissionContract c)
         {
             if (!string.IsNullOrEmpty(c.StationRef)) return true;
@@ -282,11 +276,11 @@ namespace CustomScienceContracts.UI
         {
             var p = c.Progress; if (p == null) return null;
             if (TryD(p, "cd_remaining", out double secs) && secs > 0)
-                return $"Restzeit: {secs / VesselQueryDays():0.0} Tage";
+                return $"Time left: {secs / VesselQueryDays():0.0} days";
             if (TryD(p, "ml_dist", out double dist))
-                return $"Distanz zum Marker: {dist / 1000.0:0.0} km";
+                return $"Distance to marker: {dist / 1000.0:0.0} km";
             if (TryD(p, "fb_bestApproach", out double app) && app < 1e29)
-                return $"Nächste Annäherung: {app / 1000.0:0} km";
+                return $"Closest approach: {app / 1000.0:0} km";
             return null;
         }
 
@@ -309,11 +303,11 @@ namespace CustomScienceContracts.UI
         {
             switch ((sit ?? "").Trim().ToUpperInvariant())
             {
-                case "ORBIT": case "ORBITING": return "im Orbit";
-                case "LANDED": case "SURFACE": return "gelandet";
-                case "SPLASHED": return "gewassert";
+                case "ORBIT": case "ORBITING": return "in orbit";
+                case "LANDED": case "SURFACE": return "landed";
+                case "SPLASHED": return "splashed";
                 case "SUBORBITAL": case "SUB_ORBITAL": return "suborbital";
-                case "FLYING": return "im Atmosphärenflug";
+                case "FLYING": return "flying in atmosphere";
                 default: return "";
             }
         }
@@ -322,45 +316,45 @@ namespace CustomScienceContracts.UI
         {
             if (string.IsNullOrEmpty(b.StationKey)) return "";
             string name = stations?.Name(b.StationKey);
-            return name != null ? $" an Station «{name}»" : " an der Station";
+            return name != null ? $" to station \"{name}\"" : " to the station";
         }
 
-        /// <summary>Ausfuehrliche, gut lesbare Beschreibung einer Bedingung (eine Zeile in der Liste).</summary>
+        /// <summary>Readable description of a legacy condition.</summary>
         public static string ConditionLabel(Condition b, StationRegistry stations = null)
         {
             string body = BodyVisual.DisplayName(b.Body);
-            string crew = b.MinCrew > 0 ? $", mindestens {b.MinCrew} Crew" : "";
+            string crew = b.MinCrew > 0 ? $", at least {b.MinCrew} crew" : "";
             string sit = SituationText(b.Situation);
             switch (b.Type)
             {
                 case ConditionType.ORBIT:
-                    return $"Stabilen Orbit um {body} erreichen{crew}";
+                    return $"Reach stable orbit around {body}{crew}";
                 case ConditionType.ORBIT_HIGH:
-                    return $"Hochorbit um {body} (Periapsis über {b.MinAltitudeKm:0} km){crew}";
+                    return $"High orbit around {body} (periapsis above {b.MinAltitudeKm:0} km){crew}";
                 case ConditionType.LANDED:
-                    return $"Sicher auf {body} landen{crew}";
+                    return $"Land safely on {body}{crew}";
                 case ConditionType.ALT_FRACTION_ATMO:
-                    return $"Atmosphärenflug über {body} in {b.MinFraction * 100:0}–{b.MaxFraction * 100:0} % der Atmosphärenhöhe{crew}";
+                    return $"Atmospheric flight over {body} at {b.MinFraction * 100:0}-{b.MaxFraction * 100:0}% of atmosphere height{crew}";
                 case ConditionType.ABOVE_ATMO_SUBORBITAL:
-                    return $"Suborbital über die Atmosphäre von {body} hinaus{crew}";
+                    return $"Suborbital above the atmosphere of {body}{crew}";
                 case ConditionType.EVA:
-                    return $"Aussenbordeinsatz (EVA) bei {body}{(sit != "" ? " (" + sit + ")" : "")}";
+                    return $"EVA at {body}{(sit != "" ? " (" + sit + ")" : "")}";
                 case ConditionType.CREW_DURATION:
-                    return $"{b.DurationDays:0} Tage ununterbrochen mit mindestens {Mathf.Max(1, b.MinCrew)} Crew {(sit != "" ? sit + " " : "")}bei {body} halten";
+                    return $"Hold for {b.DurationDays:0} days with at least {Mathf.Max(1, b.MinCrew)} crew {(sit != "" ? sit + " " : "")}at {body}";
                 case ConditionType.DOCK:
-                    return $"Andocken{StationSuffix(b, stations)}{(string.IsNullOrEmpty(b.Body) ? "" : $" im Orbit um {body}")}";
+                    return $"Dock{StationSuffix(b, stations)}{(string.IsNullOrEmpty(b.Body) ? "" : $" in orbit around {body}")}";
                 case ConditionType.ORE_SURFACE:
-                    return $"Erz (Ore) an der Oberfläche von {body} fördern";
+                    return $"Mine Ore on the surface of {body}";
                 case ConditionType.VESSEL_COUNT_ORBIT:
-                    return $"{b.VesselCount} Satelliten gleichzeitig im Orbit um {body}{(b.MinAltitudeKm > 0 ? $" (Periapsis über {b.MinAltitudeKm:0} km)" : "")}";
+                    return $"{b.VesselCount} satellites simultaneously in orbit around {body}{(b.MinAltitudeKm > 0 ? $" (periapsis above {b.MinAltitudeKm:0} km)" : "")}";
                 case ConditionType.FUEL_ORBIT:
-                    return $"Betanktes Treibstoffdepot (über {b.FuelThreshold:0} Einheiten) im Orbit um {body}";
+                    return $"Fueled depot (above {b.FuelThreshold:0} units) in orbit around {body}";
                 case ConditionType.FLYBY:
-                    return $"Vorbeiflug an {body}{(b.FlybyAltitudeKm > 0 ? $" mit Annäherung unter {b.FlybyAltitudeKm:0} km" : "")}";
+                    return $"Fly by {body}{(b.FlybyAltitudeKm > 0 ? $" with closest approach below {b.FlybyAltitudeKm:0} km" : "")}";
                 case ConditionType.MARKER_LANDING:
-                    return $"Präzisionslandung bei {body} im Umkreis von {(b.RadiusKm > 0 ? b.RadiusKm : 15):0} km{crew}";
+                    return $"Precision landing at {body} within {(b.RadiusKm > 0 ? b.RadiusKm : 15):0} km{crew}";
                 case ConditionType.RENDEZVOUS:
-                    return $"Rendezvous{StationSuffix(b, stations)} bei {body} (unter {(b.RendezvousKm > 0 ? b.RendezvousKm : 2):0} km)";
+                    return $"Rendezvous{StationSuffix(b, stations)} at {body} (below {(b.RendezvousKm > 0 ? b.RendezvousKm : 2):0} km)";
                 default:
                     return b.Type + " " + body;
             }

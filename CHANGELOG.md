@@ -3,6 +3,22 @@
 All notable changes to CustomScienceContracts are documented here.
 This project uses simple `MAJOR.MINOR.PATCH` versioning.
 
+## [0.2.0] - 2026-06-17
+
+### Added
+- Added an optional English contract catalog pack. It replaces mission titles,
+  descriptions, subcategories and checklist labels while keeping the same
+  contract ids, prerequisites, rewards and objective logic.
+- Added generation and validation support for the English catalog under
+  `OptionalConfigs/English/`.
+
+### Changed
+- Translated the plugin UI, repository documentation and release-facing text to
+  English.
+- The main release still ships with the original German contract catalog. The
+  English contract catalog is distributed as a separate optional download.
+- Bumped the mod version to 0.2.0.
+
 ## [0.1.4] - 2026-06-17
 
 ### Fixed

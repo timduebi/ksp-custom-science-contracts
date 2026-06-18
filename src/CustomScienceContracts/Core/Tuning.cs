@@ -3,53 +3,53 @@ using UnityEngine;
 
 namespace CustomScienceContracts.Core
 {
-    /// <summary>Zentrale Stellschrauben aus AGENTS.md / Designplan. Defaults hier; zur Laufzeit aus
-    /// GameData/CustomScienceContracts/settings.cfg (Node CUSTOM_SCIENCE_CONTRACTS_SETTINGS)
-    /// ueberschreibbar. Fehlt die Datei/ein Wert, gilt der Default.</summary>
+    /// <summary>Central tuning values from AGENTS.md / mission design. Defaults live here and can
+    /// be overridden at runtime through GameData/CustomScienceContracts/settings.cfg
+    /// (CUSTOM_SCIENCE_CONTRACTS_SETTINGS node). Missing files or values keep the defaults.</summary>
     public static class Tuning
     {
         public const string SettingsNode = "CUSTOM_SCIENCE_CONTRACTS_SETTINGS";
 
-        // --- Sichtbarkeit (Available im Auswahlfenster) ---
-        public static int VisibleBemanntBase = 3;          // bemannt: 3 sichtbar ...
-        public static int VisibleBemanntBoosted = 5;       // ... 5 sobald >= 50 % aller bemannten erledigt
+        // --- Visibility (available in the selection window) ---
+        public static int VisibleBemanntBase = 3;          // crewed: 3 visible initially
+        public static int VisibleBemanntBoosted = 5;       // 5 once >= 50 % of crewed missions are done
         public static float BemanntBoostFraction = 0.5f;
-        public static int VisibleErkundungPerSub = 4;      // Erkundung: 4 pro Unterkategorie
-        public static int VisibleNetzwerkPerSub = 3;       // Netzwerk: 3 pro Unterkategorie
+        public static int VisibleErkundungPerSub = 4;      // exploration: 4 per subcategory
+        public static int VisibleNetzwerkPerSub = 3;       // network/logistics: 3 per subcategory
 
-        // --- Aktiv-Limits (gleichzeitig angenommen) ---
+        // --- Active limits ---
         public static int ActiveBemannt = 3;
         public static int ActiveErkundung = 10;
         public static int ActiveNetzwerk = 5;
 
         // --- Repeatable ---
-        public static int RepeatableCooldown = 2;          // >= 2 andere Abschluesse bis wieder annehmbar
+        public static int RepeatableCooldown = 2;          // >= 2 other completions before repeatable again
 
-        // --- Marker (Default; einzelne Contracts ueberschreiben via radiusKm) ---
+        // --- Markers (default; individual contracts may override through radiusKm) ---
         public static double MarkerRadiusKmDefault = 15.0;
-        public static double MarkerRadiusKmResupply = 5.0;  // Referenz; Contracts setzen radiusKm direkt
+        public static double MarkerRadiusKmResupply = 5.0;  // reference value; contracts set radiusKm directly
 
-        // --- Pruef-Loop ---
+        // --- Check loop ---
         public static float CheckIntervalSeconds = 1.0f;
 
-        // --- Aktive-Missionen-Button (eigener Button oben, nicht im Stock-AppLauncher) ---
-        public static float ActiveButtonX = -1f;     // -1 => automatisch oben mittig (links vom Hoehenmesser)
-        public static float ActiveButtonY = 2f;      // Abstand von oben (px)
-        public static float ActiveButtonSize = 32f;  // Kantenlaenge (px)
+        // --- Active missions button (custom top button, not in the stock AppLauncher) ---
+        public static float ActiveButtonX = -1f;     // -1 => automatic near the stock top-right controls
+        public static float ActiveButtonY = 2f;      // top spacing in px
+        public static float ActiveButtonSize = 32f;  // button size in px
 
-        // --- Vorschau gesperrter Missionen ---
-        /// <summary>Ab Abschluss dieses Contracts wird je Koerper die naechste gesperrte Mission als
-        /// ausgegraute Vorschau (mit roter Voraussetzungs-Zeile) angezeigt.</summary>
+        // --- Locked mission preview ---
+        /// <summary>Once this contract is complete, the next locked mission per body is shown as a
+        /// greyed preview with a red prerequisite line.</summary>
         public static string LockedPreviewTrigger = "cr_luna_flyby_crewed";
 
-        // --- Diagnose ---
+        // --- Diagnostics ---
         public static bool VerboseLogging = false;
-        /// <summary>Test-Schalter: schaltet alle Missionen frei und zeigt sie ohne Sichtbarkeitslimits.</summary>
+        /// <summary>Test switch: unlocks all missions and ignores visibility limits.</summary>
         public static bool UnlockAll = false;
 
         private static bool _loaded;
 
-        /// <summary>Laedt settings.cfg (einmalig). Werte, die fehlen, behalten ihren Default.</summary>
+        /// <summary>Loads settings.cfg once. Missing values keep their defaults.</summary>
         public static void Load()
         {
             if (_loaded) return;
@@ -57,9 +57,9 @@ namespace CustomScienceContracts.Core
             if (GameDatabase.Instance == null) return;
 
             ConfigNode[] nodes = GameDatabase.Instance.GetConfigNodes(SettingsNode);
-            if (nodes == null || nodes.Length == 0) { Debug.Log("[CSC] Keine settings.cfg — Defaults aktiv."); return; }
+            if (nodes == null || nodes.Length == 0) { Debug.Log("[CSC] No settings.cfg found, using defaults."); return; }
 
-            // Mehrere Nodes (mehrere Dateien): der Reihe nach anwenden, letzter gewinnt.
+            // Multiple nodes/files: apply in order, last value wins.
             foreach (var n in nodes)
             {
                 VisibleBemanntBase    = GetI(n, "visibleBemanntBase", VisibleBemanntBase);
@@ -81,7 +81,7 @@ namespace CustomScienceContracts.Core
                 VerboseLogging        = GetB(n, "verboseLogging", VerboseLogging);
                 UnlockAll             = GetB(n, "unlockAll", UnlockAll);
             }
-            Debug.Log("[CSC] settings.cfg geladen.");
+            Debug.Log("[CSC] settings.cfg loaded.");
         }
 
         private static int GetI(ConfigNode n, string k, int def) =>

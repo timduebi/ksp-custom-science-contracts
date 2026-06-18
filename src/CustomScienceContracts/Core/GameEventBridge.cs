@@ -3,15 +3,15 @@ using UnityEngine;
 
 namespace CustomScienceContracts.Core
 {
-    /// <summary>Abonniert diskrete KSP-GameEvents (Andocken, SOI-Wechsel, Situationswechsel) und
-    /// puffert sie. Die 1-s-Coroutine pollt Zustands-Bedingungen und liest diesen Puffer fuer
-    /// ereignisbasierte Bedingungen (DOCK, FLYBY-SOI, ATMO_ENTRY) aus. Puffer wird pro Tick geleert.</summary>
+    /// <summary>Subscribes discrete KSP GameEvents (docking, SOI changes, situation changes) and
+    /// buffers them. The 1-second coroutine polls state conditions and reads this buffer for
+    /// event-based conditions. The buffer is cleared after each tick.</summary>
     public class GameEventBridge
     {
         public struct DockEvent { public Vessel Vessel; }
         public struct SoiEvent { public Vessel Vessel; public CelestialBody From; public CelestialBody To; }
         public struct SituationEvent { public Vessel Vessel; public Vessel.Situations From; public Vessel.Situations To; }
-        /// <summary>Zwei Vessel-IDs, die durch Andocken fusionieren — fuer das Umhaengen einer Timer-Bindung.</summary>
+        /// <summary>Two vessel ids that merged through docking, used to remap timer bindings.</summary>
         public struct MergeEvent { public uint IdA; public uint IdB; }
 
         public readonly List<DockEvent> Dockings = new List<DockEvent>();
@@ -39,7 +39,7 @@ namespace CustomScienceContracts.Core
             _subscribed = false;
         }
 
-        /// <summary>Nach jedem Pruef-Tick aufrufen.</summary>
+        /// <summary>Call after every check tick.</summary>
         public void ClearFrameBuffer()
         {
             Dockings.Clear();
@@ -52,8 +52,8 @@ namespace CustomScienceContracts.Core
         {
             Vessel v = a.to?.vessel ?? a.from?.vessel;
             if (v != null) Dockings.Add(new DockEvent { Vessel = v });
-            // Beide beteiligten Vessel-IDs merken: beim Andocken geht eines im anderen auf, und eine
-            // laufende Timer-Bindung muss aufs ueberlebende Schiff umgehaengt werden.
+            // Remember both vessel ids: after docking one vessel disappears into the other, and an
+            // ongoing timer binding must be moved to the survivor.
             uint idA = a.from?.vessel?.persistentId ?? 0u;
             uint idB = a.to?.vessel?.persistentId ?? 0u;
             if (idA != 0u && idB != 0u && idA != idB) Merges.Add(new MergeEvent { IdA = idA, IdB = idB });

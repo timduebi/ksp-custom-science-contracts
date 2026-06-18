@@ -2,26 +2,24 @@ using UnityEngine;
 
 namespace CustomScienceContracts.UI
 {
-    /// <summary>Dunkles Theme mit duennem hellblauem Rahmen. NUR das Fenster (und sein Rahmen) ist
-    /// abgerundet; alle Innenflaechen (Kacheln, Buttons, Tabs, Header, Balken, Scrollbar) sind eckig.
-    /// Hintergruende werden prozedural gebaut (volle Farbkontrolle, Hover-Zustaende). EIN Akzent
-    /// (Hellblau); Farb-Codierung der Koerper/Sparten kommt aus BodyVisual.</summary>
+    /// <summary>Dark theme with a thin light-blue frame. Only the window/frame is rounded; inner
+    /// surfaces stay square. Backgrounds are built procedurally for full color and hover control.</summary>
     public static class Theme
     {
-        public static readonly Color Accent     = new Color(0.32f, 0.80f, 1.00f);   // Hellblau
+        public static readonly Color Accent     = new Color(0.32f, 0.80f, 1.00f);   // light blue
         public static readonly Color TextBright  = new Color(0.95f, 0.97f, 0.99f);
-        public static readonly Color TextDim     = new Color(0.80f, 0.84f, 0.90f);   // heller = besser lesbar
+        public static readonly Color TextDim     = new Color(0.80f, 0.84f, 0.90f);   // brighter for readability
         public static readonly Color TextGrey    = new Color(0.70f, 0.74f, 0.80f);
         public static readonly Color WinBg       = new Color(0.07f, 0.08f, 0.11f, 0.98f);
-        public static readonly Color FieldBg     = new Color(0.13f, 0.16f, 0.26f, 1f); // Dunkelblau, etwas heller
-        public static readonly Color FieldBgRdy  = new Color(0.10f, 0.20f, 0.14f, 1f); // gruenlich (ReadyToClaim)
-        public static readonly Color Ok          = new Color(0.42f, 0.86f, 0.50f);   // gruen erfuellt
-        public static readonly Color Bad         = new Color(0.93f, 0.46f, 0.42f);   // rot offen
+        public static readonly Color FieldBg     = new Color(0.13f, 0.16f, 0.26f, 1f); // dark blue, slightly lifted
+        public static readonly Color FieldBgRdy  = new Color(0.10f, 0.20f, 0.14f, 1f); // greenish ReadyToClaim
+        public static readonly Color Ok          = new Color(0.42f, 0.86f, 0.50f);   // fulfilled
+        public static readonly Color Bad         = new Color(0.93f, 0.46f, 0.42f);   // open
         public static readonly Color ClaimGreen  = new Color(0.40f, 0.85f, 0.48f);
         public static readonly Color AbortRed    = new Color(0.90f, 0.30f, 0.28f);
 
         public static Texture2D White { get; private set; }
-        /// <summary>Eigener Skin nur fuer die Scrollbalken (eigener Handle im Stil).</summary>
+        /// <summary>Custom skin only for scrollbars.</summary>
         public static GUISkin Skin { get; private set; }
 
         private static bool _built;
@@ -36,7 +34,7 @@ namespace CustomScienceContracts.UI
             if (_built) return;
             White = Solid(Color.white);
 
-            // Nur das Fenster bleibt rund (radius 12); alle Innenflaechen sind eckig (radius 0).
+            // Only the window stays rounded; all inner surfaces are square.
             Texture2D winTex   = Rounded(WinBg, 40, 12);
             Texture2D fieldTex = Rounded(FieldBg, 28, 0);
             Texture2D readyTex = Rounded(FieldBgRdy, 28, 0);
@@ -45,12 +43,12 @@ namespace CustomScienceContracts.UI
             Color headCol = new Color(0.16f, 0.19f, 0.27f);
 
             _barTex  = Rounded(Color.white, 16, 0);
-            _ringTex = RoundedRing(Accent, 30, 12, 2);   // Fensterrahmen bleibt rund
+            _ringTex = RoundedRing(Accent, 30, 12, 2);   // rounded window frame
 
             Window = new GUIStyle(GUI.skin.window);
             Bg(Window, winTex, 12);
             Window.fontSize = 17; Window.fontStyle = FontStyle.Bold;
-            // Titel in JEDEM Zustand gut lesbar weiss (nie schwarz); fokussiertes Fenster hellblau.
+            // Title stays readable in every state; focused window title is accent colored.
             Window.normal.textColor = Window.onNormal.textColor =
                 Window.hover.textColor = Window.onHover.textColor =
                 Window.active.textColor = Window.onActive.textColor = TextBright;
@@ -77,7 +75,7 @@ namespace CustomScienceContracts.UI
 
             GroupHeader = Btn(headCol, TextBright, 7); GroupHeader.fontSize = 15; GroupHeader.fontStyle = FontStyle.Bold;
             GroupHeader.alignment = TextAnchor.MiddleLeft; GroupHeader.padding = new RectOffset(38, 8, 7, 7);
-            // Wie GroupHeader, aber ohne Icon-Einzug (Aktive-Fenster zeigt im Header nur den Farbbalken).
+            // Like GroupHeader but without icon indentation.
             GroupHeaderPlain = new GUIStyle(GroupHeader) { padding = new RectOffset(16, 8, 7, 7) };
             MoonHeader = new GUIStyle(GroupHeader) { fontStyle = FontStyle.Normal, fontSize = 14 };
             MoonHeader.padding = new RectOffset(54, 8, 6, 6);
@@ -89,13 +87,12 @@ namespace CustomScienceContracts.UI
             ClaimBtn  = Btn(ClaimGreen, Color.black, 7); ClaimBtn.fontSize = 16; ClaimBtn.fontStyle = FontStyle.Bold; ClaimBtn.padding = new RectOffset(12, 12, 7, 7);
             CloseBtn  = Btn(AbortRed,   Color.white, 6); CloseBtn.fontSize = 16; CloseBtn.fontStyle = FontStyle.Bold; CloseBtn.alignment = TextAnchor.MiddleCenter;
             SettingsBtn = Btn(new Color(0.20f, 0.23f, 0.30f), TextBright, 6); SettingsBtn.fontSize = 15; SettingsBtn.fontStyle = FontStyle.Bold; SettingsBtn.alignment = TextAnchor.MiddleCenter;
-            // Eigenstaendiger Icon-Button oben (Aktive Missionen): dunkel-blaue Kachel, heller Akzent, hellblauer Rand.
+            // Custom top icon button for active missions.
             TopIconButton = Btn(new Color(0.10f, 0.13f, 0.20f, 0.94f), TextBright, 6); TopIconButton.padding = new RectOffset(3, 3, 3, 3); TopIconButton.alignment = TextAnchor.MiddleCenter;
 
             Warn = Label(14, FontStyle.Bold, AbortRed, TextAnchor.UpperLeft); Warn.wordWrap = true;
 
-            // Wissenschaftswert: weisser Text (wird zur Laufzeit via GUI.color hellblau getoent),
-            // davor das Science-Symbol im selben Blau.
+            // Science value text, tinted at runtime together with the science symbol.
             Reward = Label(16, FontStyle.Bold, TextBright, TextAnchor.MiddleRight);
             RewardIcon = new GUIStyle { margin = new RectOffset(0, 2, 4, 0), padding = new RectOffset(0, 0, 0, 0) };
             RewardIcon.normal.background = null;
@@ -121,19 +118,19 @@ namespace CustomScienceContracts.UI
             th.normal.background = thumb; th.hover.background = th.active.background = thumbHi;
             th.border = new RectOffset(6, 6, 6, 6); th.fixedWidth = 11;
 
-            // Pfeil-Buttons unsichtbar (sauberer Look).
+            // Hide arrow buttons for a cleaner look.
             Skin.verticalScrollbarUpButton = new GUIStyle();
             Skin.verticalScrollbarDownButton = new GUIStyle();
         }
 
-        /// <summary>Duenner abgerundeter Akzentrahmen, ueber dem Fenster gezeichnet (alle 4 Seiten).</summary>
+        /// <summary>Thin rounded accent frame drawn over all four sides of a window.</summary>
         public static void DrawWindowBorder(Rect r)
         {
             if (Event.current.type != EventType.Repaint) return;
             GUI.Box(r, GUIContent.none, Border);
         }
 
-        /// <summary>Abgerundeter farbiger Linksbalken (eingerueckt) + eingefaerbtes Icon ueber eine Zeile.</summary>
+        /// <summary>Colored left bar plus tinted icon for a row.</summary>
         public static void DrawLeftAccent(Rect r, Color color, Texture2D icon, float barW = 6f, float iconSize = 24f)
         {
             var prev = GUI.color;
@@ -148,7 +145,7 @@ namespace CustomScienceContracts.UI
             GUI.color = prev;
         }
 
-        /// <summary>Abgerundeter rechter Aktionsbalken (rot/gruen) mit Symbol (X / Haken), klickbar, Hover.</summary>
+        /// <summary>Right action bar with symbol, click and hover state.</summary>
         public static bool DrawRightAction(Rect rowRect, Color color, string symbol, float w = 30f)
         {
             Rect rr = new Rect(rowRect.xMax - w - 2f, rowRect.y + 3f, w, rowRect.height - 6f);
@@ -182,8 +179,7 @@ namespace CustomScienceContracts.UI
             s.normal.textColor = col; return s;
         }
 
-        /// <summary>Button-Style mit eigenem Hover-Hintergrund (heller). Eckig (radius 0); der
-        /// border-Parameter dient nur noch dem 9-Slice-Rand der flachen Flaeche.</summary>
+        /// <summary>Button style with a brighter hover background. Square; border only supports 9-slice scaling.</summary>
         private static GUIStyle Btn(Color col, Color text, int border)
         {
             int size = border * 2 + 4;
@@ -232,7 +228,7 @@ namespace CustomScienceContracts.UI
             t.Apply(); return t;
         }
 
-        /// <summary>Abgerundeter Ring (nur Rand, innen transparent) — als 9-Slice fuer den Fensterrahmen.</summary>
+        /// <summary>Rounded ring with transparent center for the window frame.</summary>
         private static Texture2D RoundedRing(Color c, int size, int radius, int thickness)
         {
             var t = new Texture2D(size, size, TextureFormat.RGBA32, false)

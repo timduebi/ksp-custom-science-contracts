@@ -3,13 +3,12 @@ using CustomScienceContracts.Core;
 
 namespace CustomScienceContracts.Conditions
 {
-    /// <summary>Schnappschuss des Spielzustands fuer einen Pruef-Tick, plus die gepufferten
-    /// diskreten Events. Wird an alle Condition-Evaluatoren durchgereicht.</summary>
+    /// <summary>Snapshot of game state for one check tick plus buffered discrete events.</summary>
     public class EvaluationContext
     {
         public double UniversalTime;
-        public IReadOnlyList<Vessel> Vessels;   // FlightGlobals.Vessels-Schnappschuss
-        public GameEventBridge Events;          // Andocken / SOI / Situation seit letztem Tick
-        public StationRegistry Stations;        // gemerkte Stationen (fuer stationKey-Bedingungen)
+        public IReadOnlyList<Vessel> Vessels;   // FlightGlobals.Vessels snapshot
+        public GameEventBridge Events;          // docking / SOI / situation since last tick
+        public StationRegistry Stations;        // recorded stations for stationKey conditions
     }
 }

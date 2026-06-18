@@ -5,29 +5,28 @@ using UnityEngine;
 
 namespace CustomScienceContracts.Model
 {
-    /// <summary>Eine einzelne, aus einer CONDITION-ConfigNode geparste Pruefbedingung.
-    /// Alle Felder sind optional; nur die fuer den jeweiligen Typ relevanten werden benutzt.
-    /// Body-Werte (atmosphereDepth etc.) werden NIE hier gespeichert, sondern zur Laufzeit
-    /// ueber den BodyResolver aus der API gezogen.</summary>
+    /// <summary>A single condition parsed from a CONDITION ConfigNode. All fields are optional;
+    /// only the ones relevant to the condition type are used. Body values such as atmosphereDepth
+    /// are never stored here and are resolved from the API at runtime.</summary>
     public class Condition
     {
         public ConditionType Type;
-        public string Body = "";            // interner CelestialBody.name (z.B. "Earth", "Moon")
+        public string Body = "";            // internal CelestialBody.name, e.g. "Earth", "Moon"
         public int MinCrew = 0;
         public double DurationDays = 0.0;   // CREW_DURATION
         public double MinFraction = 0.0;    // ALT_FRACTION_ATMO
         public double MaxFraction = 1.0;    // ALT_FRACTION_ATMO
-        public double MinAltitudeKm = 0.0;  // ORBIT_HIGH / Hochorbit-Netzwerk
-        public double RadiusKm = 0.0;       // MARKER_LANDING (15 Standard, 5 Versorgung/Rotation)
+        public double MinAltitudeKm = 0.0;  // ORBIT_HIGH / high-orbit networks
+        public double RadiusKm = 0.0;       // MARKER_LANDING (15 default, 5 for resupply/rotation)
         public int VesselCount = 1;         // VESSEL_COUNT_ORBIT
-        public double FuelThreshold = 0.0;  // FUEL_ORBIT (Einheiten LiquidFuel+Oxidizer)
+        public double FuelThreshold = 0.0;  // FUEL_ORBIT (LiquidFuel+Oxidizer units)
         public double RendezvousKm = 0.0;   // RENDEZVOUS
-        public double FlybyAltitudeKm = 0.0;// FLYBY: max. zulaessige Annaeherung (PeA), 0 = nur SOI-Durchflug
+        public double FlybyAltitudeKm = 0.0;// FLYBY: max closest approach (PeA), 0 = SOI passage only
         public string Situation = "";       // optionaler expliziter Situations-Filter
-        public string StationKey = "";      // DOCK/RENDEZVOUS: Ziel ist die gemerkte Station dieses Schluessels
+        public string StationKey = "";      // DOCK/RENDEZVOUS: target is the recorded station with this key
 
-        /// <summary>Hand-komponierte atomare Teilziele (COMPOSITE). Ist die Liste nicht leer, wird die
-        /// CONDITION ueber diese Checks ausgewertet (jeder einzeln gruen/rot) statt ueber den Legacy-Typ.</summary>
+        /// <summary>Hand-composed atomic goals for COMPOSITE conditions. When this list is not
+        /// empty, the condition is evaluated through these checks rather than the legacy type.</summary>
         public List<Check> Checks = new List<Check>();
 
         public static Condition Load(ConfigNode node)
@@ -36,7 +35,7 @@ namespace CustomScienceContracts.Model
             string typeStr = node.GetValue("type");
             if (!Enum.TryParse(typeStr, true, out c.Type))
             {
-                Debug.LogWarning($"[CSC] Unbekannter ConditionType '{typeStr}' uebersprungen.");
+                Debug.LogWarning($"[CSC] Unknown ConditionType '{typeStr}' skipped.");
                 return null;
             }
 

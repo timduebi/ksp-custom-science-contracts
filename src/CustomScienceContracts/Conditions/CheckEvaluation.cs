@@ -7,11 +7,10 @@ using UnityEngine;
 
 namespace CustomScienceContracts.Conditions
 {
-    /// <summary>Wertet eine COMPOSITE-CONDITION ueber ihre hand-komponierten CHECK-Teilziele aus.
-    /// Jeder Check wird einzeln bewertet (Ergebnis in contract.Progress als c{ci}_{j}), damit die UI
-    /// pro Teilziel gruen/rot anzeigen kann. HOLD/DURATION laufen ueber einen gemeinsamen Timer, der
-    /// startet, sobald alle uebrigen Checks gleichzeitig erfuellt sind (auch unfokussiert/unloaded).
-    /// FLYBY/MARKER_LANDING tragen eigenen, ueber mehrere Ticks laufenden State (pro Check ci_j).</summary>
+    /// <summary>Evaluates a COMPOSITE condition through its hand-composed CHECK goals. Each check is
+    /// evaluated individually so the UI can show per-goal state. HOLD/DURATION use one shared timer
+    /// that starts once all other checks are fulfilled, even while unfocused/unloaded. Flyby and
+    /// marker checks keep their own multi-tick state.</summary>
     public static class CheckEvaluation
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -27,16 +26,15 @@ namespace CustomScienceContracts.Conditions
             for (int j = 0; j < n; j++) if (checks[j].IsTimer) timerIdx = j;
             bool hasTimer = timerIdx >= 0;
 
-            // Gibt es ueberhaupt Einzel-Vessel-Checks? Nur dann ist ein Subjekt-Vessel relevant
-            // (reine FLEET/FLYBY/EVENT + Timer brauchen keins).
+            // A subject vessel is relevant only when the condition has single-vessel checks.
             bool hasVesselChecks = false;
             for (int j = 0; j < n; j++) if (!checks[j].IsSpecial) { hasVesselChecks = true; break; }
 
             double t0 = GetD(c.Progress, $"c{ci}_t0", -1.0);
             bool timerRunning = hasTimer && t0 >= 0.0;
 
-            // Subjekt-Vessel: bei laufendem Timer ist die Bindung GESPERRT (nur das gemerkte Schiff,
-            // kein Wechsel aufs aktive Vessel), damit EVA/Fokus-/Szenenwechsel den Timer nicht abbrechen.
+            // Subject vessel: once a timer is running, the binding is locked to the recorded vessel
+            // so focus or scene changes do not break the timer.
             Vessel subject = ResolveSubject(c, ci, cond, ctx, hasTimer, hasVesselChecks, timerRunning);
 
             bool allInstant = true;
@@ -60,19 +58,19 @@ namespace CustomScienceContracts.Conditions
                 var t = checks[timerIdx];
                 double required = t.Kind == CheckKind.HOLD ? t.Seconds : t.Days * VesselQuery.SecondsPerDay();
 
-                // Gebundenes Schiff nur transient nicht auffindbar (Szenenwechsel/Ladevorgang):
-                // t0 halten (Pause), NICHT zuruecksetzen — elapsed wird aus absoluter UT nachgeholt.
+                // Bound vessel only transiently missing during scene/load changes: hold t0 instead
+                // of resetting; elapsed time is recovered from absolute UT.
                 bool subjectMissing = timerRunning && hasVesselChecks && subject == null;
 
                 if (timerRunning)
                 {
-                    if (subjectMissing)  { /* t0 halten */ }
-                    else if (allInstant) { /* weiterzaehlen, t0 unveraendert */ }
-                    else { t0 = -1.0; c.Progress.SetValue($"c{ci}_t0", "-1", true); } // echte Unterbrechung -> neu
+                    if (subjectMissing)  { /* hold t0 */ }
+                    else if (allInstant) { /* keep counting with unchanged t0 */ }
+                    else { t0 = -1.0; c.Progress.SetValue($"c{ci}_t0", "-1", true); } // real interruption -> restart
                 }
                 else if (allInstant)
                 {
-                    t0 = ctx.UniversalTime; c.Progress.SetValue($"c{ci}_t0", t0.ToString("R", Inv), true); // Start
+                    t0 = ctx.UniversalTime; c.Progress.SetValue($"c{ci}_t0", t0.ToString("R", Inv), true); // start
                 }
 
                 double elapsed = t0 >= 0.0 ? ctx.UniversalTime - t0 : 0.0;
@@ -90,12 +88,11 @@ namespace CustomScienceContracts.Conditions
             return overall;
         }
 
-        /// <summary>Marker-Waypoints aller Checks dieses Contracts entfernen (Abschluss/Verwerfen).</summary>
+        /// <summary>Removes marker waypoints for all checks of this contract.</summary>
         public static void ClearMarkers(MissionContract c) => MarkerWaypoint.RemoveAll(c.Id);
 
-        /// <summary>Haengt die Timer-Bindung (c{ci}_vid) auf das fusionierte Schiff um, wenn das gebundene
-        /// Schiff durch Andocken in einem anderen Vessel aufgegangen ist — sonst pausierte der Timer
-        /// dauerhaft, weil die alte persistentId nach dem Docking nicht mehr existiert.</summary>
+        /// <summary>Remaps timer binding (c{ci}_vid) to the merged vessel when the bound vessel was
+        /// absorbed by docking, avoiding a permanently paused timer with an obsolete persistentId.</summary>
         public static void RemapDockedSubjects(MissionContract c, EvaluationContext ctx)
         {
             if (c.Progress == null || ctx.Events == null) return;
@@ -106,7 +103,7 @@ namespace CustomScienceContracts.Conditions
                 string key = $"c{ci}_vid";
                 uint vid = GetUInt(c.Progress, key);
                 if (vid == 0) continue;
-                if (ctx.Vessels.Any(v => v != null && v.persistentId == vid)) continue; // existiert noch
+                if (ctx.Vessels.Any(v => v != null && v.persistentId == vid)) continue; // still exists
                 foreach (var m in merges)
                 {
                     uint other = vid == m.IdA ? m.IdB : (vid == m.IdB ? m.IdA : 0u);
@@ -122,7 +119,7 @@ namespace CustomScienceContracts.Conditions
         private static Vessel ResolveSubject(MissionContract c, int ci, Condition cond, EvaluationContext ctx,
                                              bool hasTimer, bool hasVesselChecks, bool timerRunning)
         {
-            // Ohne Timer (oder ohne Einzel-Vessel-Checks): immer das aktive Vessel bewerten.
+            // Without a timer or single-vessel checks, evaluate the active vessel.
             if (!hasTimer || !hasVesselChecks) return VesselQuery.Active;
 
             uint vid = GetUInt(c.Progress, $"c{ci}_vid");
@@ -130,13 +127,12 @@ namespace CustomScienceContracts.Conditions
                 ? ctx.Vessels.FirstOrDefault(v => v != null && v.persistentId == vid)
                 : null;
 
-            // Laeuft der Timer, ist die Bindung gesperrt: nur das gebundene Schiff zaehlt — auch
-            // unfokussiert/unloaded. Kein Fallback aufs aktive Vessel, kein Neubinden. Transient nicht
-            // gefunden -> null (der Aufrufer haelt dann t0, statt zurueckzusetzen).
+            // Running timer means locked binding: only the bound vessel counts, even unfocused or
+            // unloaded. No fallback or rebinding; transient missing returns null and the caller holds t0.
             if (timerRunning) return bound;
 
-            // Timer laeuft noch nicht: gebundenes Schiff behalten, solange es noch erfuellt; sonst das
-            // aktive Vessel pruefen und (falls erfuellend) neu binden.
+            // Timer not running yet: keep the bound vessel while it still qualifies; otherwise check
+            // and bind the active vessel if it qualifies.
             if (bound != null && SatisfiesVesselChecks(cond, bound, ctx)) return bound;
 
             var act = VesselQuery.Active;
@@ -156,7 +152,7 @@ namespace CustomScienceContracts.Conditions
             return true;
         }
 
-        /// <summary>Einzel-Vessel-Check (oeffentlich, damit auch die Subjekt-Verfolgung ihn nutzt).</summary>
+        /// <summary>Single-vessel check, public so subject tracking can reuse it.</summary>
         public static bool EvalVessel(Check chk, Vessel v)
         {
             if (v == null) return false;
@@ -177,7 +173,7 @@ namespace CustomScienceContracts.Conditions
                 {
                     if (body == null || v.mainBody != body ||
                         v.situation != Vessel.Situations.ORBITING || v.orbit == null) return false;
-                    // km > 0: fester Wert; km <= 0: API-Atmosphaerenhoehe (kein Hardcode).
+                    // km > 0: fixed value; km <= 0: atmosphere height from API, no hardcode.
                     double minPe = chk.Km > 0 ? chk.Km * 1000.0 : body.atmosphereDepth;
                     return v.orbit.PeA > minPe;
                 }
@@ -241,9 +237,8 @@ namespace CustomScienceContracts.Conditions
             return count >= chk.Count;
         }
 
-        /// <summary>FLYBY-Check: irgendein reales Vessel betritt die SOI von body, orbitet/landet dort NIE
-        /// und verlaesst sie wieder; optional muss die kleinste PeA &lt;= km liegen. State pro Check (ci_j),
-        /// laeuft unbeaufsichtigt/unloaded; rastet nach Erfolg dauerhaft ein (done=1).</summary>
+        /// <summary>Flyby check: a real vessel enters the body's SOI, never orbits/lands there and
+        /// leaves again. Optional closest PeA must be &lt;= km. State is per check and latches after success.</summary>
         private static bool EvalFlyby(MissionContract c, int ci, int j, Check chk, EvaluationContext ctx)
         {
             ConfigNode node = StateNode(c.Progress, $"fb{ci}_{j}");
@@ -289,9 +284,8 @@ namespace CustomScienceContracts.Conditions
             return false;
         }
 
-        /// <summary>MARKER_LANDING-Check: Zielpunkt einmalig festlegen (Basisstandort, falls beim ersten Tick
-        /// gelandet — sonst deterministischer Zufallspunkt), sichtbaren Waypoint sicherstellen (auch nach
-        /// Neuladen), erfuellt sobald das aktive Vessel LANDED/SPLASHED und Grosskreisdistanz &lt;= km.</summary>
+        /// <summary>Marker landing check: choose a target once, ensure a visible waypoint after
+        /// reloads, and complete once the active vessel is landed/splashed within km.</summary>
         private static bool EvalMarker(MissionContract c, int ci, int j, Check chk, EvaluationContext ctx)
         {
             var body = BodyResolver.Resolve(chk.Body);
@@ -299,9 +293,8 @@ namespace CustomScienceContracts.Conditions
             string pfx = $"ml{ci}_{j}_";
             string wpId = $"{c.Id}#{ci}_{j}";
 
-            // 1) Zielort einmal festlegen (persistiert). Pro Spielstand zufaellig (Game-Seed), aber innerhalb
-            //    eines Saves stabil; im absoluten Breiten-Band [LatAbsMin, LatAbsMax] mit zufaelliger Hemisphaere.
-            //    Default-Band 0..15 => aequatornah; Pol-Landungen setzen z.B. 70..90.
+            // 1) Pick target once and persist it. Random per game seed but stable inside a save.
+            //    Absolute latitude band defaults to near-equator; polar landings use high bands.
             if (GetI(c.Progress, pfx + "set", 0) != 1)
             {
                 int gameSeed = HighLogic.CurrentGame != null ? HighLogic.CurrentGame.Seed : 0;
@@ -309,7 +302,7 @@ namespace CustomScienceContracts.Conditions
                 double aMin = Math.Min(chk.LatAbsMin, chk.LatAbsMax);
                 double aMax = Math.Max(chk.LatAbsMin, chk.LatAbsMax);
                 double absLat = rng.NextDouble() * (aMax - aMin) + aMin;
-                double lat = rng.Next(2) == 0 ? absLat : -absLat;   // Nord- oder Suedhalbkugel
+                double lat = rng.Next(2) == 0 ? absLat : -absLat;   // northern or southern hemisphere
                 double lon = rng.NextDouble() * 360.0 - 180.0;
                 c.Progress.SetValue(pfx + "lat", lat.ToString("R", Inv), true);
                 c.Progress.SetValue(pfx + "lon", lon.ToString("R", Inv), true);
@@ -318,11 +311,11 @@ namespace CustomScienceContracts.Conditions
             double mLat = GetD(c.Progress, pfx + "lat", 0.0);
             double mLon = GetD(c.Progress, pfx + "lon", 0.0);
 
-            // 2) Sichtbaren Waypoint sicherstellen (Objekt lebt nur zur Laufzeit).
+            // 2) Ensure visible waypoint; object state only lives at runtime.
             if (!MarkerWaypoint.Has(wpId))
                 MarkerWaypoint.Set(wpId, body, mLat, mLon, c.Titel, Math.Abs(wpId.GetHashCode()) % 10000);
 
-            // 3) Gelandet + Distanz.
+            // 3) Landed + distance.
             var v = VesselQuery.Active;
             if (v == null) return false;
             bool landed = VesselQuery.OnBody(v, body) &&
@@ -334,7 +327,7 @@ namespace CustomScienceContracts.Conditions
             return dist <= rMeters;
         }
 
-        // ---- ConfigNode-State-Helfer ----
+        // ---- ConfigNode state helpers ----
         private static ConfigNode StateNode(ConfigNode prog, string name)
         {
             var n = prog.GetNode(name);
@@ -369,9 +362,8 @@ namespace CustomScienceContracts.Conditions
             n != null && double.TryParse(n.GetValue(k), NumberStyles.Float, Inv, out double r) ? r : def;
     }
 
-    /// <summary>Lifecycle-Haken fuer COMPOSITE-CONDITIONs: die Auswertung selbst laeuft ueber
-    /// <see cref="CheckEvaluation"/> (direkt aus dem ContractManager), aber beim Abschluss/Verwerfen
-    /// muessen gesetzte Marker-Waypoints entfernt werden.</summary>
+    /// <summary>Lifecycle hooks for COMPOSITE conditions. Actual evaluation runs through
+    /// <see cref="CheckEvaluation"/>; claim/abandon needs to remove marker waypoints.</summary>
     public sealed class CompositeEvaluator : ConditionEvaluatorBase
     {
         public override ConditionType Type => ConditionType.COMPOSITE;

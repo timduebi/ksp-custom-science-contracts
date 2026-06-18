@@ -2,17 +2,17 @@ using CustomScienceContracts.Model;
 
 namespace CustomScienceContracts.UI
 {
-    /// <summary>Kreative, beschreibende Anzeigenamen der Sparten. Icons/Farben kommen aus BodyVisual.</summary>
+    /// <summary>Player-facing tab names. Icons and colors come from BodyVisual.</summary>
     public static class SparteDisplay
     {
         public static string Name(Sparte s)
         {
             switch (s)
             {
-                case Sparte.Bemannt:             return "Pioniere";
-                case Sparte.UnbemannteErkundung: return "Robotische Erkunder";
-                case Sparte.NetzwerkLogistik:    return "Versorgungsnetz";
-                case Sparte.Wiederholbar:        return "Daueraufträge";
+                case Sparte.Bemannt:             return "Pioneers";
+                case Sparte.UnbemannteErkundung: return "Robotic Explorers";
+                case Sparte.NetzwerkLogistik:    return "Lifelines";
+                case Sparte.Wiederholbar:        return "Repeatable";
                 default:                          return s.ToString();
             }
         }

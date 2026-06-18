@@ -1,451 +1,235 @@
-# CustomScienceContracts - Projektdokumentation
+# CustomScienceContracts Documentation
 
-Stand: Juni 2026.
+## Purpose
 
-CustomScienceContracts ist ein KSP-1.12.x-Plugin fuer den Science Mode. Es
-stellt ein eigenes Missions- und Zielsystem bereit, das parallel zum
-Stock-Contractsystem laeuft. Der Mod ist fuer eine SOL-Quarter-Scale-Kampagne
-geschrieben und nutzt die internen Body-Namen dieses Systems, zum Beispiel
-`Earth`, `Moon`, `Mars`, `Jupiter`, `Saturn`, `Triton` und `Pluto`.
+CustomScienceContracts is a KSP 1.12.x Science Mode plugin. It provides a
+separate mission system that is independent from the stock career contract
+system. Missions are selected in a custom UI, tracked through stock KSP state and
+paid out as science bonuses when the player claims them.
 
-Der Mod ersetzt keine Stock-Science. Er gibt beim Abschluss definierter
-Missionen zusaetzliche Science-Punkte aus und fuehrt den Spieler dadurch durch
-eine lange, erzählerische Erkundungskampagne.
+The mod does not require Contract Configurator, Kerbalism, Simplex or specific
+part packs.
 
-Aktuell sind Missions- und UI-Texte nur auf Deutsch verfuegbar. Eine englische
-Version ist in Arbeit. Die bestehenden Missionsconfigs sind fuer SOL
-Quarter-Scale geschrieben; alternative Configs fuer Stock KSP sind ebenfalls in
-Arbeit.
+## Runtime Overview
 
-## Kurzfassung
+At game load, `ContractsScenario` initializes the mod:
 
-- Spielmodus: KSP 1 Science Mode.
-- KSP-Zielversion: 1.12.x.
-- Sprache der Missionen: Deutsch, Schweizer Hochdeutsch.
-- Laufzeit-Abhaengigkeiten: KSP 1.12.x und die SOL-Quarter-Scale-Umgebung, fuer
-  die die Body-Namen geschrieben sind.
-- Sprache: aktuell Deutsch; Englisch ist in Arbeit.
-- Stock-KSP-Configs: in Arbeit, aber noch nicht Teil dieses Releases.
-- Keine Abhaengigkeit von Contract Configurator.
-- Keine Abhaengigkeit von Kerbalism, Simplex oder anderen Gameplay-APIs.
-- Pruefung erfolgt nur ueber Stock-KSP-Zustaende: Orbit, Landung, Crew,
-  Ressourcen, Treibstoff, EVA, Andocken, Flybys, Waypoints, Vessel-Anzahl,
-  Inklination und Zeit.
+1. Load tuning values from `GameData/CustomScienceContracts/settings.cfg`.
+2. Load all `CUSTOM_CONTRACT_CATALOG` nodes through KSP `GameDatabase`.
+3. Build the in-memory `ContractCatalog`.
+4. Load save-specific state from
+   `saves/<SaveName>/CustomScienceContracts/contracts_state.cfg`.
+5. Register condition evaluators.
+6. Create the UI.
+7. Start the 1-second check loop.
 
-## Ordnerstruktur
+The check loop evaluates active missions in Flight, Tracking Station, Space
+Center and Editor scenes. In-game universal time remains authoritative, so
+timers do not advance in the editor while the universe clock is frozen.
 
-```text
-ksp science contracts/
-├── README.md                         Spieler- und Release-Information
-├── AGENTS.md                         Arbeitsregeln fuer Codex
-├── DOKUMENTATION.md                  diese technische Dokumentation
-├── CustomScienceContracts.sln        C# Solution
-├── build.sh                          lokaler Build und KSP-Deploy
-├── custom_science_contracts_missionsdesign.md
-│                                      Single Source of Truth fuer Missionen
-├── customScienceContracts Logo.png   Logo/Artwork
-├── GameData/CustomScienceContracts/
-│   ├── Contracts/                    generierter Missionskatalog
-│   ├── Icons/                        App-, Body- und UI-Icons
-│   ├── Plugins/                      Build-Ausgabe, nicht versioniert
-│   └── settings.cfg                  UI-/Balance-/Debug-Settings
-├── src/CustomScienceContracts/       C#-Quellcode
-└── tools/                            Generator und Validatoren
-```
+## Mission Flow
 
-Nicht zum Quellbestand gehoeren alte Exportordner, alte v3-Spezifikationen,
-alte SOL-Config-Kopien, `.DS_Store`, `bin/`, `obj/` und fertige DLLs. Diese
-Dinge sind entweder veraltet, lokal oder regenerierbar.
+Each mission moves through these states:
 
-## Release-Inhalt
+- `Locked`: prerequisites are not complete.
+- `Available`: prerequisites are complete and visibility rules allow display.
+- `Active`: accepted by the player and tracked by the check loop.
+- `ReadyToClaim`: all objectives are complete; reward is waiting.
+- `CompletedOnce`: claimed at least once.
 
-Ein Spieler braucht nur den fertigen Release-Inhalt:
+Repeatable missions stay in their home branch until first completion. After that
+they appear only in the repeatable branch and require two other mission
+completions before they can be accepted again.
 
-```text
-GameData/
-└── CustomScienceContracts/
-    ├── Contracts/
-    ├── Icons/
-    ├── Plugins/
-    │   └── CustomScienceContracts.dll
-    └── settings.cfg
-README.md
-```
+## Branches
 
-Installation: den enthaltenen `GameData`-Ordner in die KSP-Installation
-kopieren und vorhandene Dateien zusammenfuehren.
+The UI displays four branches:
 
-## Abhaengigkeiten
+- Pioneers: crewed progression.
+- Robotic Explorers: probes, mapping, landers and flybys.
+- Lifelines: communication networks, logistics and depots.
+- Repeatable: repeatable missions after first completion.
 
-### Zum Spielen
+The internal enum names are still German (`Bemannt`, `UnbemannteErkundung`,
+`NetzwerkLogistik`, `Wiederholbar`). They are stable config/save keys and should
+not be renamed without migration.
 
-- Kerbal Space Program 1.12.x.
-- Eine SOL-Quarter-Scale-Installation mit den Body-Namen, die der Mod nutzt.
-- Keine weiteren Plugin-Abhaengigkeiten.
+## Visibility Rules
 
-Noch nicht enthalten:
+Home-branch visibility is computed by `VisibilityRules`:
 
-- englische Missions-/UI-Texte.
-- Stock-KSP-Body-Configs.
+- Pioneers: initially 3 visible available missions; later 5 once at least half
+  of the crewed branch is completed.
+- Robotic Explorers: 4 visible missions per subcategory.
+- Outer-system robotic branches can reveal all missions in a subcategory after
+  the planet flyby is completed.
+- Lifelines: 3 visible missions per subcategory.
 
-Der Mod verwendet ausschliesslich KSP- und Unity-Klassen, die mit KSP 1.12.x
-geliefert werden. Es gibt keine Part-Anforderungen und keine API-Kopplung an
-Kerbalism, Simplex, Contract Configurator oder andere Mods.
+Active limits are enforced by `ActiveLimits`:
 
-### Zum Bauen
+- Pioneers: 3 active missions.
+- Robotic Explorers: 10 active missions.
+- Lifelines: 5 active missions.
 
-- .NET SDK, das `net48`-Projekte bauen kann.
-- NuGet-Paket `Microsoft.NETFramework.ReferenceAssemblies` fuer net48 auf
-  macOS/Linux.
-- KSP-Managed-Assemblies aus der lokalen KSP-Installation:
-  - `Assembly-CSharp.dll`
-  - `UnityEngine.dll`
-  - `UnityEngine.CoreModule.dll`
-  - `UnityEngine.IMGUIModule.dll`
-  - `UnityEngine.ImageConversionModule.dll`
-  - `UnityEngine.PhysicsModule.dll`
-  - `UnityEngine.AnimationModule.dll`
-  - `UnityEngine.TextRenderingModule.dll`
+## Conditions and Checks
 
-Die Pfade werden ueber `KSPManaged` oder `KSPRoot` an MSBuild uebergeben. Das
-lokale `build.sh` nutzt standardmaessig die Steam-KSP-Installation auf macOS.
+Modern missions use `COMPOSITE` conditions with multiple `CHECK` subnodes. Each
+check has its own UI line and can be shown as fulfilled or open.
 
-## Missionsdesign
+Supported check types include:
 
-Die Missionsquelle ist:
+- Crew checks: `CREW_MIN`, `CREW_NONE`, `CREW_EXACT`.
+- Vessel/body state: `ORBIT_ABOVE`, `LANDED`, `SUBORBITAL`, `EVA`.
+- Orbit details: `INCLINATION_MIN`, `VESSEL_COUNT`,
+  `VESSEL_COUNT_INCLINATION`.
+- Time: `HOLD`, `DURATION`.
+- Events: `DOCK_ANY`, `DOCK_STATION`.
+- Stateful goals: `FLYBY`, `MARKER_LANDING`.
+- Resources: `FUEL_MIN`, `RESOURCE_MIN`, `ORE_SURFACE`.
+- Atmosphere: `ATMO_FRACTION`, `SUBORBITAL_ABOVE_ATMO`.
 
-```text
-custom_science_contracts_missionsdesign.md
-```
+All body sizes, atmosphere heights and day lengths are read from the KSP API at
+runtime. The code must not hardcode those values.
 
-Diese Datei ist die Single Source of Truth. Die Dateien unter
-`GameData/CustomScienceContracts/Contracts/*.cfg` werden daraus generiert und
-werden nicht von Hand editiert.
+## Waypoints
 
-Der Missionsplan enthaelt aktuell:
+Precision landing missions use `MARKER_LANDING`. The target coordinates are
+stored in mission progress. The visible FinePrint waypoint is created only in
+Flight/Map/Tracking scenes and recreated after scene changes if needed.
 
-- 156 handgeschriebene Missionen.
-- 89 generierte Stations-, Basis- und Depot-Auftraege.
-- Insgesamt 245 spielbare Contracts im generierten Katalog.
+This avoids the KSP waypoint object being created in scenes where it may not
+survive into flight.
 
-Die Missionen sind in vier spielerische Sparten organisiert:
+## Persistence
 
-- `Pioniere`: bemannte Hauptmissionen.
-- `Robotische Erkunder`: unbemannte Flybys, Orbits, Landungen, Atmosphaeren- und
-  Kartierungsmissionen.
-- `Versorgungsnetz`: Infrastruktur, Kommunikationsnetze, Treibstoff, Ore und
-  Logistik.
-- `Wiederholbar`: abgeschlossene wiederholbare Auftraege wandern nach ihrem
-  Erstabschluss hierhin.
-
-## Kampagnenbogen
-
-Der Ablauf beginnt mit unbemannten Erdtests, fuehrt ueber erste
-Erdorbit-Missionen und ein fruehes 3-Satelliten-Netz zu bemannten Fluegen,
-Luna, Stationen, Mars, Asteroiden, Jupiter, Saturn, Titan und den fernen
-robotischen Schlusszielen.
-
-Wichtige neuere Infrastruktur:
-
-- Das fruehe Erdnetz besteht aus 3 Satelliten.
-- Ab Epoche 3 entsteht ein neues Kommunikationsnetz in `Versorgungsnetz`.
-- Kommunikationskette:
-  - Erde: 3 Relais ueber 2000 km Periapsis.
-  - Erde polar: 6 Relais total, davon 3 mit Inklination ueber 75 Grad.
-  - Luna: 3 Relais ueber 2000 km Periapsis.
-  - Luna polar: 6 Relais total, davon 3 mit Inklination ueber 75 Grad.
-  - Mars: 3 Relais ueber 2000 km Periapsis.
-  - Interplanetarer Sonnenorbit-Ring.
-  - Jupiter-Kommunikationsnetz.
-  - Saturn-Kommunikationsnetz.
-- Optionale Polar-Kartierungsmissionen werden erst nach dem jeweiligen normalen
-  Orbit sichtbar und sind keine Voraussetzung fuer andere Missionen.
-
-## Datenfluss
-
-```text
-custom_science_contracts_missionsdesign.md
-        │
-        ├─ tools/validate_design.py
-        │
-        └─ tools/gen_catalog.py
-                │
-                ▼
-GameData/CustomScienceContracts/Contracts/*.cfg
-        │
-        ▼
-CatalogLoader
-        │
-        ▼
-ContractCatalog
-        │
-        ▼
-ContractManager
-        │
-        ├─ UI
-        ├─ CheckEvaluation
-        ├─ StationRegistry
-        └─ SaveFolderStore
-```
-
-## Generierter Katalog
-
-`tools/gen_catalog.py` erzeugt vier Dateien:
-
-- `A_Pioniere.cfg`: bemannte Missionen.
-- `B_Spaeher.cfg`: robotische Erkundung.
-- `C_Lebensadern.cfg`: Netzwerk, Kommunikation und Logistik.
-- `D_Stationen.cfg`: generierte Stations-, Basis- und Depotketten.
-
-Der Generator setzt ausserdem Titel, Unterkategorien, Icons und `revealAllAfter`
-fuer das aeussere System. `Sun` wird in der Unterkategorie `Interplanetar`
-angezeigt.
-
-## Runtime-Architektur
-
-### Einstieg
-
-`ContractsScenario` ist ein KSP-`ScenarioModule`. Es wird in relevanten Szenen
-geladen, initialisiert Katalog, Manager, Settings, Events und UI und startet
-einen Coroutine-Pruefloop.
-
-Der Pruefloop laeuft nicht jeden Frame, sondern ungefaehr einmal pro Sekunde.
-Das schont die Performance und reicht fuer Missionsziele, die sowieso ueber
-Spielzustaende, Zeiten und Events laufen.
-
-### Katalog
-
-`CatalogLoader` liest alle `CUSTOM_CONTRACT_CATALOG`-Nodes aus der KSP
-`GameDatabase`. Jede Mission wird als `MissionContract` geladen. Die
-`CONDITION`-Nodes werden in `Condition` und, bei zusammengesetzten Zielen, in
-einzelne `Check`-Objekte zerlegt.
-
-### Manager
-
-`ContractManager` verwaltet:
-
-- Statuswechsel.
-- Annahme und Abbruch.
-- aktive Limits pro Sparte.
-- Abschluss und Einloesen.
-- Science-Auszahlung.
-- Repeatable-Cooldown.
-- Stationsregistrierung fuer spaetere Versorgung.
-
-Beim Einloesen zahlt der Mod Science ueber:
-
-```csharp
-ResearchAndDevelopment.Instance.AddScience(amount, TransactionReasons.Cheating)
-```
-
-Das ist technisch der stabile Stock-Weg, um Science im Science Mode direkt zu
-veraendern.
-
-### Persistenz
-
-Fortschritt wird pro Save gespeichert:
+Save state is stored outside the `.sfs` file:
 
 ```text
 saves/<SaveName>/CustomScienceContracts/contracts_state.cfg
 ```
 
-Gespeichert werden unter anderem:
+It contains:
 
-- abgeschlossene Missionen.
-- aktive Missionen.
-- `ReadyToClaim`-Status.
-- Repeatable-Cooldown-Zaehler.
-- Timer-Fortschritt.
-- Flyby-State.
-- Waypoint-/Marker-State.
-- registrierte Stationen, Basen und Depots.
+- mission status,
+- total completions,
+- repeatable cooldown counters,
+- active mission progress,
+- timer state,
+- flyby state,
+- marker target state,
+- registered station/base vessels,
+- science multiplier and unlock-all test setting.
 
-### UI
+If the state file is missing or broken, the mod seeds state from the catalog.
 
-Die UI ist eine IMGUI-Oberflaeche mit ApplicationLauncher-Buttons:
+## Mission Catalogs
 
-- Auswahlfenster fuer verfuegbare Missionen.
-- Aktive-Missionen-Fenster mit Fortschritt.
-- Settings-Fenster.
+The default German catalog is generated from:
 
-Die Missionen werden nach Sparte und Unterkategorie gruppiert. Body-Icons,
-Mission-Icons und Farben kommen aus `BodyVisual` und `IconLibrary`.
+```text
+custom_science_contracts_missionsdesign.md
+```
 
-Icons werden direkt aus dem Modordner geladen. `GameDatabase` ist nur ein
-Fallback, damit veraltete gecachte Icons im Spiel seltener ein Problem sind.
+Generator:
 
-## Contract-Status
+```bash
+python3 tools/gen_catalog.py
+```
 
-Eine Mission bewegt sich durch diese Zustaende:
+Output:
 
-- `Locked`: Voraussetzungen fehlen.
-- `Available`: Voraussetzungen sind erfuellt, aber die Mission ist noch nicht
-  angenommen.
-- `Active`: Mission wurde angenommen und wird geprueft.
-- `ReadyToClaim`: alle Bedingungen sind erfuellt, Reward wurde aber noch nicht
-  ausgezahlt.
-- `CompletedOnce`: Mission wurde mindestens einmal abgeschlossen.
+```text
+GameData/CustomScienceContracts/Contracts/
+├── A_Pioniere.cfg
+├── B_Spaeher.cfg
+├── C_Lebensadern.cfg
+└── D_Stationen.cfg
+```
 
-Nicht wiederholbare Missionen sind danach fertig. Wiederholbare Missionen
-wandern nach dem Erstabschluss in `Wiederholbar`.
+The optional English catalog is generated from the same mission source:
 
-## Sichtbarkeit
+```bash
+python3 tools/gen_catalog_en.py
+```
 
-Die Sichtbarkeit wird in `VisibilityRules` begrenzt:
+Output:
 
-- Bemannte Missionen: anfangs 3 sichtbare verfuegbare Missionen, spaeter 5.
-- Robotische Erkundung: 4 sichtbare Missionen pro Unterkategorie.
-- Aeusseres System: nach dem Planeten-Flyby koennen alle Missionen der
-  Unterkategorie sichtbar werden.
-- Netzwerk/Logistik: 3 sichtbare Missionen pro Unterkategorie.
+```text
+OptionalConfigs/English/GameData/CustomScienceContracts/Contracts/
+```
 
-Aktive Limits stehen in `Tuning`:
+The English catalog uses the same ids, prerequisites, rewards and checks as the
+German catalog. It changes only player-facing titles, descriptions, subcategory
+labels and checklist labels.
 
-- Bemannt: 3 aktive Missionen.
-- Robotische Erkundung: 10 aktive Missionen.
-- Netzwerk/Logistik: 5 aktive Missionen.
+## Validation
 
-## Repeatables
-
-Wiederholbare Missionen sind nach dem Erstabschluss nicht mehr in ihrer
-Heimatliste, sondern in `Wiederholbar`.
-
-Cooldown-Regel:
-
-- Nach Einloesen wird der Zaehler auf 0 gesetzt.
-- Jede andere abgeschlossene Mission erhoeht ihn um 1.
-- Wieder annehmbar ab 2 anderen Abschluessen.
-
-## Check-System
-
-Die meisten Missionen nutzen eine `COMPOSITE`-Condition mit mehreren `CHECK`
-Teilzielen. Dadurch kann die UI jede Teilbedingung einzeln anzeigen.
-
-Wichtige Check-Typen:
-
-- `CREW_NONE`, `CREW_MIN`, `CREW_EXACT`: Besatzung.
-- `ORBIT_ABOVE Body [km]`: aktives Vessel in stabilem Orbit. Mit `km` muss die
-  Periapsis strikt groesser als dieser Wert sein. Ohne `km` wird die
-  Atmosphaerenhoehe des Bodies aus der KSP-API genutzt.
-- `INCLINATION_MIN Body degrees`: Orbit-Inklination mindestens Wert.
-- `VESSEL_COUNT Body count [km]`: Anzahl echter Vessels im Orbit, optional mit
-  Periapsis strikt groesser als `km`.
-- `VESSEL_COUNT_INCLINATION Body count degrees [km]`: wie `VESSEL_COUNT`, aber
-  mit Mindest-Inklination.
-- `LANDED Body`: gelandet oder gesplasht.
-- `ATMO_FRACTION Body min max`: Hoehe als Anteil der Atmosphaerenhoehe.
-- `FLYBY Body km`: SOI-Durchflug ohne Orbit/Landung, optional mit maximaler
-  Annaeherung.
-- `MARKER_LANDING Body km`: Landung bei einem gesetzten Zielpunkt.
-- `EVA Body Situation`: Kerbal im EVA-Zustand.
-- `DOCK_ANY`, `DOCK_STATION`: Andocken.
-- `FUEL_MIN`, `RESOURCE_MIN`, `ORE_SURFACE`: Ressourcen und Logistik.
-- `HOLD seconds`: Zustand fuer Sekunden halten.
-- `DURATION days`: Zustand fuer KSP-Tage halten.
-
-Wichtig: Hoehenchecks sind als "ueber der Zahl" implementiert, nicht als
-"genau diese Zahl". Bei `ORBIT_ABOVE Mars 250` gilt also `PeA > 250 km`.
-
-## Stationen, Basen und Depots
-
-Stationsketten werden aus dem Abschnitt `STATIONSKETTEN` im Missionsdesign
-generiert. Beim Bauauftrag merkt sich der Mod das Vessel als konkrete Station
-oder Basis. Spaetere Versorgung und Andockmissionen koennen dann gezielt gegen
-dieses Vessel pruefen.
-
-Beispiele:
-
-- Erdstation.
-- Mondstation.
-- Mondbasis.
-- Marsstation.
-- Marsbasis.
-- Erdorbit-Treibstoffdepot.
-
-## Build-Workflow
-
-Normaler Arbeitsablauf:
+Run the full validation workflow after mission or generator changes:
 
 ```bash
 python3 tools/validate_design.py
 python3 tools/gen_catalog.py
 python3 tools/validate_catalog.py
-./build.sh
+python3 tools/gen_catalog_en.py
+python3 tools/validate_catalog.py OptionalConfigs/English/GameData/CustomScienceContracts/Contracts
 ```
 
-Direkter Build ohne KSP-Kopie:
+The catalog validator checks:
+
+- duplicate ids,
+- dangling prerequisites,
+- invalid `revealAllAfter` references,
+- unsupported check kinds,
+- missing SOL bodies,
+- unknown icons,
+- station keys without matching `recordStationKey`.
+
+## Build
+
+On this machine, use the explicit dotnet path:
 
 ```bash
-dotnet build -c Release \
-  -p:KSPManaged="/path/to/KSP/KSP.app/Contents/Resources/Data/Managed" \
+/usr/local/share/dotnet/dotnet build -c Release \
+  -p:KSPManaged="$HOME/Library/Application Support/Steam/steamapps/common/Kerbal Space Program/KSP.app/Contents/Resources/Data/Managed" \
   CustomScienceContracts.sln
 ```
 
-Nach dem Build liegt die DLL hier:
+The build copies `CustomScienceContracts.dll` into:
 
 ```text
-GameData/CustomScienceContracts/Plugins/CustomScienceContracts.dll
+GameData/CustomScienceContracts/Plugins/
 ```
 
-`build.sh` kopiert danach den ganzen Modordner in die lokale KSP-Installation.
+## Release Packaging
 
-## Release-Workflow
-
-1. Design pruefen.
-2. Katalog generieren.
-3. Katalog pruefen.
-4. Release-Build erstellen.
-5. Paket bauen mit:
+The main release zip should contain:
 
 ```text
+GameData/
 README.md
-GameData/CustomScienceContracts/
+LICENSE
+THIRD_PARTY_NOTICES.md
+LICENSES/
+CHANGELOG.md
+DOKUMENTATION.md
 ```
 
-6. Git-Commit und GitHub-Tag setzen.
-7. Zip als GitHub-Release-Asset hochladen.
-
-## Entwicklungsregeln
-
-- Missionen immer zuerst im Missionsdesign aendern.
-- Generierte `.cfg`-Dateien nicht von Hand pflegen.
-- Keine erfundenen Body-Namen.
-- Keine hardcodeten Body-Radien oder Atmosphaerenhoehen.
-- Keine Part-Anforderungen.
-- Keine Kopplung an Kerbalism, Simplex oder andere Mod-APIs.
-- UI darf die aktuelle dunkle Optik behalten.
-- Contract-Titel und -Beschreibungen bleiben deutsch.
-
-## Lizenz und Drittanbieter-Assets
-
-Der Mod selbst ist unter GNU GPL v3.0 lizenziert. Die Hauptlizenz steht in
-`LICENSE`, der vollstaendige GPL-v3.0-Text in `LICENSES/GPL-3.0.txt`.
-
-Nicht alle Bilddateien sind eigenes Artwork:
-
-- Der Mod enthaelt unveraenderte Bild-Assets aus ZTheme. ZTheme ist unter GNU
-  GPL v3.0 lizenziert.
-- Der Mod enthaelt unveraenderte Bild-Assets aus Kerbal Planet Emblems. Kerbal
-  Planet Emblems ist unter MIT lizenziert.
-- Aus diesen Mods wurde kein Code verwendet.
-- Die verwendeten Drittanbieter-Assets wurden nicht veraendert.
-
-Details stehen in `THIRD_PARTY_NOTICES.md`. Der MIT-Lizenztext fuer Kerbal
-Planet Emblems (Autor: Chickenhunt) liegt unter
-`LICENSES/MIT-Kerbal-Planet-Emblems.txt`. Da der Upstream auf SpaceDock keine
-separate Lizenzdatei mitliefert, gibt diese Datei den Standard-MIT-Text mit der
-Autoren-Zuschreibung aus dem offiziellen SpaceDock-Eintrag wieder.
-
-## Pruefstand
-
-Letzter bekannter Pruefstand:
+The optional English contracts zip should contain:
 
 ```text
-python3 tools/validate_design.py  -> OK
-python3 tools/validate_catalog.py -> OK
-dotnet build -c Release           -> OK
+GameData/CustomScienceContracts/Contracts/
+README.md
 ```
 
-Beim Build kann eine NuGet-Warnung zu Sicherheitsdaten auftreten, wenn kein
-Netzwerkzugriff auf `https://api.nuget.org/v3/index.json` besteht. Diese Warnung
-betrifft nicht den Mod-Code.
+The optional English zip is installed after the main mod and replaces only the
+contract catalog files.
+
+## Legal Notes
+
+The mod code is GPL-3.0. Some bundled image assets are third-party assets:
+
+- ZTheme image assets, unmodified, GPL-3.0.
+- Kerbal Planet Emblems image assets, unmodified, MIT.
+
+No code from those projects is used. Do not claim that all assets are original
+CustomScienceContracts artwork.

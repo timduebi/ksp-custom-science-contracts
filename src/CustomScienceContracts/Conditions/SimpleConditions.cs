@@ -6,13 +6,12 @@ using UnityEngine;
 namespace CustomScienceContracts.Conditions
 {
     // ============================================================================
-    //  Einfache Bedingungen (Schritt 4). Einzel-Vessel-Typen werten das AKTIVE
-    //  Fahrzeug aus (FlightGlobals.ActiveVessel). VESSEL_COUNT_ORBIT zaehlt alle
-    //  realen Vessels; DOCK/ATMO_ENTRY sind ereignisbasiert. Body wird zur Laufzeit
-    //  aufgeloest; fehlt er, ist die Bedingung inert. Atmo/Tageslaenge aus der API.
+    //  Simple conditions. Single-vessel types evaluate FlightGlobals.ActiveVessel.
+    //  VESSEL_COUNT_ORBIT counts all real vessels; DOCK/ATMO_ENTRY are event-based.
+    //  Bodies are resolved at runtime. Missing bodies make the condition inert.
     // ============================================================================
 
-    /// <summary>ORBITING + orbit.PeA &gt; atmosphereDepth, optional Crew &gt;= N (aktives Vessel).</summary>
+    /// <summary>ORBITING + orbit.PeA &gt; atmosphereDepth, optional crew &gt;= N.</summary>
     public sealed class OrbitEvaluator : ConditionEvaluatorBase
     {
         public override ConditionType Type => ConditionType.ORBIT;
@@ -24,7 +23,7 @@ namespace CustomScienceContracts.Conditions
         }
     }
 
-    /// <summary>ORBITING + orbit.PeA &gt; minAltitudeKm, optional Crew &gt;= N (aktives Vessel).</summary>
+    /// <summary>ORBITING + orbit.PeA &gt; minAltitudeKm, optional crew &gt;= N.</summary>
     public sealed class OrbitHighEvaluator : ConditionEvaluatorBase
     {
         public override ConditionType Type => ConditionType.ORBIT_HIGH;
@@ -39,7 +38,7 @@ namespace CustomScienceContracts.Conditions
         }
     }
 
-    /// <summary>LANDED/SPLASHED auf Zielkoerper, optional Crew &gt;= N (aktives Vessel).</summary>
+    /// <summary>LANDED/SPLASHED at target body, optional crew &gt;= N.</summary>
     public sealed class LandedEvaluator : ConditionEvaluatorBase
     {
         public override ConditionType Type => ConditionType.LANDED;
@@ -53,7 +52,7 @@ namespace CustomScienceContracts.Conditions
         }
     }
 
-    /// <summary>Hoehe zwischen minFraction*atmoDepth und maxFraction*atmoDepth, Situation FLYING.</summary>
+    /// <summary>Altitude between minFraction*atmoDepth and maxFraction*atmoDepth, situation FLYING.</summary>
     public sealed class AltFractionAtmoEvaluator : ConditionEvaluatorBase
     {
         public override ConditionType Type => ConditionType.ALT_FRACTION_ATMO;
@@ -69,7 +68,7 @@ namespace CustomScienceContracts.Conditions
         }
     }
 
-    /// <summary>Hoehe &gt; atmosphereDepth, Situation SUB_ORBITAL (aktives Vessel).</summary>
+    /// <summary>Altitude &gt; atmosphereDepth, situation SUB_ORBITAL.</summary>
     public sealed class AboveAtmoSuborbitalEvaluator : ConditionEvaluatorBase
     {
         public override ConditionType Type => ConditionType.ABOVE_ATMO_SUBORBITAL;
@@ -84,7 +83,7 @@ namespace CustomScienceContracts.Conditions
         }
     }
 
-    /// <summary>Aktives Vessel ist im EVA-Zustand in der Ziel-Situation am Zielkoerper.</summary>
+    /// <summary>Active vessel is an EVA in the target situation at the target body.</summary>
     public sealed class EvaEvaluator : ConditionEvaluatorBase
     {
         public override ConditionType Type => ConditionType.EVA;
@@ -97,10 +96,9 @@ namespace CustomScienceContracts.Conditions
         }
     }
 
-    /// <summary>Situation + Crew &gt;= N + zusammenhaengende UT-Spanne &gt;= T Tage. Verfolgt ein
-    /// konkretes Vessel ueber persistentId — die Zeit laeuft weiter, auch wenn das Vessel nicht
-    /// aktiv/fokussiert ist (auch unloaded). Verliert das Vessel Situation/Crew oder verschwindet
-    /// es, startet der Timer mit einem anderen passenden Vessel neu. Optional Hochorbit (minAltitudeKm).</summary>
+    /// <summary>Situation + crew &gt;= N + continuous UT span &gt;= T days. Tracks one vessel by
+    /// persistentId, so time continues while the vessel is unfocused or unloaded. If the vessel
+    /// loses situation/crew or disappears, the timer restarts with another matching vessel. Optional high orbit.</summary>
     public sealed class CrewDurationEvaluator : ConditionEvaluatorBase
     {
         public override ConditionType Type => ConditionType.CREW_DURATION;
@@ -131,7 +129,7 @@ namespace CustomScienceContracts.Conditions
 
             if (!(tracked != null && Predicate(tracked) && startUT >= 0.0))
             {
-                // verfolgtes Vessel weg/ungeeignet -> neues passendes Vessel suchen
+                // Tracked vessel disappeared or no longer qualifies -> find a new matching vessel.
                 var v0 = VesselQuery.RealVessels(ctx.Vessels).FirstOrDefault(Predicate);
                 if (v0 == null) { Reset(c); return false; }
                 startUT = ctx.UniversalTime;
@@ -158,15 +156,14 @@ namespace CustomScienceContracts.Conditions
             double.TryParse(n.GetValue(k), NumberStyles.Float, CultureInfo.InvariantCulture, out double r) ? r : def;
     }
 
-    /// <summary>Andocken (onPartCouple) in Ziel-Situation/-Koerper. Body/Situation optional.</summary>
+    /// <summary>Docking (onPartCouple) in target situation/body. Body/situation optional.</summary>
     public sealed class DockEvaluator : ConditionEvaluatorBase
     {
         public override ConditionType Type => ConditionType.DOCK;
         public override bool Evaluate(MissionContract c, Condition cond, EvaluationContext ctx)
         {
             var body = VesselQuery.Body(cond.Body);
-            // Zielt der Auftrag auf eine konkrete gemerkte Station, muss diese existieren und am
-            // Andocken beteiligt sein (sonst zaehlt jedes Andockmanoever).
+            // If the contract targets a recorded station, that station must exist and be involved.
             var station = ctx.Stations?.Get(cond.StationKey);
             if (!string.IsNullOrEmpty(cond.StationKey) && station == null) return false;
 
@@ -183,7 +180,7 @@ namespace CustomScienceContracts.Conditions
         }
     }
 
-    /// <summary>LANDED + Ore-Menge &gt; 0 auf Zielkoerper (aktives Vessel).</summary>
+    /// <summary>LANDED + Ore amount &gt; 0 at target body.</summary>
     public sealed class OreSurfaceEvaluator : ConditionEvaluatorBase
     {
         public override ConditionType Type => ConditionType.ORE_SURFACE;
@@ -197,7 +194,7 @@ namespace CustomScienceContracts.Conditions
         }
     }
 
-    /// <summary>&gt;= N reale Vessels gleichzeitig ORBITING um Koerper (optional PeA &gt; minAltitudeKm).</summary>
+    /// <summary>&gt;= N real vessels ORBITING around body at once, optional PeA &gt; minAltitudeKm.</summary>
     public sealed class VesselCountOrbitEvaluator : ConditionEvaluatorBase
     {
         public override ConditionType Type => ConditionType.VESSEL_COUNT_ORBIT;
@@ -214,7 +211,7 @@ namespace CustomScienceContracts.Conditions
         }
     }
 
-    /// <summary>ORBITING + Treibstoff (LiquidFuel+Oxidizer) &gt; Schwelle (aktives Vessel).</summary>
+    /// <summary>ORBITING + fuel (LiquidFuel+Oxidizer) &gt; threshold.</summary>
     public sealed class FuelOrbitEvaluator : ConditionEvaluatorBase
     {
         public override ConditionType Type => ConditionType.FUEL_ORBIT;
@@ -229,7 +226,7 @@ namespace CustomScienceContracts.Conditions
         }
     }
 
-    /// <summary>Wechsel zu FLYING ueber einem Koerper mit Atmosphaere (Re-/Entry, ereignisbasiert).</summary>
+    /// <summary>Change to FLYING over a body with atmosphere, event-based.</summary>
     public sealed class AtmoEntryEvaluator : ConditionEvaluatorBase
     {
         public override ConditionType Type => ConditionType.ATMO_ENTRY;

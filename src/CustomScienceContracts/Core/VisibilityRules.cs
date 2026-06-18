@@ -5,23 +5,20 @@ using CustomScienceContracts.Model;
 
 namespace CustomScienceContracts.Core
 {
-    /// <summary>Berechnet, welche Available-Contracts im Auswahlfenster (Heimatsparten) sichtbar sind.
-    /// Repeatable-Contracts, die schon einmal abgeschlossen wurden, leben in der Sparte Wiederholbar
-    /// und werden hier NICHT mehr gelistet.</summary>
+    /// <summary>Computes which Available contracts are visible in the selection window for home
+    /// branches. Repeatables that have been completed once live in Wiederholbar and are no longer listed here.</summary>
     public static class VisibilityRules
     {
-        /// <summary>Contract ist in seiner Heimatsparte listbar (Available und noch nicht in den
-        /// Wiederholbar-Pool gewandert).</summary>
+        /// <summary>Contract is listable in its home branch: Available and not moved into the Wiederholbar pool.</summary>
         public static bool IsHomeAvailable(MissionContract c) =>
             c.Status == MissionStatus.Available && !c.IsRepeatableInPool;
 
-        /// <summary>Liefert die Menge der Ids, die in den Heimatsparten aktuell sichtbar sind.
-        /// Reihenfolge = Katalog-Reihenfolge (stabil).</summary>
+        /// <summary>Returns the ids currently visible in home branches. Order follows the stable catalog order.</summary>
         public static HashSet<string> ComputeVisible(ContractCatalog cat)
         {
             var visible = new HashSet<string>();
 
-            // Test-Schalter: alles freischaltbare ohne Limits zeigen.
+            // Test switch: show every unlockable contract without limits.
             if (Tuning.UnlockAll)
             {
                 foreach (var c in cat.All)
@@ -29,7 +26,7 @@ namespace CustomScienceContracts.Core
                 return visible;
             }
 
-            // --- Bemannt: globales Limit 3, ab >= 50 % CompletedOnce -> 5 ---
+            // --- Crewed: global cap 3, then 5 once >= 50 % are CompletedOnce ---
             var bemannt = cat.InSparte(Sparte.Bemannt).ToList();
             int bemTotal = bemannt.Count;
             int bemDone = bemannt.Count(ContractManager.IsCompleted);
@@ -39,7 +36,7 @@ namespace CustomScienceContracts.Core
             foreach (var c in bemannt.Where(IsHomeAvailable).Take(bemCap))
                 visible.Add(c.Id);
 
-            // --- Unbemannte Erkundung: 4 pro Unterkategorie; RevealAllAfter hebt das Limit auf ---
+            // --- Robotic exploration: 4 per subcategory; RevealAllAfter lifts the cap ---
             foreach (string sub in cat.Subcategories(Sparte.UnbemannteErkundung))
             {
                 var inSub = cat.InSubcategory(Sparte.UnbemannteErkundung, sub).ToList();
@@ -52,7 +49,7 @@ namespace CustomScienceContracts.Core
                 foreach (var c in shown) visible.Add(c.Id);
             }
 
-            // --- Netzwerk/Logistik: 3 pro Unterkategorie ---
+            // --- Network/logistics: 3 per subcategory ---
             foreach (string sub in cat.Subcategories(Sparte.NetzwerkLogistik))
             {
                 var inSub = cat.InSubcategory(Sparte.NetzwerkLogistik, sub);
