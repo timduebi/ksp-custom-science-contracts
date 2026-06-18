@@ -14,22 +14,22 @@ ResearchAndDevelopment.AddScience(amount, TransactionReasons.Cheating)
 
 ## Mission Sources
 
-The German mission design source is:
+The SOL mission design source is:
 
 ```text
 custom_science_contracts_missionsdesign.md
 ```
 
-Generated German catalogs live in:
+Generated default English SOL catalogs live in:
 
 ```text
 GameData/CustomScienceContracts/Contracts/*.cfg
 ```
 
-Generated English replacement catalogs live in:
+Generated German SOL replacement catalogs live in:
 
 ```text
-OptionalConfigs/English/GameData/CustomScienceContracts/Contracts/*.cfg
+OptionalConfigs/SOL-German/GameData/CustomScienceContracts/Contracts/*.cfg
 ```
 
 Never hand-edit generated `.cfg` files. Change the mission design or generator,
@@ -39,8 +39,8 @@ then regenerate and validate.
 
 - `src/CustomScienceContracts/` - C# plugin source.
 - `GameData/CustomScienceContracts/` - deployable mod folder with generated
-  German contracts, icons, plugin DLL and settings.
-- `OptionalConfigs/English/` - optional English replacement contract pack.
+  English SOL contracts, icons, plugin DLL and settings.
+- `OptionalConfigs/SOL-German/` - optional German SOL replacement contract pack.
 - `tools/` - design/catalog generators and validators.
 - `custom_science_contracts_missionsdesign.md` - German campaign flow and
   mission source.
@@ -69,8 +69,7 @@ Design/catalog workflow:
 python3 tools/validate_design.py
 python3 tools/gen_catalog.py
 python3 tools/validate_catalog.py
-python3 tools/gen_catalog_en.py
-python3 tools/validate_catalog.py OptionalConfigs/English/GameData/CustomScienceContracts/Contracts
+python3 tools/validate_catalog.py OptionalConfigs/SOL-German/GameData/CustomScienceContracts/Contracts
 ```
 
 Do not treat `bin/`, `obj/`, generated DLLs or release archives as source.
@@ -102,13 +101,13 @@ completion. They become available again after two other mission completions.
 - No dependency on Kerbalism or Simplex APIs.
 - No hardcoded body sizes or atmosphere heights.
 - No hand-editing generated contract cfg files.
-- Keep the German default catalog intact when adding English text.
+- Keep the default English SOL catalog and optional German SOL config in sync.
 
 ## Text and Style
 
-The plugin UI, documentation and release notes are English from version 0.2.0.
-The default shipped contract catalog remains German. The optional English catalog
-is generated separately and uses the same contract ids, prerequisites and checks.
+The plugin UI, documentation and release notes are English. The default shipped
+SOL contract catalog is English. The optional German SOL catalog is generated
+separately and uses the same contract ids, prerequisites and checks.
 
 Code comments should be English. Contract enum names such as `Bemannt` and
 `NetzwerkLogistik` are stable technical keys and must not be renamed without a

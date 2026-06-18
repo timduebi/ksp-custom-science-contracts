@@ -7,7 +7,10 @@ check types, unknown bodies and invalid branches. Read-only.
 import re, os, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DOC = os.path.join(ROOT, "custom_science_contracts_missionsdesign.md")
+DOC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "custom_science_contracts_missionsdesign.md")
+if not os.path.isabs(DOC):
+    DOC = os.path.join(ROOT, DOC)
+PROFILE = (sys.argv[2].lower() if len(sys.argv) > 2 else ("stock" if "stock" in DOC.lower() else "sol"))
 text = open(DOC, encoding="utf-8").read()
 
 SOL_BODIES = {  # known internal body names from SOL
@@ -17,14 +20,19 @@ SOL_BODIES = {  # known internal body names from SOL
  "Oberon","Pallas","Phobos","Phoebe","Pluto","Proteus","Psyche","Puck","Rhea","Ryugu",
  "Saturn","Styx","Sun","Tethys","Thebe","Titan","Titania","Triton","Umbriel","Uranus",
  "Venus","Vesta"}
+STOCK_BODIES = {
+ "Sun","Kerbin","Mun","Minmus","Moho","Eve","Gilly","Duna","Ike","Dres","Jool",
+ "Laythe","Vall","Tylo","Bop","Pol","Eeloo"}
+BODIES = STOCK_BODIES if PROFILE == "stock" else SOL_BODIES
 
 # Check token in the design plan -> whether the first argument is a body.
 CHECK_BODY = {"ATMO_FRACTION","SUBORBITAL","ORBIT_ABOVE","INCLINATION_MIN","VESSEL_COUNT","VESSEL_COUNT_INCLINATION",
-              "EVA","FLYBY","LANDED","MARKER_LANDING","ORE_SURFACE"}
+              "EVA","FLYBY","LANDED","MARKER_LANDING","ORE_SURFACE","RETURN_FROM_BODY"}
 CHECK_NOBODY = {"CREW_NONE","CREW_MIN","CREW_EXACT","HOLD","DURATION","DOCK_ANY",
                 "DOCK_STATION","FUEL_MIN","RESOURCE_MIN"}
 KNOWN_CHECKS = CHECK_BODY | CHECK_NOBODY
-SPARTEN = {"Pioniere","Robotische Erkunder","Versorgungsnetz"}
+SPARTEN = {"Pioniere","Robotische Erkunder","Versorgungsnetz",
+           "Pioneers","Robotic Explorers","Lifelines"}
 
 # ---- Parse missions ----
 missions = []
@@ -36,7 +44,7 @@ for blk in text.split("=== MISSION ===")[1:]:
         if s.startswith("=="): break
         if s.startswith("check:"):
             checks.append(s[len("check:"):].strip()); continue
-        mm = re.match(r"(id|sparte|body|prereq|reward|repeatable|recordStation|stationRef|beschreibung|icon):\s*(.*)$", s)
+        mm = re.match(r"(id|sparte|body|prereq|reward|repeatable|recordStation|stationRef|beschreibung|description|icon):\s*(.*)$", s)
         if mm: m[mm.group(1)] = mm.group(2).strip()
     if "id" in m:
         m["checks"] = checks
@@ -93,9 +101,12 @@ for m in missions:
         if kind not in KNOWN_CHECKS: unknown_checks.add(kind)
         if kind in CHECK_BODY and len(toks) >= 2:
             used_bodies.add(toks[1])
-            if toks[1] not in SOL_BODIES: unknown_bodies.add(toks[1])
+            if toks[1] not in BODIES: unknown_bodies.add(toks[1])
+        if kind == "RETURN_FROM_BODY" and len(toks) >= 3:
+            used_bodies.add(toks[2])
+            if toks[2] not in BODIES: unknown_bodies.add(toks[2])
     b = m.get("body")
-    if b and b not in SOL_BODIES: unknown_bodies.add(b)
+    if b and b not in BODIES: unknown_bodies.add(b)
 
 # Branches.
 bad_sparte = sorted({m.get("sparte","?") for m in missions if m.get("sparte") not in SPARTEN})
@@ -107,6 +118,8 @@ record_keys = {m["recordStation"] for m in missions if m.get("recordStation","-"
 ref_keys    = {m["stationRef"]    for m in missions if m.get("stationRef","-") != "-"}
 
 # ---- Report ----
+print("Design file:", DOC)
+print("Profile:", PROFILE)
 print(f"Missions: {len(missions)}   (station chains generate {len(gen_ids)} additional ids)")
 print("Per branch:", by_sparte)
 print("Chains:", [c['key'] for c in chains])

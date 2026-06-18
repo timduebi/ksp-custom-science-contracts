@@ -10,7 +10,7 @@ import re, os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOC  = os.path.join(ROOT, "custom_science_contracts_missionsdesign.md")
-OUT  = os.path.join(ROOT, "GameData", "CustomScienceContracts", "Contracts")
+OUT  = os.path.join(ROOT, "OptionalConfigs", "SOL-German", "GameData", "CustomScienceContracts", "Contracts")
 
 SPARTE = {"Pioniere": "Bemannt", "Robotische Erkunder": "UnbemannteErkundung",
           "Versorgungsnetz": "NetzwerkLogistik"}
@@ -99,6 +99,9 @@ def parse_check(s):
     elif kind == "DOCK_ANY": kv = []
     elif kind == "HOLD": kv = [("seconds", a[0])]
     elif kind == "DURATION": kv = [("days", a[0])]
+    elif kind == "RETURN_FROM_BODY":
+        kv = [("body", a[0]), ("returnBody", a[1])]
+        if len(a) > 2: kv.append(("returnMode", a[2]))
     else: raise SystemExit(f"Unbekannter Check '{kind}' in: {s}")
     return kind, kv, label
 
@@ -215,14 +218,34 @@ def mission_contract(m):
 HEADER = ("// ===========================================================================\n"
           "//  {t}\n"
           "//  GENERIERT aus custom_science_contracts_missionsdesign.md (tools/gen_catalog.py).\n"
+          "//  Optionale deutsche SOL-Konfiguration. Standard-Download ist englisch.\n"
           "//  NICHT von Hand editieren — Designplan/Skript aendern und neu generieren.\n"
           "//  Body-Namen = interne CelestialBody.name (Luna = Moon, Stern = Sun).\n"
           "// ===========================================================================\n\n"
           "CUSTOM_CONTRACT_CATALOG\n{{\n")
 
 def write_file(path, title, body):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         f.write(HEADER.format(t=title) + body + "}\n")
+
+def write_optional_readme():
+    path = os.path.join(ROOT, "OptionalConfigs", "SOL-German", "README.md")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("""# SOL German contract config
+
+This optional config replaces the default English SOL contract catalog with the German
+version.
+
+Install:
+1. Install the main mod download first.
+2. Copy this folder's `GameData` directory into your KSP install.
+3. Allow it to overwrite `GameData/CustomScienceContracts/Contracts`.
+
+Only contract text/config files are replaced. The plugin, icons, licenses and other
+assets come from the main download.
+""")
 
 # ---------------- Stationsketten ----------------
 def kerbals(n): return "1 Kerbal" if n == 1 else f"{n} Kerbals"
@@ -385,11 +408,14 @@ def main():
     write_file(os.path.join(OUT, "B_Spaeher.cfg"), "SPARTE B — ROBOTISCHE ERKUNDER (unbemannt)", "".join(buckets["Robotische Erkunder"]))
     write_file(os.path.join(OUT, "C_Lebensadern.cfg"), "SPARTE C — VERSORGUNGSNETZ (Logistik)", "".join(buckets["Versorgungsnetz"]))
     write_file(os.path.join(OUT, "D_Stationen.cfg"), "STATIONEN, BASEN & DEPOTS (generierte Ketten)", build_stations())
+    write_optional_readme()
     print(f"A Pioniere:           {len(buckets['Pioniere'])}")
     print(f"B Robotische Erkunder:{len(buckets['Robotische Erkunder'])}")
     print(f"C Versorgungsnetz:    {len(buckets['Versorgungsnetz'])}")
     print(f"D Stationen: generiert ({sum(len(s) for s in [build_stations()])} Zeichen)")
-    print("Geschrieben nach", OUT)
+    print("Deutsche SOL-Konfiguration geschrieben nach", OUT)
+    import gen_catalog_en
+    gen_catalog_en.main()
 
 if __name__ == "__main__":
     main()

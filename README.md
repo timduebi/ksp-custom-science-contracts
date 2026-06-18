@@ -9,20 +9,23 @@ starts with early uncrewed Earth tests and grows into crewed lunar and Martian
 exploration, stations, bases, logistics chains, communication networks,
 asteroid branches, outer-planet probes and late-game Titan infrastructure.
 
-## Languages
+## Languages and Config Tracks
 
-The main release ships with the original German contract catalog.
+The main release ships with the English SOL Quarter-Scale contract catalog.
 
-An optional English contract catalog is published as a separate release asset.
-Install the main mod first, then install the English contract pack over it to
+An optional German SOL contract catalog is published as a separate release asset.
+Install the main mod first, then install the German SOL config pack over it to
 replace only the mission text/config files:
 
 ```text
 GameData/CustomScienceContracts/Contracts/
 ```
 
-The plugin UI, repository documentation and release notes are English from
-version 0.2.0 onward. Stock KSP contract configs are planned but not included yet.
+The plugin UI, repository documentation and release notes are English.
+
+Stock KSP configs are developed separately on the Stock campaign branch. That
+track is English-only and is intended to become its own main-download variant
+instead of being mixed into the SOL release.
 
 ## Installation
 
@@ -43,9 +46,13 @@ Kerbal Space Program/
         └── settings.cfg
 ```
 
-To use the English mission texts, download the matching
-`CustomScienceContracts-EnglishContracts-vX.Y.Z.zip` asset and copy its
-`GameData` folder over the main installation.
+To use the German SOL mission texts, download the matching
+`CustomScienceContracts-SOL-GermanConfig-vX.Y.Z.zip` asset and copy its
+`GameData` folder over the main installation. Allow it to overwrite:
+
+```text
+GameData/CustomScienceContracts/Contracts/
+```
 
 ## Dependencies
 
@@ -101,7 +108,7 @@ waypoint state, repeatable cooldowns and registered stations/bases.
 
 ## Development
 
-The German mission design source is:
+The SOL mission design source is:
 
 ```text
 custom_science_contracts_missionsdesign.md
@@ -109,14 +116,17 @@ custom_science_contracts_missionsdesign.md
 
 Generated catalog files must not be edited by hand.
 
+`tools/gen_catalog.py` generates both the default English SOL catalog in
+`GameData/CustomScienceContracts/Contracts/` and the optional German SOL config
+under `OptionalConfigs/SOL-German/`.
+
 Common workflow:
 
 ```bash
 python3 tools/validate_design.py
 python3 tools/gen_catalog.py
 python3 tools/validate_catalog.py
-python3 tools/gen_catalog_en.py
-python3 tools/validate_catalog.py OptionalConfigs/English/GameData/CustomScienceContracts/Contracts
+python3 tools/validate_catalog.py OptionalConfigs/SOL-German/GameData/CustomScienceContracts/Contracts
 ./build.sh
 ```
 

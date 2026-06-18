@@ -236,6 +236,11 @@ namespace CustomScienceContracts.UI
                     ? $"Fly by {body} with closest approach below {chk.Km:0} km"
                     : $"Fly by {body}";
                 case CheckKind.MARKER_LANDING: return $"Precision landing at {body} within {(chk.Km > 0 ? chk.Km : 15):0} km";
+                case CheckKind.RETURN_FROM_BODY:
+                    string home = BodyVisual.DisplayName(string.IsNullOrEmpty(chk.ReturnBody) ? "Kerbin" : chk.ReturnBody);
+                    return string.Equals(chk.ReturnMode, "flyby", System.StringComparison.OrdinalIgnoreCase)
+                        ? $"Fly by {body}, then return to {home}"
+                        : $"Return from {body} to {home}";
                 case CheckKind.FUEL_MIN:    return $"More than {chk.Amount:0} units of fuel aboard";
                 case CheckKind.RESOURCE_MIN:return $"More than {chk.Amount:0} {chk.Resource} aboard";
                 case CheckKind.EVA:         return "Kerbal on EVA";
@@ -281,6 +286,10 @@ namespace CustomScienceContracts.UI
                 return $"Distance to marker: {dist / 1000.0:0.0} km";
             if (TryD(p, "fb_bestApproach", out double app) && app < 1e29)
                 return $"Closest approach: {app / 1000.0:0} km";
+            string ret = p.GetValue("ret_status");
+            if (ret == "awaiting_return") return "Return landing logged: come home";
+            if (ret == "awaiting_source") return "Waiting for destination landing";
+            if (ret == "awaiting_visit") return "Waiting for destination flyby";
             return null;
         }
 

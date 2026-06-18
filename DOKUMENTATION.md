@@ -84,7 +84,7 @@ Supported check types include:
   `VESSEL_COUNT_INCLINATION`.
 - Time: `HOLD`, `DURATION`.
 - Events: `DOCK_ANY`, `DOCK_STATION`.
-- Stateful goals: `FLYBY`, `MARKER_LANDING`.
+- Stateful goals: `FLYBY`, `MARKER_LANDING`, `RETURN_FROM_BODY`.
 - Resources: `FUEL_MIN`, `RESOURCE_MIN`, `ORE_SURFACE`.
 - Atmosphere: `ATMO_FRACTION`, `SUBORBITAL_ABOVE_ATMO`.
 
@@ -124,7 +124,7 @@ If the state file is missing or broken, the mod seeds state from the catalog.
 
 ## Mission Catalogs
 
-The default German catalog is generated from:
+The SOL catalog is generated from:
 
 ```text
 custom_science_contracts_missionsdesign.md
@@ -136,7 +136,7 @@ Generator:
 python3 tools/gen_catalog.py
 ```
 
-Output:
+Default English output, shipped in the main download:
 
 ```text
 GameData/CustomScienceContracts/Contracts/
@@ -146,21 +146,17 @@ GameData/CustomScienceContracts/Contracts/
 └── D_Stationen.cfg
 ```
 
-The optional English catalog is generated from the same mission source:
-
-```bash
-python3 tools/gen_catalog_en.py
-```
-
-Output:
+The optional German SOL config is generated from the same mission source:
 
 ```text
-OptionalConfigs/English/GameData/CustomScienceContracts/Contracts/
+OptionalConfigs/SOL-German/GameData/CustomScienceContracts/Contracts/
 ```
 
-The English catalog uses the same ids, prerequisites, rewards and checks as the
-German catalog. It changes only player-facing titles, descriptions, subcategory
-labels and checklist labels.
+Both catalogs use the same ids, prerequisites, rewards and checks. They change
+only player-facing titles, descriptions, subcategory labels and checklist labels.
+
+The Stock KSP campaign is kept on its own English-only branch/track and is not
+mixed into the SOL release catalog.
 
 ## Validation
 
@@ -170,8 +166,7 @@ Run the full validation workflow after mission or generator changes:
 python3 tools/validate_design.py
 python3 tools/gen_catalog.py
 python3 tools/validate_catalog.py
-python3 tools/gen_catalog_en.py
-python3 tools/validate_catalog.py OptionalConfigs/English/GameData/CustomScienceContracts/Contracts
+python3 tools/validate_catalog.py OptionalConfigs/SOL-German/GameData/CustomScienceContracts/Contracts
 ```
 
 The catalog validator checks:
@@ -214,14 +209,14 @@ CHANGELOG.md
 DOKUMENTATION.md
 ```
 
-The optional English contracts zip should contain:
+The optional German SOL config zip should contain:
 
 ```text
 GameData/CustomScienceContracts/Contracts/
 README.md
 ```
 
-The optional English zip is installed after the main mod and replaces only the
+The optional German zip is installed after the main mod and replaces only the
 contract catalog files.
 
 ## Legal Notes

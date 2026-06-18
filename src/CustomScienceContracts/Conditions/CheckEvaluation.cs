@@ -25,6 +25,8 @@ namespace CustomScienceContracts.Conditions
             int timerIdx = -1;
             for (int j = 0; j < n; j++) if (checks[j].IsTimer) timerIdx = j;
             bool hasTimer = timerIdx >= 0;
+            bool hasReturn = false;
+            for (int j = 0; j < n; j++) if (checks[j].IsReturn) { hasReturn = true; break; }
 
             // A subject vessel is relevant only when the condition has single-vessel checks.
             bool hasVesselChecks = false;
@@ -38,18 +40,31 @@ namespace CustomScienceContracts.Conditions
             Vessel subject = ResolveSubject(c, ci, cond, ctx, hasTimer, hasVesselChecks, timerRunning);
 
             bool allInstant = true;
+            bool allTimerPrereqs = true;
             for (int j = 0; j < n; j++)
             {
                 var chk = checks[j];
                 if (chk.IsTimer) continue;
                 bool m;
-                if (chk.IsFlyby)      m = EvalFlyby(c, ci, j, chk, ctx);
-                else if (chk.IsMarker) m = EvalMarker(c, ci, j, chk, ctx);
-                else if (chk.IsEvent)  m = EvalEvent(chk, ctx);
-                else if (chk.IsFleet)  m = EvalFleet(chk, ctx);
-                else                   m = subject != null && EvalVessel(chk, subject);
+                string latchKey = $"c{ci}_{j}_latched";
+                if (hasReturn && !chk.IsReturn && GetI(c.Progress, latchKey, 0) == 1)
+                {
+                    m = true;
+                }
+                else
+                {
+                    if (chk.IsFlyby)      m = EvalFlyby(c, ci, j, chk, ctx);
+                    else if (chk.IsMarker) m = EvalMarker(c, ci, j, chk, ctx);
+                    else if (chk.IsReturn) m = EvalReturn(c, ci, j, chk, ctx);
+                    else if (chk.IsEvent)  m = EvalEvent(chk, ctx);
+                    else if (chk.IsFleet)  m = EvalFleet(chk, ctx);
+                    else                   m = subject != null && EvalVessel(chk, subject);
+                    if (hasReturn && !chk.IsReturn && m)
+                        c.Progress.SetValue(latchKey, "1", true);
+                }
                 met[j] = m;
                 if (!m) allInstant = false;
+                if (!chk.IsReturn && !m) allTimerPrereqs = false;
             }
 
             bool overall;
@@ -57,18 +72,23 @@ namespace CustomScienceContracts.Conditions
             {
                 var t = checks[timerIdx];
                 double required = t.Kind == CheckKind.HOLD ? t.Seconds : t.Days * VesselQuery.SecondsPerDay();
+                bool timerDone = hasReturn && GetI(c.Progress, $"c{ci}_timerDone", 0) == 1;
 
                 // Bound vessel only transiently missing during scene/load changes: hold t0 instead
                 // of resetting; elapsed time is recovered from absolute UT.
                 bool subjectMissing = timerRunning && hasVesselChecks && subject == null;
 
-                if (timerRunning)
+                if (timerDone)
+                {
+                    c.Progress.SetValue($"c{ci}_rem", "0", true);
+                }
+                else if (timerRunning)
                 {
                     if (subjectMissing)  { /* hold t0 */ }
-                    else if (allInstant) { /* keep counting with unchanged t0 */ }
+                    else if (allTimerPrereqs) { /* keep counting with unchanged t0 */ }
                     else { t0 = -1.0; c.Progress.SetValue($"c{ci}_t0", "-1", true); } // real interruption -> restart
                 }
-                else if (allInstant)
+                else if (allTimerPrereqs)
                 {
                     t0 = ctx.UniversalTime; c.Progress.SetValue($"c{ci}_t0", t0.ToString("R", Inv), true); // start
                 }
@@ -76,9 +96,10 @@ namespace CustomScienceContracts.Conditions
                 double elapsed = t0 >= 0.0 ? ctx.UniversalTime - t0 : 0.0;
                 double rem = Math.Max(0.0, required - elapsed);
                 c.Progress.SetValue($"c{ci}_rem", rem.ToString("0", Inv), true);
-                bool holdMet = !subjectMissing && allInstant && t0 >= 0.0 && elapsed >= required;
+                bool holdMet = timerDone || (!subjectMissing && allTimerPrereqs && t0 >= 0.0 && elapsed >= required);
+                if (hasReturn && holdMet) c.Progress.SetValue($"c{ci}_timerDone", "1", true);
                 met[timerIdx] = holdMet;
-                overall = holdMet;
+                overall = holdMet && allInstant;
             }
             else overall = allInstant;
 
@@ -325,6 +346,66 @@ namespace CustomScienceContracts.Conditions
             double dist = VesselQuery.SurfaceDistance(body, v.latitude, v.longitude, mLat, mLon);
             c.Progress.SetValue("ml_dist", dist.ToString("0", Inv), true);
             return dist <= rMeters;
+        }
+
+        /// <summary>Sequential return check: first log a crewed landing/splashdown on the source
+        /// body, or a crewed SOI visit in flyby mode, then complete once a crewed vessel lands or
+        /// splashes down on the return body. The return is intentionally forgiving across staging
+        /// and docking, because the crew capsule often is not the same vessel object that reached
+        /// the destination.</summary>
+        private static bool EvalReturn(MissionContract c, int ci, int j, Check chk, EvaluationContext ctx)
+        {
+            ConfigNode node = StateNode(c.Progress, $"ret{ci}_{j}");
+            if (NInt(node, "done") == 1) return true;
+
+            var from = BodyResolver.Resolve(chk.Body);
+            var home = BodyResolver.Resolve(string.IsNullOrEmpty(chk.ReturnBody) ? "Kerbin" : chk.ReturnBody);
+            if (from == null || home == null) return false;
+            bool flybyMode = string.Equals(chk.ReturnMode, "flyby", StringComparison.OrdinalIgnoreCase);
+
+            bool seenSource = NInt(node, "seenSource") == 1;
+            bool justLoggedSource = false;
+            foreach (var v in VesselQuery.RealVessels(ctx.Vessels))
+            {
+                if (!Crewed(v)) continue;
+                bool atSource = v.mainBody == from && (flybyMode || Surface(v));
+                bool atHomeSurface = v.mainBody == home && Surface(v);
+                if (!seenSource && atSource)
+                {
+                    RememberHomeVessels(node, ctx, home);
+                    seenSource = true;
+                    justLoggedSource = true;
+                    node.SetValue("seenSource", "1", true);
+                    node.SetValue("sourceVessel", v.persistentId.ToString(), true);
+                    c.Progress.SetValue("ret_status", flybyMode ? "visit_logged" : "source_logged", true);
+                }
+                if (seenSource && !justLoggedSource && atHomeSurface && !IsRememberedHomeVessel(node, v.persistentId))
+                {
+                    node.SetValue("done", "1", true);
+                    node.SetValue("returnVessel", v.persistentId.ToString(), true);
+                    c.Progress.SetValue("ret_status", "returned", true);
+                    return true;
+                }
+            }
+
+            c.Progress.SetValue("ret_status", seenSource ? "awaiting_return" : (flybyMode ? "awaiting_visit" : "awaiting_source"), true);
+            return false;
+        }
+
+        private static bool Crewed(Vessel v) => v != null && VesselQuery.EffectiveCrew(v) > 0;
+        private static bool Surface(Vessel v) =>
+            v != null && (v.situation == Vessel.Situations.LANDED || v.situation == Vessel.Situations.SPLASHED);
+        private static void RememberHomeVessels(ConfigNode node, EvaluationContext ctx, CelestialBody home)
+        {
+            ConfigNode homeNode = StateNode(node, "HOME_BASELINE");
+            foreach (var v in VesselQuery.RealVessels(ctx.Vessels))
+                if (Crewed(v) && Surface(v) && v.mainBody == home)
+                    GetVesselNode(homeNode, v.persistentId, create: true);
+        }
+        private static bool IsRememberedHomeVessel(ConfigNode node, uint id)
+        {
+            ConfigNode homeNode = node.GetNode("HOME_BASELINE");
+            return homeNode != null && GetVesselNode(homeNode, id, create: false) != null;
         }
 
         // ---- ConfigNode state helpers ----

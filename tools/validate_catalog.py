@@ -5,7 +5,7 @@ Default target:
   GameData/CustomScienceContracts/Contracts
 
 Optional target:
-  python3 tools/validate_catalog.py OptionalConfigs/English/GameData/CustomScienceContracts/Contracts
+  python3 tools/validate_catalog.py OptionalConfigs/SOL-German/GameData/CustomScienceContracts/Contracts
 """
 import re, os, sys
 
@@ -18,13 +18,16 @@ FILES = ["A_Pioniere.cfg", "B_Spaeher.cfg", "C_Lebensadern.cfg", "D_Stationen.cf
 CHECK_KINDS = {"CREW_MIN","CREW_NONE","CREW_EXACT","ON_BODY","SITUATION","SUBORBITAL","LANDED",
   "PERIAPSIS_MIN","ORBIT_ABOVE","INCLINATION_MIN","ABOVE_ATMOSPHERE","SUBORBITAL_ABOVE_ATMO","ATMO_FRACTION",
   "ORE_PRESENT","ORE_SURFACE","FUEL_MIN","RESOURCE_MIN","EVA","DOCK_STATION","DOCK_ANY",
-  "VESSEL_COUNT","VESSEL_COUNT_INCLINATION","FLYBY","MARKER_LANDING","HOLD","DURATION"}
+  "VESSEL_COUNT","VESSEL_COUNT_INCLINATION","FLYBY","MARKER_LANDING","RETURN_FROM_BODY","HOLD","DURATION"}
 SPARTEN = {"Bemannt","UnbemannteErkundung","NetzwerkLogistik"}
 SOL_BODIES = {"Amalthea","Ariel","Arrokoth","Callisto","Ceres","Charon","Dactyl","Deimos","Dione",
   "Earth","Enceladus","Eros","Europa","Ganymede","Hydra","Hyperion","Iapetus","Ida","Io","Jupiter",
   "Kerberos","Mars","Mercury","Mimas","Miranda","Moon","Neptune","Nereid","Nix","Oberon","Pallas",
   "Phobos","Phoebe","Pluto","Proteus","Psyche","Puck","Rhea","Ryugu","Saturn","Styx","Sun","Tethys",
   "Thebe","Titan","Titania","Triton","Umbriel","Uranus","Venus","Vesta"}
+STOCK_BODIES = {"Sun","Kerbin","Mun","Minmus","Moho","Eve","Gilly","Duna","Ike","Dres","Jool",
+  "Laythe","Vall","Tylo","Bop","Pol","Eeloo"}
+BODIES = STOCK_BODIES if "stock" in CDIR.lower() else SOL_BODIES
 ICONS = {  # in GameData/.../Icons/UI vorhanden
   "TrackingStation_ButtonMapProbe","TrackingStation_ButtonMapLander","TrackingStation_ButtonMapFlag",
   "TrackingStation_ButtonMapEVA","TrackingStation_ButtonMapShips","TrackingStation_ButtonMapStation",
@@ -84,7 +87,9 @@ for cid, (fn, c) in contracts.items():
         k = val(chk, "kind")
         if k not in CHECK_KINDS: issues.append(f"{cid}: Check-Kind '{k}'")
         b = val(chk, "body")
-        if b and b not in SOL_BODIES: issues.append(f"{cid}: body '{b}'")
+        if b and b not in BODIES: issues.append(f"{cid}: body '{b}'")
+        rb = val(chk, "returnBody")
+        if rb and rb not in BODIES: issues.append(f"{cid}: returnBody '{rb}'")
         if k == "DOCK_STATION":
             sk = val(chk, "stationKey")
             if sk: dock_keys.add(sk)
