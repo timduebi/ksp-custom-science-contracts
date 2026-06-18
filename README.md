@@ -4,61 +4,64 @@
 
 <h1 align="center">Custom Science Contracts</h1>
 
-<p align="center"><b>Custom Science Contracts</b> gibt dem KSP Science Mode endlich einen roten Faden.</p>
+<p align="center"><b>Custom Science Contracts</b> finally gives KSP's Science Mode a clear thread to follow.</p>
+
+> ⚠️ **Work in progress — first alpha.** This is an early release. Expect rough edges, and bugs may
+> show up. Bug reports and suggestions are very welcome — see [Feedback & bug reports](#feedback--bug-reports).
 
 ---
 
-**Custom Science Contracts** fügt eine eigene, strukturierte Wissenschaftskampagne für den Science Mode hinzu.
+**Custom Science Contracts** adds its own structured science campaign to Science Mode.
 
-Der normale Science Mode gibt dir zwar viel Freiheit, fühlt sich aber oft ziellos an. Man sammelt Science, schaltet Teile frei und entscheidet selbst, wohin es als Nächstes geht – aber ein echter roter Faden fehlt. Der Career Mode hat zwar Contracts, diese wirken jedoch oft zufällig, unpassend oder störend: Part-Tests, belanglose Aufträge und Missionen ohne echten Zusammenhang.
+Plain Science Mode gives you a lot of freedom, but it often feels aimless. You gather science, unlock parts and decide for yourself where to go next — but there is no real thread tying it together. Career Mode has contracts, yet they often feel random, out of place or annoying: part tests, throwaway jobs and missions with no real connection.
 
-**Custom Science Contracts verbindet das Beste aus beiden Welten:** die Freiheit und den Forschungsfokus des Science Mode mit der klaren Missionsstruktur einer Kampagne – aber ohne zufällige, nervige Career-Mode-Aufträge.
+**Custom Science Contracts combines the best of both worlds:** the freedom and research focus of Science Mode with the clear mission structure of a campaign — but without the random, annoying Career-Mode jobs.
 
-Der Mod führt dich Schritt für Schritt durch eine eigene Wissenschaftskampagne: von den ersten einfachen Flügen, über Orbit, Raumstationen, Mondbasen und Versorgungsmissionen, bis hin zur realistischen Expansion ins gesamte Sonnensystem. Jede Mission hat ein klares Ziel und ist Teil einer nachvollziehbaren Progression.
+The mod walks you through your own science campaign step by step: from the first simple flights, through orbit, space stations, lunar bases and supply missions, all the way to a realistic expansion across the whole solar system. Every mission has a clear goal and is part of a progression that makes sense.
 
-Die Kampagne ist bewusst realistisch aufgebaut. Du wirst nicht plötzlich nach Jool geschickt, obwohl du noch kaum Erfahrung mit Duna hast. Neue Ziele werden logisch vorbereitet: Zuerst kommen robotische Vorerkundungen, dann Orbitmissionen, danach Landungen, längere Aufenthalte und schließlich dauerhafte Infrastruktur. So wie in der echten Raumfahrt landet niemand einfach irgendwo, ohne vorher robotisch dort gewesen zu sein.
+The campaign is deliberately realistic. You won't suddenly be sent to Jool while you've barely managed Duna. New targets are prepared logically: first robotic scouting, then orbital missions, then landings, longer stays and finally permanent infrastructure. Just like in real spaceflight, nobody lands somewhere without a robotic mission having been there first.
 
-Auch bemannte Missionen bauen sinnvoll aufeinander auf. Bevor du eine Crew zu einem weit entfernten Ziel wie Duna schickst, musst du zuerst beweisen, dass deine Raumfahrtagentur längere Aufenthalte im All unterstützen kann. Lange Raumstationsmissionen zeigen zum Beispiel, dass du Lebenserhaltung, Versorgung, Crewrotation und Missionsbetrieb über längere Zeit beherrschst. Erst danach werden größere interplanetare Schritte glaubwürdig und sinnvoll.
+Crewed missions build on each other too. Before you send a crew to a distant target like Duna, you first have to prove that your space agency can support longer stays in space. Long space-station missions, for example, show that you've mastered life support, supply, crew rotation and sustained operations. Only then do bigger interplanetary steps become believable and worthwhile.
 
-Ein besonderer Fokus liegt auf Infrastruktur. Im normalen Spiel sind Raumstationen, Mondbasen oder Außenposten oft eher freiwillige Bauprojekte ohne echten spielerischen Nutzen. **Custom Science Contracts macht sie zu einem wichtigen Teil deiner Progression.** Der Bau, Ausbau, Betrieb, die Versorgung und Wiederaufstockung von Ressourcen werden mit Science belohnt und geben Stationen und Basen endlich einen echten Zweck.
+A special focus is on infrastructure. In the normal game, space stations, lunar bases or outposts are often optional building projects with no real gameplay purpose. **Custom Science Contracts turns them into an important part of your progression.** Building, expanding, operating, supplying and restocking resources are rewarded with science and finally give stations and bases a real purpose.
 
-Auch Ressourcen- und Netzwerkmissionen sind Teil der Kampagne. Du wirst nicht nur irgendwohin geschickt, um Science zu sammeln, sondern baust nach und nach eine funktionierende Raumfahrtinfrastruktur auf: Orbitalstationen, Basen, Versorgungsrouten, Erzförderung und Missionsnetzwerke.
+Resource and network missions are part of the campaign as well. You're not just sent somewhere to gather science — you gradually build up a working spaceflight infrastructure: orbital stations, bases, supply routes, ore mining and mission networks.
 
-Der Mod löst damit mehrere große Probleme des normalen Science- und Career-Gameplays: Science Mode ist oft zu ziellos, Career Contracts sind oft zu zufällig, und Infrastruktur wie Stationen oder Basen ist normalerweise kaum notwendig. **Custom Science Contracts gibt deinem Space Program eine klare Richtung, sinnvolle Zwischenziele und eine realistische Progression.**
+This solves several big problems of normal Science and Career gameplay: Science Mode is often too aimless, Career contracts are often too random, and infrastructure like stations or bases is normally barely necessary. **Custom Science Contracts gives your space program a clear direction, meaningful milestones and a realistic progression.**
 
-Der Mod ist für Spieler gedacht, die den Science Mode mögen, sich aber mehr Struktur, mehr Sinn und eine echte Kampagne wünschen.
+The mod is made for players who enjoy Science Mode but want more structure, more purpose and a real campaign.
 
 ## Features
 
-- Eigene Wissenschaftskampagne für den Science Mode
-- Klare, realistische Progression vom ersten Flug bis ins äußere Sonnensystem
-- Verbindet die Freiheit des Science Mode mit der Struktur einer Kampagne
-- Keine zufälligen Part-Test-Contracts
-- Missionen mit rotem Faden und klaren Zielen
-- Robotische Vorerkundung vor bemannten Missionen
-- Lange Raumstationsaufenthalte als Vorbereitung für interplanetare Crews
-- Science-Belohnungen für Raumstationen, Basen, Ausbau und Betrieb
-- Sinnvolle Infrastruktur-Missionen für Versorgung, Ressourcen und Netzwerke
-- Erzförderung, Ressourcennachschub und Missionsnetzwerke als Teil der Progression
-- Kein zielloses Science-Grinding
-- Progression für Stock Kerbol System und SOL / reales Sonnensystem
-- Besonders empfohlen mit Kerbalism
+- A dedicated science campaign for Science Mode
+- Clear, realistic progression from your first flight to the outer solar system
+- Combines the freedom of Science Mode with the structure of a campaign
+- No random part-test contracts
+- Missions with a clear thread and well-defined goals
+- Robotic scouting before crewed missions
+- Long space-station stays as preparation for interplanetary crews
+- Science rewards for stations, bases, expansion and operation
+- Meaningful infrastructure missions for supply, resources and networks
+- Ore mining, resupply and mission networks as part of the progression
+- No aimless science grinding
+- Progression for the stock Kerbol system and SOL / real solar system
+- Especially recommended with Kerbalism
 
-## Kompatibilität
+## Compatibility
 
 - **Kerbal Space Program 1.12.x**, Science Mode.
-- **Stock Kerbol System** – über die optionale Stock-Config (siehe unten).
-- **SOL / reales Sonnensystem** – der Standard-Download ist auf reale Körpernamen ausgelegt (`Earth`, `Moon`, `Mars`, `Jupiter`, `Saturn` …, abgestimmt auf SOL Quarter-Scale).
-- **Kerbalism wird empfohlen**, ist aber keine Voraussetzung: lange Missionen, Versorgung, Lebenserhaltung, Stationen und Basen bekommen damit noch mehr Bedeutung.
-- **Kein** Contract Configurator und **keine** bestimmten Part-Packs nötig – die Missionsziele prüfen nur Stock-Zustände (Orbit, Landung, Crew, Schiffsanzahl, Ressourcen, Vorbeiflug, Zeit …).
+- **Stock Kerbol system** — via the optional Stock config (see below).
+- **SOL / real solar system** — the main download targets real body names (`Earth`, `Moon`, `Mars`, `Jupiter`, `Saturn` …, tuned for SOL Quarter-Scale).
+- **Kerbalism is recommended** but not required: long missions, supply, life support, stations and bases gain even more meaning with it.
+- **No** Contract Configurator and **no** specific part packs needed — objectives only check stock state (orbit, landing, crew, vessel count, resources, flyby, time …).
 
 ## Installation
 
-1. Lade **`CustomScienceContracts-vX.Y.Z.zip`** von der [Release-Seite](https://github.com/timduebi/ksp-custom-science-contracts/releases/latest) herunter.
-2. Entpacke das Archiv und kopiere den Ordner `GameData` in dein KSP-Verzeichnis.
-3. Starte einen Science-Mode-Spielstand.
+1. Download **`CustomScienceContracts-vX.Y.Z.zip`** from the [releases page](https://github.com/timduebi/ksp-custom-science-contracts/releases/latest).
+2. Unzip it and copy the `GameData` folder into your KSP install.
+3. Start a Science Mode save.
 
-Danach sollte es so aussehen:
+You should end up with:
 
 ```text
 Kerbal Space Program/
@@ -71,26 +74,30 @@ Kerbal Space Program/
         └── settings.cfg
 ```
 
-### Optionale Config-Swaps
+### Optional config swaps
 
-Der Standard-Download enthält die SOL-Kampagne (reales Sonnensystem). Zwei optionale Config-Packs im selben Release ändern, **welche Missionen** du fliegst. Sie ersetzen jeweils nur die vier Katalog-Dateien in `GameData/CustomScienceContracts/Contracts/`. Erst den Haupt-Download installieren, dann ein Pack darüber entpacken und das Überschreiben bestätigen – immer nur **eine** Config gleichzeitig.
+The main download ships with the SOL campaign (real solar system). Two optional config packs on the same release change **which missions you fly**. Each one replaces only the four catalog files in `GameData/CustomScienceContracts/Contracts/`. Install the main download first, then unzip one pack over it and confirm overwriting — run only **one** config at a time.
 
-- **`CustomScienceContracts-vX.Y.Z_Stock-Config.zip`** – baut die ganze Kampagne auf das **Stock-Kerbol-System** um (Kerbin, Mun, Minmus, Duna, Jool, Laythe, Eve …). Für ein normales, nicht skaliertes Spiel.
-- **`CustomScienceContracts-vX.Y.Z_German-Config.zip`** – die SOL-Kampagne mit allen Contract-Texten auf **Deutsch**. Gleiche Missionen, nur die Sprache ändert sich.
+- **`CustomScienceContracts-vX.Y.Z_Stock-Config.zip`** — rebuilds the whole campaign for the **stock Kerbol system** (Kerbin, the Mun, Minmus, Duna, Jool, Laythe, Eve …). For a stock, non-rescaled game.
+- **`CustomScienceContracts-vX.Y.Z_German-Config.zip`** — the SOL campaign with all contract text in **German**. Same missions, only the language changes.
 
-Zurück zum Standard: die vier `Contracts/*.cfg` einfach erneut aus dem Haupt-Download entpacken.
+To go back to the default, re-extract the four `Contracts/*.cfg` from the main download.
 
-## Hinweise zum Gameplay
+## Gameplay notes
 
-- Höhenangaben sind Mindestwerte (z. B. „Periapsis über 2000 km" = mehr als 2000 km).
-- Polarmissionen verlangen mindestens 75° Inklination.
-- Kommunikationsnetze zählen echte Vessels im Orbit – Debris, Flaggen, Asteroiden und ausgesetzte Science-Objekte zählen nicht.
-- Der Fortschritt wird pro Spielstand gespeichert unter `saves/<Name>/CustomScienceContracts/contracts_state.cfg`.
+- Altitude requirements are minimums (e.g. "periapsis above 2000 km" means greater than 2000 km).
+- Polar missions require at least 75° inclination.
+- Communication networks count real vessels in orbit — debris, flags, asteroids and deployed science objects do not count.
+- Progress is stored per save at `saves/<Name>/CustomScienceContracts/contracts_state.cfg`.
 
-## Entwicklung
+## Feedback & bug reports
 
-Die Kampagnen werden aus Designplänen generiert, die generierten `.cfg`-Dateien werden **nie** von Hand bearbeitet. Architektur, Build und Release-Workflow sind in [`DEVELOPMENT.md`](DEVELOPMENT.md) beschrieben, technische Details in [`DOKUMENTATION.md`](DOKUMENTATION.md).
+This is an early alpha and very much a work in progress, so things can break. **Bug reports and suggestions are very welcome** — please open an issue on the [GitHub issue tracker](https://github.com/timduebi/ksp-custom-science-contracts/issues). Helpful details: KSP version, which config you run (SOL / Stock / German), the mission, and a `KSP.log` if you have it.
 
-## Lizenz und Drittanbieter-Assets
+## Development
 
-Custom Science Contracts steht unter der GNU General Public License 3.0 (siehe [`LICENSE`](LICENSE)). Einige Bild-Assets stammen von Dritten und werden unverändert mitgeliefert: ZTheme (GPL-3.0) und Kerbal Planet Emblems (MIT). Es wird kein Code dieser Projekte verwendet. Details in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+The campaigns are generated from design plans; the generated `.cfg` files are **never** edited by hand. Architecture, build and release workflow are documented in [`DEVELOPMENT.md`](DEVELOPMENT.md), with technical details in [`DOKUMENTATION.md`](DOKUMENTATION.md).
+
+## License and third-party assets
+
+Custom Science Contracts is licensed under the GNU General Public License 3.0 (see [`LICENSE`](LICENSE)). Some image assets are third-party and shipped unmodified: ZTheme (GPL-3.0) and Kerbal Planet Emblems (MIT). No code from those projects is used. Details in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
