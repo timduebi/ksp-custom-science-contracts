@@ -1,4 +1,4 @@
-# Custom Science Contracts - Stock KSP Campaign (English)
+# Custom Science Contracts - Stock KSP Campaign
 
 This is the optional Stock KSP mission source. It is intentionally separate from the
 SOL Quarter-Scale source so the current default catalog is not overwritten during

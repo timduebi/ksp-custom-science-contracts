@@ -1,14 +1,14 @@
 ## KSP Custom Science Contracts
 
-A custom science-mode contract campaign for Kerbal Space Program. **One install, two worlds:**
-the mod ships with the **SOL** (real solar system) contracts in English by default, and you can
-optionally swap the contract catalog to the **stock KSP** system or to **German** — the plugin is
-the same either way.
+A custom science-mode contract campaign for Kerbal Space Program. It adds its own progression of
+crewed and robotic missions — flights, landings, returns, stations, bases, logistics and comm
+networks — that runs alongside the stock science game without Contract Configurator.
 
 ---
 
-### 1. Main download — required
-**`CustomScienceContracts-v0.3.0.zip`** — the full mod with the **English SOL** catalog.
+### Download — required
+**`CustomScienceContracts-v0.3.0.zip`** — the complete mod (plugin + the SOL real-solar-system
+campaign).
 
 1. Download and unzip.
 2. Copy the `GameData` folder from the zip into your KSP install root, merging it into your
@@ -16,23 +16,26 @@ the same either way.
 3. You should end up with `Kerbal Space Program/GameData/CustomScienceContracts/` containing
    `Plugins/`, `Contracts/`, `Icons/` and `settings.cfg`.
 
-That's a complete, playable install (English, real solar system).
+That's a complete, playable install.
 
 ---
 
-### 2. Optional config swaps — only if you want a different catalog
-These packs **replace only the four files** in
+### Optional config swaps
+Want a different campaign? These drop-in packs change **which missions you fly** without touching
+the plugin. Each one replaces **only the four catalog files** in
 `GameData/CustomScienceContracts/Contracts/` (`A_Pioniere.cfg`, `B_Spaeher.cfg`,
-`C_Lebensadern.cfg`, `D_Stationen.cfg`). Install the main download first, then drop one of these
-on top and **confirm overwriting** those four files. The plugin, icons and licenses stay from the
-main download.
+`C_Lebensadern.cfg`, `D_Stationen.cfg`). Install the main download first, then unzip one of these
+into your KSP install root and **confirm overwriting** those four files.
 
-- **Stock KSP system** — **`CustomScienceContracts-StockConfig-v0.3.0.zip`**
-  Swaps the catalog to the stock-KSP campaign (Kerbin, Mun, Minmus, Duna, Jool, Laythe, Eve …).
-  Copy its `GameData` folder into your KSP install root and overwrite the four `Contracts` files.
+- **Stock KSP system** — **`CustomScienceContracts-v0.3.0_Stock-Config.zip`**
+  Rebuilds the whole campaign for the stock KSP solar system. Same mission structure, but flown to
+  Kerbin, the Mun, Minmus, Duna, Jool, Laythe, Eve and the other stock bodies instead of the real
+  solar system. Pick this if you play a stock (non-rescaled) game.
 
-- **German (SOL)** — **`CustomScienceContracts-SOL-GermanConfig-v0.3.0.zip`**
-  German translation of the SOL catalog. Copy its `GameData` folder in and overwrite the four files.
+- **German** — **`CustomScienceContracts-v0.3.0_German-Config.zip`**
+  The SOL real-solar-system campaign with all contract titles, descriptions and checklist labels
+  in German. Same missions, prerequisites and rewards — just the language changes.
 
-**Back to English SOL:** re-extract the four `Contracts/*.cfg` from the main download (or reinstall it).
-Only ever run one catalog at a time — the optional packs overwrite each other.
+**Switching back or between configs:** re-extract the four `Contracts/*.cfg` from the main
+download (or from another config pack). Only ever run **one** config at a time — the packs
+overwrite the same four files.

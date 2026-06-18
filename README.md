@@ -9,23 +9,23 @@ starts with early uncrewed Earth tests and grows into crewed lunar and Martian
 exploration, stations, bases, logistics chains, communication networks,
 asteroid branches, outer-planet probes and late-game Titan infrastructure.
 
-## Languages and Config Tracks
+## Config swaps
 
-The main release ships with the English SOL Quarter-Scale contract catalog.
-
-An optional German SOL contract catalog is published as a separate release asset.
-Install the main mod first, then install the German SOL config pack over it to
-replace only the mission text/config files:
+The main download ships with the SOL (real solar system) campaign. Two optional
+config packs are published on the same release and change which missions you fly.
+Each one replaces only the four catalog files:
 
 ```text
 GameData/CustomScienceContracts/Contracts/
 ```
 
-The plugin UI, repository documentation and release notes are English.
+- **Stock KSP config** — rebuilds the whole campaign around the stock KSP system
+  (Kerbin, the Mun, Minmus, Duna, Jool, Laythe, Eve …). Use it for a stock,
+  non-rescaled game.
+- **German config** — the SOL campaign with all contract text in German.
 
-Stock KSP configs are developed separately on the Stock campaign branch. That
-track is English-only and is intended to become its own main-download variant
-instead of being mixed into the SOL release.
+Install the main download first, then unzip one config pack over it and confirm
+overwriting the four files. Run only one config at a time.
 
 ## Installation
 
@@ -116,9 +116,10 @@ custom_science_contracts_missionsdesign.md
 
 Generated catalog files must not be edited by hand.
 
-`tools/gen_catalog.py` generates both the default English SOL catalog in
-`GameData/CustomScienceContracts/Contracts/` and the optional German SOL config
-under `OptionalConfigs/SOL-German/`.
+`tools/gen_catalog_en.py` generates the default SOL catalog in
+`GameData/CustomScienceContracts/Contracts/`, `tools/gen_catalog.py` the German
+SOL config under `OptionalConfigs/SOL-German/`, and `tools/gen_catalog_stock.py`
+the Stock config under `OptionalConfigs/Stock/`. See `DEVELOPMENT.md`.
 
 Common workflow:
 

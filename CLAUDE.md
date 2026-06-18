@@ -25,8 +25,8 @@ no per-edition branch. Read `DEVELOPMENT.md` for the full architecture.
 
 ## Building and releasing
 
-- There is **one** GitHub release. The main asset is the engine + English SOL catalog; the stock
-  and German catalogs ship as optional config overlays (they replace only the four
+- There is **one** GitHub release. The main asset is the engine + the default SOL catalog; the
+  stock and German catalogs ship as optional config overlays (they replace only the four
   `Contracts/*.cfg`).
 - Build/package via **`tools/make_release.sh [--publish]`** — it builds the shared DLL once,
   validates all three catalogs, and is the only supported release path. Release notes (placement

@@ -7,7 +7,7 @@ that replace only `GameData/CustomScienceContracts/Contracts/*.cfg`.
 
 | Catalog | Bodies | Design source | Catalog in repo | In the release |
 |---------|--------|---------------|-----------------|----------------|
-| **SOL English** | real solar system | `custom_science_contracts_missionsdesign.md` | `GameData/CustomScienceContracts/Contracts/` (default) | main download |
+| **SOL** (default) | real solar system | `custom_science_contracts_missionsdesign.md` | `GameData/CustomScienceContracts/Contracts/` (default) | main download |
 | **SOL German** | real solar system | same (German variant) | `OptionalConfigs/SOL-German/` | optional overlay |
 | **Stock** | stock KSP (Kerbin, Mun, …) | `custom_science_contracts_stock_missionsdesign.md` | `OptionalConfigs/Stock/` | optional overlay |
 
@@ -17,9 +17,9 @@ engine change applies to every catalog at once.
 
 ## Generators
 
-- `tools/gen_catalog_en.py` → SOL English catalog into `GameData/.../Contracts` (the default).
-- `tools/gen_catalog.py` → SOL German catalog into `OptionalConfigs/SOL-German/`.
-- `tools/gen_catalog_stock.py` → Stock English catalog into `OptionalConfigs/Stock/`.
+- `tools/gen_catalog_en.py` → default SOL catalog into `GameData/.../Contracts`.
+- `tools/gen_catalog.py` → German SOL catalog into `OptionalConfigs/SOL-German/`.
+- `tools/gen_catalog_stock.py` → Stock catalog into `OptionalConfigs/Stock/`.
 
 Never edit generated `*.cfg` by hand — change the design `.md` and regenerate.
 
@@ -35,9 +35,9 @@ Never edit generated `*.cfg` by hand — change the design `.md` and regenerate.
 packages all assets, and (with `--publish`) creates/updates the **single** GitHub release:
 
 ```
-CustomScienceContracts-vX.zip                 # main download: engine + English SOL catalog
-CustomScienceContracts-StockConfig-vX.zip     # optional overlay: stock KSP catalog
-CustomScienceContracts-SOL-GermanConfig-vX.zip# optional overlay: German SOL catalog
+CustomScienceContracts-vX.zip                # main download: engine + default SOL catalog
+CustomScienceContracts-vX_German-Config.zip  # optional overlay: German SOL catalog
+CustomScienceContracts-vX_Stock-Config.zip   # optional overlay: stock KSP catalog
 ```
 
 The overlays contain only `GameData/CustomScienceContracts/Contracts/*.cfg`. The release notes come

@@ -4,10 +4,10 @@
 #   tools/make_release.sh             # build all assets locally into compiled/release-vX/
 #   tools/make_release.sh --publish   # also create/update the single GitHub release
 #
-# One release, three downloads:
-#   1. CustomScienceContracts-vX.zip            full mod, English SOL catalog (default)
-#   2. CustomScienceContracts-StockConfig-vX.zip   optional: swap catalog to stock KSP
-#   3. CustomScienceContracts-SOL-GermanConfig-vX.zip optional: German SOL catalog
+# One release, three downloads (named so the main download sorts to the top of the asset list):
+#   1. CustomScienceContracts-vX.zip                  full mod, default SOL catalog
+#   2. CustomScienceContracts-vX_German-Config.zip    optional: swap catalog to German
+#   3. CustomScienceContracts-vX_Stock-Config.zip     optional: swap catalog to stock KSP
 # The optional packs only replace GameData/CustomScienceContracts/Contracts/*.cfg; the shared
 # engine DLL already supports both the real-solar-system and stock bodies. See DEVELOPMENT.md.
 set -euo pipefail
@@ -45,7 +45,7 @@ DLL="$ROOT/GameData/CustomScienceContracts/Plugins/CustomScienceContracts.dll"
 
 zipdir() { ( cd "$1" && rm -f "$2" && zip -rq "$2" . -x '*.DS_Store' ); }
 
-# --- 1. Main download: full mod, English SOL default ----------------------------------
+# --- 1. Main download: full mod, default SOL catalog ----------------------------------
 MAIN="$OUTDIR/main"; rm -rf "$MAIN"; mkdir -p "$MAIN"
 cp -R "$ROOT/GameData" "$MAIN/"
 cp "$ROOT/README.md" "$ROOT/LICENSE" "$ROOT/THIRD_PARTY_NOTICES.md" "$ROOT/CHANGELOG.md" "$ROOT/DOKUMENTATION.md" "$MAIN/"
@@ -56,13 +56,13 @@ MAINZIP="$OUTDIR/CustomScienceContracts-v$VERSION.zip"; zipdir "$MAIN" "$MAINZIP
 STK="$OUTDIR/stock-config"; rm -rf "$STK"; mkdir -p "$STK/GameData/CustomScienceContracts/Contracts"
 cp "$ROOT/OptionalConfigs/Stock/GameData/CustomScienceContracts/Contracts/"*.cfg "$STK/GameData/CustomScienceContracts/Contracts/"
 cp "$ROOT/OptionalConfigs/Stock/README.md" "$STK/"
-STOCKZIP="$OUTDIR/CustomScienceContracts-StockConfig-v$VERSION.zip"; zipdir "$STK" "$STOCKZIP"
+STOCKZIP="$OUTDIR/CustomScienceContracts-v${VERSION}_Stock-Config.zip"; zipdir "$STK" "$STOCKZIP"
 
 # --- 3. German SOL config overlay (Contracts cfgs only) -------------------------------
 GER="$OUTDIR/sol-german"; rm -rf "$GER"; mkdir -p "$GER"
 cp -R "$ROOT/OptionalConfigs/SOL-German/GameData" "$GER/"
 cp "$ROOT/OptionalConfigs/SOL-German/README.md" "$GER/"
-GZIP="$OUTDIR/CustomScienceContracts-SOL-GermanConfig-v$VERSION.zip"; zipdir "$GER" "$GZIP"
+GZIP="$OUTDIR/CustomScienceContracts-v${VERSION}_German-Config.zip"; zipdir "$GER" "$GZIP"
 
 ASSETS=("$MAINZIP" "$STOCKZIP" "$GZIP")
 echo "==> Packaged:"; for a in "${ASSETS[@]}"; do echo "    $(basename "$a") ($(du -h "$a" | cut -f1))"; done

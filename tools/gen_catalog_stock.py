@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Generate the Stock KSP English contract catalog.
+"""Generate the Stock KSP contract catalog.
 
-Both editions live on `main` and share one engine. The default GameData catalog is the
-SOL English one; this generator writes the Stock catalog into OptionalConfigs/Stock, from
-where tools/make_release.sh assembles the Stock edition download.
+All catalogs live on `main` and share one engine. The default GameData catalog is the SOL
+one; this generator writes the Stock catalog into OptionalConfigs/Stock, from where
+tools/make_release.sh assembles the Stock config overlay.
 """
 import os
 import re
@@ -208,11 +208,14 @@ def write_file(path, title, body):
 def write_readme(counts):
     readme = os.path.join(ROOT, "OptionalConfigs", "Stock", "README.md")
     os.makedirs(os.path.dirname(readme), exist_ok=True)
-    text = """# Stock KSP config (English)
+    text = """# Stock KSP config
 
-Optional config pack that switches the contract catalog to the **stock** Kerbal Space Program
-system. It replaces only the four files in `GameData/CustomScienceContracts/Contracts/`; the
-plugin, icons and licenses come from the main download.
+Optional config pack that rebuilds the whole campaign around the **stock** Kerbal Space Program
+system — the same mission structure, but flown to Kerbin, the Mun, Minmus, Duna, Jool, Laythe,
+Eve and the rest of the stock bodies instead of the real solar system.
+
+It replaces only the four catalog files in `GameData/CustomScienceContracts/Contracts/`; the
+plugin, icons and licenses stay from the main download.
 
 Install:
 1. Install the main mod download first.
@@ -220,7 +223,8 @@ Install:
 3. Confirm overwriting `A_Pioniere.cfg`, `B_Spaeher.cfg`, `C_Lebensadern.cfg`, `D_Stationen.cfg`
    in `GameData/CustomScienceContracts/Contracts/`.
 
-To return to the default English SOL catalog, re-extract those four files from the main download.
+To go back to the default catalog, re-extract those four files from the main download. Run only
+one config at a time.
 
 Campaign shape:
 - Crewed-first Kerbin program, then Mun and Minmus.
@@ -240,7 +244,7 @@ def main():
         buckets[m["sparte"]].append(contract(m))
     for name, (fn, title) in BUCKET_FILES.items():
         write_file(os.path.join(OUT, fn), title, "".join(buckets[name]))
-    write_file(os.path.join(OUT, "D_Stationen.cfg"), "STATION CHAINS - not used by the Stock English pack", "")
+    write_file(os.path.join(OUT, "D_Stationen.cfg"), "STATION CHAINS - not used by the Stock pack", "")
     write_readme({k: len(v) for k, v in buckets.items()})
     for name, items in buckets.items():
         print(f"{name}: {len(items)}")

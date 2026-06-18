@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the default English SOL contract catalog.
+"""Generate the default SOL contract catalog.
 
 This script writes the main install catalog to:
 
@@ -275,7 +275,7 @@ def mission_contract(m):
 HEADER = ("// ===========================================================================\n"
           "//  {t}\n"
           "//  GENERATED from custom_science_contracts_missionsdesign.md (tools/gen_catalog_en.py).\n"
-          "//  Default English SOL catalog. Do not edit generated cfg files by hand.\n"
+          "//  Default SOL catalog. Do not edit generated cfg files by hand.\n"
           "//  Body names remain internal CelestialBody.name values (Moon = internal body Moon, star = Sun).\n"
           "// ===========================================================================\n\n"
           "CUSTOM_CONTRACT_CATALOG\n{{\n")

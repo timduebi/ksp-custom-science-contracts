@@ -136,7 +136,7 @@ Generator:
 python3 tools/gen_catalog.py
 ```
 
-Default English output, shipped in the main download:
+Default output, shipped in the main download:
 
 ```text
 GameData/CustomScienceContracts/Contracts/
@@ -155,8 +155,8 @@ OptionalConfigs/SOL-German/GameData/CustomScienceContracts/Contracts/
 Both catalogs use the same ids, prerequisites, rewards and checks. They change
 only player-facing titles, descriptions, subcategory labels and checklist labels.
 
-The Stock KSP campaign is kept on its own English-only branch/track and is not
-mixed into the SOL release catalog.
+The Stock KSP campaign ships as an optional config pack (`OptionalConfigs/Stock/`)
+on the same release, replacing only the four catalog files above.
 
 ## Validation
 

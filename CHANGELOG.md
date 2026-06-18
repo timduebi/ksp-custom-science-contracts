@@ -3,19 +3,8 @@
 All notable changes to CustomScienceContracts are documented here.
 This project uses simple `MAJOR.MINOR.PATCH` versioning.
 
-The mod ships in two editions that share the same engine version: the **SOL** edition
-(real solar system, English main download + optional German config) and the **Stock**
-edition (stock KSP system, English only). This file is shared; entries note the edition
-where relevant.
-
-## [Stock 0.3.0] - 2026-06-18
-
-### Added
-- First release of the **Stock KSP** contract campaign as its own English-only main
-  download (built on the same engine as SOL 0.3.0). 76 missions across Pioneers (crewed),
-  Robotic Explorers and Lifelines: a crewed-first Kerbin program, Mun/Minmus core
-  progression, focused robotic support, communication and fuel networks, optional
-  grand-tour landings, and a Laythe-then-Eve landing-and-return finale.
+The mod ships as one download with the SOL (real solar system) campaign, plus optional config
+packs on the same release that swap the catalog to the stock KSP system or to German.
 
 ## [0.3.0] - 2026-06-18
 
@@ -26,11 +15,15 @@ where relevant.
 - Added crew-return objectives for the crewed Venus and Mars flybys.
 - Added a stateful `RETURN_FROM_BODY` check that can track a destination landing
   or flyby first, then require safe crew recovery on Earth.
-- Added the optional German SOL config pack under `OptionalConfigs/SOL-German/`.
+- Added the **Stock KSP** config pack (`OptionalConfigs/Stock/`): the full campaign
+  rebuilt for the stock system — 76 missions across Pioneers (crewed), Robotic Explorers
+  and Lifelines, with a Laythe-then-Eve landing-and-return finale.
+- Added the optional **German** SOL config pack under `OptionalConfigs/SOL-German/`.
 
 ### Changed
-- The main SOL download now ships with the English contract catalog by default.
-  The German SOL catalog is distributed as a separate optional config download.
+- The mod now ships as a single release: the main download is the SOL campaign, and the
+  Stock and German catalogs are optional config packs that replace only the four
+  `Contracts/*.cfg`.
 - Planet and moon body icons are color-tinted per body in the UI, so shared base
   icons can still appear in the correct body colors.
 

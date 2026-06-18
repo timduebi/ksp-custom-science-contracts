@@ -20,7 +20,7 @@ The SOL mission design source is:
 custom_science_contracts_missionsdesign.md
 ```
 
-Generated default English SOL catalogs live in:
+Generated default SOL catalogs live in:
 
 ```text
 GameData/CustomScienceContracts/Contracts/*.cfg
@@ -39,7 +39,7 @@ then regenerate and validate.
 
 - `src/CustomScienceContracts/` - C# plugin source.
 - `GameData/CustomScienceContracts/` - deployable mod folder with generated
-  English SOL contracts, icons, plugin DLL and settings.
+  default SOL contracts, icons, plugin DLL and settings.
 - `OptionalConfigs/SOL-German/` - optional German SOL replacement contract pack.
 - `tools/` - design/catalog generators and validators.
 - `custom_science_contracts_missionsdesign.md` - German campaign flow and
@@ -101,14 +101,14 @@ completion. They become available again after two other mission completions.
 - No dependency on Kerbalism or Simplex APIs.
 - No hardcoded body sizes or atmosphere heights.
 - No hand-editing generated contract cfg files.
-- Keep the default English SOL catalog and optional German SOL config in sync.
+- Keep the default SOL catalog and optional German SOL config in sync.
 
 ## Text and Style
 
-The plugin UI, documentation and release notes are English. The default shipped
-SOL contract catalog is English. The optional German SOL catalog is generated
-separately and uses the same contract ids, prerequisites and checks.
+The default shipped SOL contract catalog and the optional German SOL catalog are
+generated from the same mission source and use the same contract ids,
+prerequisites and checks; only the player-facing text differs.
 
-Code comments should be English. Contract enum names such as `Bemannt` and
+Write code comments and the plugin UI in English. Contract enum names such as `Bemannt` and
 `NetzwerkLogistik` are stable technical keys and must not be renamed without a
 migration plan.

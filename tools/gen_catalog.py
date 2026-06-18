@@ -218,7 +218,7 @@ def mission_contract(m):
 HEADER = ("// ===========================================================================\n"
           "//  {t}\n"
           "//  GENERIERT aus custom_science_contracts_missionsdesign.md (tools/gen_catalog.py).\n"
-          "//  Optionale deutsche SOL-Konfiguration. Standard-Download ist englisch.\n"
+          "//  Optionale deutschsprachige SOL-Konfiguration.\n"
           "//  NICHT von Hand editieren — Designplan/Skript aendern und neu generieren.\n"
           "//  Body-Namen = interne CelestialBody.name (Luna = Moon, Stern = Sun).\n"
           "// ===========================================================================\n\n"
@@ -233,15 +233,18 @@ def write_optional_readme():
     path = os.path.join(ROOT, "OptionalConfigs", "SOL-German", "README.md")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
-        f.write("""# SOL German contract config
+        f.write("""# German config
 
-This optional config replaces the default English SOL contract catalog with the German
-version.
+Optional config pack that puts the whole SOL (real solar system) campaign into German — the
+same missions, prerequisites and rewards, just with German titles, descriptions and labels.
+
+It replaces only the four catalog files in `GameData/CustomScienceContracts/Contracts/`; the
+plugin, icons and licenses stay from the main download.
 
 Install:
 1. Install the main mod download first.
-2. Copy this folder's `GameData` directory into your KSP install.
-3. Allow it to overwrite `GameData/CustomScienceContracts/Contracts`.
+2. Copy this folder's `GameData` directory into your KSP install root.
+3. Allow it to overwrite the four files in `GameData/CustomScienceContracts/Contracts`.
 
 Only contract text/config files are replaced. The plugin, icons, licenses and other
 assets come from the main download.
