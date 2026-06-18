@@ -11,25 +11,17 @@
 
 ---
 
-**Custom Science Contracts** adds its own structured science campaign to Science Mode.
+Science Mode is great — but after the first few flights it can start to feel aimless. You collect science, unlock parts, and then you're left to invent the whole progression yourself.
 
-Plain Science Mode gives you a lot of freedom, but it often feels aimless. You gather science, unlock parts and decide for yourself where to go next — but there is no real thread tying it together. Career Mode has contracts, yet they often feel random, out of place or annoying: part tests, throwaway jobs and missions with no real connection.
+Career Mode has contracts, but too many of them feel random, repetitive or disconnected from the space program you actually want to build.
 
-**Custom Science Contracts combines the best of both worlds:** the freedom and research focus of Science Mode with the clear mission structure of a campaign — but without the random, annoying Career-Mode jobs.
+**Custom Science Contracts is built to fix exactly that.**
 
-The mod walks you through your own science campaign step by step: from the first simple flights, through orbit, space stations, lunar bases and supply missions, all the way to a realistic expansion across the whole solar system. Every mission has a clear goal and is part of a progression that makes sense.
+It keeps the freedom of Science Mode and adds a structured campaign on top: first flights, orbit, robotic scouting, crewed missions, stations, bases, supply routes, resource missions, long-duration stays and deep-space exploration. Instead of random contracts, you follow a clear mission path — each step prepared by the last — so your space program feels like it's actually growing.
 
-The campaign is deliberately realistic. You won't suddenly be sent to Jool while you've barely managed Duna. New targets are prepared logically: first robotic scouting, then orbital missions, then landings, longer stays and finally permanent infrastructure. Just like in real spaceflight, nobody lands somewhere without a robotic mission having been there first.
+Everything runs through the mod's own in-game menu. Right inside KSP you can browse available missions, track the ones you're flying, review what you've completed and watch your overall campaign progress.
 
-Crewed missions build on each other too. Before you send a crew to a distant target like Duna, you first have to prove that your space agency can support longer stays in space. Long space-station missions, for example, show that you've mastered life support, supply, crew rotation and sustained operations. Only then do bigger interplanetary steps become believable and worthwhile.
-
-A special focus is on infrastructure. In the normal game, space stations, lunar bases or outposts are often optional building projects with no real gameplay purpose. **Custom Science Contracts turns them into an important part of your progression.** Building, expanding, operating, supplying and restocking resources are rewarded with science and finally give stations and bases a real purpose.
-
-Resource and network missions are part of the campaign as well. You're not just sent somewhere to gather science — you gradually build up a working spaceflight infrastructure: orbital stations, bases, supply routes, ore mining and mission networks.
-
-This solves several big problems of normal Science and Career gameplay: Science Mode is often too aimless, Career contracts are often too random, and infrastructure like stations or bases is normally barely necessary. **Custom Science Contracts gives your space program a clear direction, meaningful milestones and a realistic progression.**
-
-The mod is made for players who enjoy Science Mode but want more structure, more purpose and a real campaign.
+Custom Science Contracts is made for players who love Science Mode but want their save to feel like a real space program: less aimless grinding, fewer throwaway tasks, and more meaningful milestones.
 
 ## Features
 
