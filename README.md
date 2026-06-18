@@ -44,14 +44,14 @@ The mod is made for players who enjoy Science Mode but want more structure, more
 - Meaningful infrastructure missions for supply, resources and networks
 - Ore mining, resupply and mission networks as part of the progression
 - No aimless science grinding
-- Progression for the stock Kerbol system and SOL / real solar system
+- Progression for the stock Kerbol system and the Sol system
 - Especially recommended with Kerbalism
 
 ## Compatibility
 
 - **Kerbal Space Program 1.12.x**, Science Mode.
 - **Stock Kerbol system** — via the optional Stock config (see below).
-- **SOL / real solar system** — the main download targets real body names (`Earth`, `Moon`, `Mars`, `Jupiter`, `Saturn` …, tuned for SOL Quarter-Scale).
+- **[Sol](https://forum.kerbalspaceprogram.com/topic/229428-112x-sol-a-modern-recreation-of-our-home-system-at-real-quarter-and-stock-scale/)** — the main download is built for the Sol planet pack (a modern recreation of our home system at real, quarter and stock scale). It uses real body names like `Earth`, `Moon`, `Mars`, `Jupiter`, `Saturn` … and is tuned for the quarter-scale setup.
 - **Kerbalism is recommended** but not required: long missions, supply, life support, stations and bases gain even more meaning with it.
 - **No** Contract Configurator and **no** specific part packs needed — objectives only check stock state (orbit, landing, crew, vessel count, resources, flyby, time …).
 
@@ -76,10 +76,10 @@ Kerbal Space Program/
 
 ### Optional config swaps
 
-The main download ships with the SOL campaign (real solar system). Two optional config packs on the same release change **which missions you fly**. Each one replaces only the four catalog files in `GameData/CustomScienceContracts/Contracts/`. Install the main download first, then unzip one pack over it and confirm overwriting — run only **one** config at a time.
+The main download ships with the Sol campaign. Two optional config packs on the same release change **which missions you fly**. Each one replaces only the four catalog files in `GameData/CustomScienceContracts/Contracts/`. Install the main download first, then unzip one pack over it and confirm overwriting — run only **one** config at a time.
 
 - **`CustomScienceContracts-vX.Y.Z_Stock-Config.zip`** — rebuilds the whole campaign for the **stock Kerbol system** (Kerbin, the Mun, Minmus, Duna, Jool, Laythe, Eve …). For a stock, non-rescaled game.
-- **`CustomScienceContracts-vX.Y.Z_German-Config.zip`** — the SOL campaign with all contract text in **German**. Same missions, only the language changes.
+- **`CustomScienceContracts-vX.Y.Z_German-Config.zip`** — the Sol campaign with all contract text in **German**. Same missions, only the language changes.
 
 To go back to the default, re-extract the four `Contracts/*.cfg` from the main download.
 
@@ -92,7 +92,7 @@ To go back to the default, re-extract the four `Contracts/*.cfg` from the main d
 
 ## Feedback & bug reports
 
-This is an early alpha and very much a work in progress, so things can break. **Bug reports and suggestions are very welcome** — please open an issue on the [GitHub issue tracker](https://github.com/timduebi/ksp-custom-science-contracts/issues). Helpful details: KSP version, which config you run (SOL / Stock / German), the mission, and a `KSP.log` if you have it.
+This is an early alpha and very much a work in progress, so things can break. **Bug reports and suggestions are very welcome** — please open an issue on the [GitHub issue tracker](https://github.com/timduebi/ksp-custom-science-contracts/issues). Helpful details: KSP version, which config you run (Sol / Stock / German), the mission, and a `KSP.log` if you have it.
 
 ## Development
 

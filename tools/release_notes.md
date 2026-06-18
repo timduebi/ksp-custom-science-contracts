@@ -8,8 +8,7 @@ you get clear missions with meaningful progression: robotic missions come before
 space-station stays prepare interplanetary crews, and infrastructure — stations, bases, supply
 routes, ore mining and networks — becomes an important part of your space program.
 
-Supports the **stock Kerbol system** and **SOL / real solar system**. Best enjoyed together with
-**Kerbalism**.
+Supports the **stock Kerbol system** and **[Sol](https://forum.kerbalspaceprogram.com/topic/229428-112x-sol-a-modern-recreation-of-our-home-system-at-real-quarter-and-stock-scale/)** (a modern recreation of our home system at real, quarter and stock scale). Best enjoyed together with **Kerbalism**.
 
 > ⚠️ **Work in progress — first alpha.** Expect rough edges, and bugs may show up. Bug reports and
 > suggestions are very welcome: please open an issue on the
@@ -19,7 +18,7 @@ Supports the **stock Kerbol system** and **SOL / real solar system**. Best enjoy
 ---
 
 ### 1. Main download — required
-**`CustomScienceContracts-v0.3.0.zip`** — the complete mod with the SOL campaign (real solar system).
+**`CustomScienceContracts-v0.3.0.zip`** — the complete mod with the Sol campaign.
 
 1. Download and unzip.
 2. Copy the `GameData` folder from the zip into your KSP install root (merge it into your existing
@@ -38,6 +37,6 @@ Run only **one** config at a time.
   Eve …). For a stock, non-rescaled game.
 
 - **German** — **`CustomScienceContracts-v0.3.0_German-Config.zip`**
-  The SOL campaign with all contract text in German. Same missions, only the language changes.
+  The Sol campaign with all contract text in German. Same missions, only the language changes.
 
 To go back to the default, re-extract the four `Contracts/*.cfg` from the main download.
