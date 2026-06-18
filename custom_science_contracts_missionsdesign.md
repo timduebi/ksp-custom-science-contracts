@@ -351,10 +351,11 @@ reward: 208
 repeatable: no
 recordStation: -
 stationRef: -
-beschreibung: Setze den ersten Kerbal auf Luna ab und lass ihn aussteigen. Ein Fussabdruck, der bleibt — und der Anfang von allem, was dein Programm später auf der Oberfläche aufbaut, von der ersten Basis bis zum Daueraufenthalt.
+beschreibung: Setze den ersten Kerbal auf Luna ab und lass ihn aussteigen. Ein Fussabdruck, der bleibt — und der Anfang von allem, was dein Programm später auf der Oberfläche aufbaut, von der ersten Basis bis zum Daueraufenthalt. Die Crew muss danach sicher zur Erde zurückkehren.
 check: CREW_MIN 1 | mindestens 1 Kerbal an Bord
 check: LANDED Moon | auf Luna gelandet
 check: EVA Moon LANDED | EVA auf Luna
+check: RETURN_FROM_BODY Moon Earth | Crew sicher zur Erde zurückbringen
 
 === MISSION ===
 id: cr_luna_stay_2d
@@ -365,10 +366,11 @@ reward: 168
 repeatable: no
 recordStation: -
 stationRef: -
-beschreibung: Lass eine Besatzung zwei Tage auf dem Mond arbeiten. Aus der ersten Landung werden die ersten echten Arbeitsschichten auf einer anderen Welt.
+beschreibung: Lass eine Besatzung zwei Tage auf dem Mond arbeiten. Aus der ersten Landung werden die ersten echten Arbeitsschichten auf einer anderen Welt. Die Crew muss danach sicher zur Erde zurückkehren.
 check: CREW_MIN 1 | mindestens 1 Kerbal an Bord
 check: LANDED Moon | auf Luna gelandet
 check: DURATION 2 | 2 Tage ununterbrochen ausharren
+check: RETURN_FROM_BODY Moon Earth | Crew sicher zur Erde zurückbringen
 
 === MISSION ===
 id: cr_luna_precision_landing
@@ -379,10 +381,11 @@ reward: 184
 repeatable: no
 recordStation: -
 stationRef: -
-beschreibung: Bring eine bemannte Landefähre punktgenau am vorbereiteten Mondgebiet nieder. So beweist dein Programm, dass Module und Besatzungen sich später am selben Ort treffen können — die Voraussetzung für eine echte Basis.
+beschreibung: Bring eine bemannte Landefähre punktgenau am vorbereiteten Mondgebiet nieder. So beweist dein Programm, dass Module und Besatzungen sich später am selben Ort treffen können — die Voraussetzung für eine echte Basis. Die Crew muss danach sicher zur Erde zurückkehren.
 check: CREW_MIN 1 | mindestens 1 Kerbal an Bord
 check: LANDED Moon | auf Luna gelandet
 check: MARKER_LANDING Moon 5 | Landung im Umkreis von 5 km
+check: RETURN_FROM_BODY Moon Earth | Crew sicher zur Erde zurückbringen
 
 === MISSION ===
 id: cr_luna_stay_7d
@@ -393,10 +396,11 @@ reward: 224
 repeatable: no
 recordStation: -
 stationRef: -
-beschreibung: Halte eine Besatzung eine volle Woche auf Luna. Diese sieben Tage machen die spätere Mondbasis glaubhaft — und den langen Weg nach Mars eine Spur weniger furchteinflössend.
+beschreibung: Halte eine Besatzung eine volle Woche auf Luna. Diese sieben Tage machen die spätere Mondbasis glaubhaft — und den langen Weg nach Mars eine Spur weniger furchteinflössend. Die Crew muss danach sicher zur Erde zurückkehren.
 check: CREW_MIN 1 | mindestens 1 Kerbal an Bord
 check: LANDED Moon | auf Luna gelandet
 check: DURATION 7 | 7 Tage ununterbrochen ausharren
+check: RETURN_FROM_BODY Moon Earth | Crew sicher zur Erde zurückbringen
 
 === MISSION ===
 id: net_earth_comm_network3
@@ -518,9 +522,10 @@ reward: 280
 repeatable: no
 recordStation: -
 stationRef: -
-beschreibung: Schicke zwei Kerbals an Venus vorbei. Die Besatzung sieht die Nachbarwelt mit eigenen Augen, während dein Programm sie aus sicherer Distanz erforscht — bemannt bleibt Venus ein Ort des Vorbeiflugs.
+beschreibung: Schicke zwei Kerbals an Venus vorbei. Die Besatzung sieht die Nachbarwelt mit eigenen Augen, während dein Programm sie aus sicherer Distanz erforscht — bemannt bleibt Venus ein Ort des Vorbeiflugs. Nach dem Vorbeiflug muss die Crew sicher zur Erde zurückkehren.
 check: CREW_MIN 2 | mindestens 2 Kerbals an Bord
 check: FLYBY Venus 8000 | Vorbeiflug unter 8000 km
+check: RETURN_FROM_BODY Venus Earth flyby | Crew nach dem Vorbeiflug sicher zur Erde zurückbringen
 
 === MISSION ===
 id: cr_venus_orbit
@@ -740,9 +745,10 @@ reward: 420
 repeatable: no
 recordStation: -
 stationRef: -
-beschreibung: Schicke zwei Kerbals an Mars vorbei. Die Besatzung sieht den roten Planeten aus der Nähe — eine Generalprobe für den Tag, an dem dein Programm dort landet.
+beschreibung: Schicke zwei Kerbals an Mars vorbei. Die Besatzung sieht den roten Planeten aus der Nähe — eine Generalprobe für den Tag, an dem dein Programm dort landet. Nach dem Vorbeiflug muss die Crew sicher zur Erde zurückkehren.
 check: CREW_MIN 2 | mindestens 2 Kerbals an Bord
 check: FLYBY Mars 8000 | Vorbeiflug unter 8000 km
+check: RETURN_FROM_BODY Mars Earth flyby | Crew nach dem Vorbeiflug sicher zur Erde zurückbringen
 
 === MISSION ===
 id: cr_mars_orbit
@@ -943,10 +949,11 @@ reward: 540
 repeatable: no
 recordStation: -
 stationRef: -
-beschreibung: Lande zwei Kerbals auf dem Mars und lass sie den roten Staub betreten. Nach Luna beginnt hier das zweite grosse Kapitel deines Programms — Menschen auf einer anderen Welt.
+beschreibung: Lande zwei Kerbals auf dem Mars und lass sie den roten Staub betreten. Nach Luna beginnt hier das zweite grosse Kapitel deines Programms — Menschen auf einer anderen Welt. Die Crew muss danach sicher zur Erde zurückkehren.
 check: CREW_MIN 2 | mindestens 2 Kerbals an Bord
 check: LANDED Mars | auf Mars gelandet
 check: EVA Mars LANDED | EVA auf Mars
+check: RETURN_FROM_BODY Mars Earth | Crew sicher zur Erde zurückbringen
 
 === MISSION ===
 id: cr_mars_precision_landing
@@ -957,10 +964,11 @@ reward: 435
 repeatable: no
 recordStation: -
 stationRef: -
-beschreibung: Setze eine bemannte Marslandung punktgenau am vorbereiteten Gebiet ab. Die gewonnene Treffsicherheit ist die Voraussetzung für eine dauerhafte Basis.
+beschreibung: Setze eine bemannte Marslandung punktgenau am vorbereiteten Gebiet ab. Die gewonnene Treffsicherheit ist die Voraussetzung für eine dauerhafte Basis. Die Crew muss danach sicher zur Erde zurückkehren.
 check: CREW_MIN 2 | mindestens 2 Kerbals an Bord
 check: LANDED Mars | auf Mars gelandet
 check: MARKER_LANDING Mars 10 | Landung im Umkreis von 10 km
+check: RETURN_FROM_BODY Mars Earth | Crew sicher zur Erde zurückbringen
 
 === MISSION ===
 id: cr_mars_stay_10d
@@ -971,10 +979,11 @@ reward: 480
 repeatable: no
 recordStation: -
 stationRef: -
-beschreibung: Halte zwei Kerbals zehn Tage auf dem Mars. Aus der ersten Landung wird eine echte Forschungsmission — der rote Planet wird zum Arbeitsplatz.
+beschreibung: Halte zwei Kerbals zehn Tage auf dem Mars. Aus der ersten Landung wird eine echte Forschungsmission — der rote Planet wird zum Arbeitsplatz. Die Crew muss danach sicher zur Erde zurückkehren.
 check: CREW_MIN 2 | mindestens 2 Kerbals an Bord
 check: LANDED Mars | auf Mars gelandet
 check: DURATION 10 | 10 Tage ununterbrochen ausharren
+check: RETURN_FROM_BODY Mars Earth | Crew sicher zur Erde zurückbringen
 
 === MISSION ===
 id: cr_mars_stay_30d
@@ -985,10 +994,11 @@ reward: 630
 repeatable: no
 recordStation: -
 stationRef: -
-beschreibung: Halte zwei Kerbals dreissig Tage auf dem Mars. Damit wird der Planet vom Landeziel zum künftigen Aussenposten — und die Marsbasis denkbar.
+beschreibung: Halte zwei Kerbals dreissig Tage auf dem Mars. Damit wird der Planet vom Landeziel zum künftigen Aussenposten — und die Marsbasis denkbar. Die Crew muss danach sicher zur Erde zurückkehren.
 check: CREW_MIN 2 | mindestens 2 Kerbals an Bord
 check: LANDED Mars | auf Mars gelandet
 check: DURATION 30 | 30 Tage ununterbrochen ausharren
+check: RETURN_FROM_BODY Mars Earth | Crew sicher zur Erde zurückbringen
 
 === MISSION ===
 id: cr_phobos_orbit
@@ -1013,10 +1023,11 @@ reward: 315
 repeatable: no
 recordStation: -
 stationRef: -
-beschreibung: Lande zwei Kerbals auf Phobos. Der Marsraum wird vom einzelnen Planeten zu einem System aus Zielen — Mond für Mond.
+beschreibung: Lande zwei Kerbals auf Phobos. Der Marsraum wird vom einzelnen Planeten zu einem System aus Zielen — Mond für Mond. Die Crew muss danach sicher zur Erde zurückkehren.
 check: CREW_MIN 2 | mindestens 2 Kerbals an Bord
 check: LANDED Phobos | auf Phobos gelandet
 check: EVA Phobos LANDED | EVA auf Phobos
+check: RETURN_FROM_BODY Phobos Earth | Crew sicher zur Erde zurückbringen
 
 === MISSION ===
 id: cr_deimos_orbit
@@ -1041,10 +1052,11 @@ reward: 315
 repeatable: no
 recordStation: -
 stationRef: -
-beschreibung: Lande zwei Kerbals auf Deimos. Von hier draussen wirkt Mars wie der Mittelpunkt eines ganz neuen Arbeitsgebiets.
+beschreibung: Lande zwei Kerbals auf Deimos. Von hier draussen wirkt Mars wie der Mittelpunkt eines ganz neuen Arbeitsgebiets. Die Crew muss danach sicher zur Erde zurückkehren.
 check: CREW_MIN 2 | mindestens 2 Kerbals an Bord
 check: LANDED Deimos | auf Deimos gelandet
 check: EVA Deimos LANDED | EVA auf Deimos
+check: RETURN_FROM_BODY Deimos Earth | Crew sicher zur Erde zurückbringen
 
 === MISSION ===
 id: net_mars_orbit_supply
@@ -1285,10 +1297,11 @@ reward: 450
 repeatable: no
 recordStation: -
 stationRef: -
-beschreibung: Lande zwei Kerbals auf Ceres. Ein freiwilliger Höhepunkt fernab des Hauptpfads — und ein Zeichen für die enorme Reichweite deines Programms.
+beschreibung: Lande zwei Kerbals auf Ceres. Ein freiwilliger Höhepunkt fernab des Hauptpfads — und ein Zeichen für die enorme Reichweite deines Programms. Die Crew muss danach sicher zur Erde zurückkehren.
 check: CREW_MIN 2 | mindestens 2 Kerbals an Bord
 check: LANDED Ceres | auf Ceres gelandet
 check: EVA Ceres LANDED | EVA auf Ceres
+check: RETURN_FROM_BODY Ceres Earth | Crew sicher zur Erde zurückbringen
 
 === MISSION ===
 id: cr_ceres_stay_7d
@@ -1299,10 +1312,11 @@ reward: 405
 repeatable: no
 recordStation: -
 stationRef: -
-beschreibung: Halte zwei Kerbals sieben Tage auf Ceres. Dein Programm lernt, in winzigen Schwerefeldern über längere Zeit zu leben und zu arbeiten.
+beschreibung: Halte zwei Kerbals sieben Tage auf Ceres. Dein Programm lernt, in winzigen Schwerefeldern über längere Zeit zu leben und zu arbeiten. Die Crew muss danach sicher zur Erde zurückkehren.
 check: CREW_MIN 2 | mindestens 2 Kerbals an Bord
 check: LANDED Ceres | auf Ceres gelandet
 check: DURATION 7 | 7 Tage ununterbrochen ausharren
+check: RETURN_FROM_BODY Ceres Earth | Crew sicher zur Erde zurückbringen
 
 === MISSION ===
 id: net_ceres_ore_test
@@ -1506,10 +1520,11 @@ reward: 1140
 repeatable: no
 recordStation: -
 stationRef: -
-beschreibung: Lande drei Kerbals auf Ganymed. Das Jupitersystem bekommt seinen einzigen bemannten Landungshöhepunkt — ein Fussabdruck unvorstellbar weit von zu Hause.
+beschreibung: Lande drei Kerbals auf Ganymed. Das Jupitersystem bekommt seinen einzigen bemannten Landungshöhepunkt — ein Fussabdruck unvorstellbar weit von zu Hause. Die Crew muss danach sicher zur Erde zurückkehren.
 check: CREW_MIN 3 | mindestens 3 Kerbals an Bord
 check: LANDED Ganymede | auf Ganymed gelandet
 check: EVA Ganymede LANDED | EVA auf Ganymed
+check: RETURN_FROM_BODY Ganymede Earth | Crew sicher zur Erde zurückbringen
 
 === MISSION ===
 id: cr_ganymede_stay_7d
@@ -1520,10 +1535,11 @@ reward: 1080
 repeatable: no
 recordStation: -
 stationRef: -
-beschreibung: Halte drei Kerbals sieben Tage auf Ganymed. Diese Ausdauer macht Saturn als letztes bemanntes Fernziel überhaupt erst denkbar.
+beschreibung: Halte drei Kerbals sieben Tage auf Ganymed. Diese Ausdauer macht Saturn als letztes bemanntes Fernziel überhaupt erst denkbar. Die Crew muss danach sicher zur Erde zurückkehren.
 check: CREW_MIN 3 | mindestens 3 Kerbals an Bord
 check: LANDED Ganymede | auf Ganymed gelandet
 check: DURATION 7 | 7 Tage ununterbrochen ausharren
+check: RETURN_FROM_BODY Ganymede Earth | Crew sicher zur Erde zurückbringen
 
 === MISSION ===
 id: un_saturn_flyby
@@ -1857,10 +1873,11 @@ reward: 1860
 repeatable: no
 recordStation: -
 stationRef: -
-beschreibung: Lande drei Kerbals auf Titan. Diese dichte, fremde Welt wird zur letzten grossen bemannten Landung deiner ganzen Kampagne.
+beschreibung: Lande drei Kerbals auf Titan. Diese dichte, fremde Welt wird zur letzten grossen bemannten Landung deiner ganzen Kampagne. Die Crew muss danach sicher zur Erde zurückkehren.
 check: CREW_MIN 3 | mindestens 3 Kerbals an Bord
 check: LANDED Titan | auf Titan gelandet
 check: EVA Titan LANDED | EVA auf Titan
+check: RETURN_FROM_BODY Titan Earth | Crew sicher zur Erde zurückbringen
 
 === MISSION ===
 id: cr_titan_stay_7d
@@ -1871,10 +1888,11 @@ reward: 1740
 repeatable: no
 recordStation: -
 stationRef: -
-beschreibung: Halte drei Kerbals sieben Tage auf Titan. Danach übernehmen wieder Sonden den Weg hinaus in die fernsten Regionen.
+beschreibung: Halte drei Kerbals sieben Tage auf Titan. Danach übernehmen wieder Sonden den Weg hinaus in die fernsten Regionen. Die Crew muss danach sicher zur Erde zurückkehren.
 check: CREW_MIN 3 | mindestens 3 Kerbals an Bord
 check: LANDED Titan | auf Titan gelandet
 check: DURATION 7 | 7 Tage ununterbrochen ausharren
+check: RETURN_FROM_BODY Titan Earth | Crew sicher zur Erde zurückbringen
 
 === MISSION ===
 id: net_titan_supply_test

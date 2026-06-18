@@ -3,6 +3,23 @@
 All notable changes to CustomScienceContracts are documented here.
 This project uses simple `MAJOR.MINOR.PATCH` versioning.
 
+## [0.3.0] - 2026-06-18
+
+### Added
+- Added crew-return objectives for SOL crewed landings on the Moon, Mars,
+  Phobos, Deimos, Ceres, Ganymede and Titan. Explicit base-building missions are
+  excluded so long-running base progression stays manageable.
+- Added crew-return objectives for the crewed Venus and Mars flybys.
+- Added a stateful `RETURN_FROM_BODY` check that can track a destination landing
+  or flyby first, then require safe crew recovery on Earth.
+- Added the optional German SOL config pack under `OptionalConfigs/SOL-German/`.
+
+### Changed
+- The main SOL download now ships with the English contract catalog by default.
+  The German SOL catalog is distributed as a separate optional config download.
+- Planet and moon body icons are color-tinted per body in the UI, so shared base
+  icons can still appear in the correct body colors.
+
 ## [0.2.0] - 2026-06-17
 
 ### Added

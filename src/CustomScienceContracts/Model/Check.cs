@@ -32,6 +32,7 @@ namespace CustomScienceContracts.Model
         VESSEL_COUNT_INCLINATION, // >= count reale Vessels ORBITING um body mit inclination >= inclinationMin (optional PeA > km)
         FLYBY,               // a real vessel passes through the body's SOI without orbiting
         MARKER_LANDING,      // active vessel landed/splashed at body within km of target point
+        RETURN_FROM_BODY,    // crewed landing/visit at body, then crewed landing/splashdown on returnBody
         HOLD,                // hold all other checks continuously for seconds
         DURATION             // hold all other checks continuously for days
     }
@@ -44,6 +45,8 @@ namespace CustomScienceContracts.Model
         public string StationKey = "";
         public string Resource = "";
         public string Label = "";
+        public string ReturnBody = "";
+        public string ReturnMode = ""; // empty/surface = land first, flyby = visit SOI first
         public int Min = 0;          // crew threshold
         public int Count = 1;        // VESSEL_COUNT
         public double Km = 0.0;      // PERIAPSIS_MIN / VESSEL_COUNT / FLYBY closest approach / MARKER radius
@@ -66,8 +69,10 @@ namespace CustomScienceContracts.Model
         public bool IsFlyby => Kind == CheckKind.FLYBY;
         /// <summary>Precision landing that creates/checks a persistent target point.</summary>
         public bool IsMarker => Kind == CheckKind.MARKER_LANDING;
+        /// <summary>Sequential crewed return check with its own persisted state.</summary>
+        public bool IsReturn => Kind == CheckKind.RETURN_FROM_BODY;
         /// <summary>Checks with their own state/subject that do not run against one subject vessel.</summary>
-        public bool IsSpecial => IsTimer || IsEvent || IsFleet || IsFlyby || IsMarker;
+        public bool IsSpecial => IsTimer || IsEvent || IsFleet || IsFlyby || IsMarker || IsReturn;
 
         public static Check Load(ConfigNode node)
         {
@@ -82,6 +87,8 @@ namespace CustomScienceContracts.Model
             c.StationKey = node.GetValue("stationKey") ?? "";
             c.Resource   = node.GetValue("resource") ?? "";
             c.Label      = node.GetValue("label") ?? "";
+            c.ReturnBody = node.GetValue("returnBody") ?? "";
+            c.ReturnMode = node.GetValue("returnMode") ?? "";
             c.Min     = GetI(node, "min", 0);
             c.Count   = GetI(node, "count", 1);
             c.Km      = GetD(node, "km", 0.0);

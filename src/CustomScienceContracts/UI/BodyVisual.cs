@@ -12,6 +12,7 @@ namespace CustomScienceContracts.UI
         public struct Visual { public Texture2D Icon; public Color Color; }
 
         private static Color RGB(int r, int g, int b) => new Color(r / 255f, g / 255f, b / 255f);
+        private static readonly Dictionary<string, Texture2D> _bodyTintCache = new Dictionary<string, Texture2D>();
 
         // body name -> (planet icon key, color)
         private static readonly Dictionary<string, (string icon, Color col)> _bodies =
@@ -19,6 +20,23 @@ namespace CustomScienceContracts.UI
         {
             // Star
             { "Sun",     ("pol",    RGB(255,210,80)) },
+            // Stock KSP
+            { "Kerbin",  ("kerbin", RGB(46,111,176)) },
+            { "Mun",     ("mun",    RGB(158,158,158)) },
+            { "Minmus",  ("ovok",   RGB(149,218,200)) },
+            { "Moho",    ("moho",   RGB(140,123,107)) },
+            { "Eve",     ("eve",    RGB(139,88,186)) },
+            { "Gilly",   ("gilly",  RGB(134,122,105)) },
+            { "Duna",    ("duna",   RGB(193,80,46)) },
+            { "Ike",     ("mun",    RGB(118,112,105)) },
+            { "Dres",    ("ovok",   RGB(150,142,126)) },
+            { "Jool",    ("jool",   RGB(107,185,80)) },
+            { "Laythe",  ("kerbin", RGB(70,139,198)) },
+            { "Vall",    ("vall",   RGB(185,212,224)) },
+            { "Tylo",    ("tylo",   RGB(158,150,133)) },
+            { "Bop",     ("gilly",  RGB(111,98,82)) },
+            { "Pol",     ("pol",    RGB(213,190,75)) },
+            { "Eeloo",   ("plock",  RGB(213,213,201)) },
             // Planets
             { "Earth",   ("kerbin", RGB(46,111,176)) },
             { "Moon",    ("mun",    RGB(158,158,158)) },
@@ -81,6 +99,14 @@ namespace CustomScienceContracts.UI
         {
             { "Earth", "Earth" }, { "Erde", "Earth" },
             { "Moon", "Moon" }, { "Luna", "Moon" },
+            { "Kerbin", "Kerbin" }, { "Mun", "Mun" }, { "Minmus", "Minmus" },
+            { "Moho", "Moho" }, { "Eve", "Eve" }, { "Gilly", "Gilly" },
+            { "Duna", "Duna" }, { "Ike", "Ike" }, { "Dres", "Dres" },
+            { "Jool", "Jool" }, { "Laythe", "Laythe" }, { "Vall", "Vall" },
+            { "Tylo", "Tylo" }, { "Bop", "Bop" }, { "Pol", "Pol" },
+            { "Eeloo", "Eeloo" }, { "Kerbin System", "Kerbin" },
+            { "Jool System", "Jool" }, { "Inner Planets", "Moho" },
+            { "Outer System", "Eeloo" },
             { "Mars", "Mars" }, { "Venus", "Venus" },
             { "Mercury", "Mercury" }, { "Merkur", "Mercury" },
             { "Jupiter", "Jupiter" }, { "Saturn", "Saturn" },
@@ -99,6 +125,14 @@ namespace CustomScienceContracts.UI
         {
             { "Earth", "Earth" }, { "Erde", "Earth" },
             { "Moon", "Moon" }, { "Luna", "Moon" },
+            { "Kerbin", "Kerbin" }, { "Mun", "Mun" }, { "Minmus", "Minmus" },
+            { "Moho", "Moho" }, { "Eve", "Eve" }, { "Gilly", "Gilly" },
+            { "Duna", "Duna" }, { "Ike", "Ike" }, { "Dres", "Dres" },
+            { "Jool", "Jool" }, { "Laythe", "Laythe" }, { "Vall", "Vall" },
+            { "Tylo", "Tylo" }, { "Bop", "Bop" }, { "Pol", "Pol" },
+            { "Eeloo", "Eeloo" }, { "Kerbin System", "Kerbin System" },
+            { "Jool System", "Jool System" }, { "Inner Planets", "Inner Planets" },
+            { "Outer System", "Outer System" },
             { "Mercury", "Mercury" }, { "Merkur", "Mercury" }, { "Venus", "Venus" },
             { "Mars", "Mars" }, { "Jupiter", "Jupiter" }, { "Saturn", "Saturn" }, { "Uranus", "Uranus" },
             { "Neptune", "Neptune" }, { "Neptun", "Neptune" }, { "Pluto", "Pluto" },
@@ -122,8 +156,51 @@ namespace CustomScienceContracts.UI
         public static Visual ForBody(string bodyName)
         {
             if (bodyName != null && _bodies.TryGetValue(bodyName, out var v))
-                return new Visual { Icon = IconLibrary.Body(v.icon), Color = v.col };
+                return new Visual { Icon = TintedBodyIcon(v.icon, v.col), Color = v.col };
             return new Visual { Icon = IconLibrary.Body("mun"), Color = RGB(150,150,150) };
+        }
+
+        private static Texture2D TintedBodyIcon(string iconKey, Color tint)
+        {
+            string cacheKey = $"{iconKey}:{ColorUtility.ToHtmlStringRGB(tint)}";
+            if (_bodyTintCache.TryGetValue(cacheKey, out var cached))
+            {
+                if (cached != null) return cached;
+                _bodyTintCache.Remove(cacheKey);
+            }
+
+            var src = IconLibrary.Body(iconKey);
+            if (src == null) return null;
+            try
+            {
+                var px = src.GetPixels32();
+                var outPx = new Color32[px.Length];
+                for (int i = 0; i < px.Length; i++)
+                {
+                    float shade = (px[i].r + px[i].g + px[i].b) / (255f * 3f);
+                    float lift = Mathf.Clamp01(0.38f + shade * 0.82f);
+                    outPx[i] = new Color32(
+                        (byte)Mathf.Clamp(Mathf.RoundToInt(tint.r * 255f * lift), 0, 255),
+                        (byte)Mathf.Clamp(Mathf.RoundToInt(tint.g * 255f * lift), 0, 255),
+                        (byte)Mathf.Clamp(Mathf.RoundToInt(tint.b * 255f * lift), 0, 255),
+                        px[i].a);
+                }
+                var tex = new Texture2D(src.width, src.height, TextureFormat.RGBA32, false)
+                {
+                    name = "CSC_TintedBody_" + cacheKey,
+                    wrapMode = TextureWrapMode.Clamp,
+                    filterMode = src.filterMode,
+                    hideFlags = HideFlags.HideAndDontSave
+                };
+                tex.SetPixels32(outPx);
+                tex.Apply(false, false);
+                _bodyTintCache[cacheKey] = tex;
+                return tex;
+            }
+            catch (System.Exception)
+            {
+                return src;
+            }
         }
 
         public static Visual ForSubcategory(string label)
@@ -210,6 +287,10 @@ namespace CustomScienceContracts.UI
                                 break;
                             case CheckKind.FLYBY:
                                 hasFlyby = true;
+                                break;
+                            case CheckKind.RETURN_FROM_BODY:
+                                hasLanded = true;
+                                hasCrew = true;
                                 break;
                             case CheckKind.VESSEL_COUNT:
                             case CheckKind.VESSEL_COUNT_INCLINATION:

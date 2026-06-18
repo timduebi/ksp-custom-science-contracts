@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Generate the optional English contract catalog.
+"""Generate the default English SOL contract catalog.
 
-The German catalog in GameData/CustomScienceContracts/Contracts remains the default build output.
-This script writes an installable replacement catalog to:
+This script writes the main install catalog to:
 
-  OptionalConfigs/English/GameData/CustomScienceContracts/Contracts
+  GameData/CustomScienceContracts/Contracts
 
 The technical ids, prerequisites, enum values and checks stay identical to the German catalog so
 save progress and mission logic remain compatible. Only player-facing titles, descriptions,
@@ -18,7 +17,7 @@ import gen_catalog as de
 
 ROOT = de.ROOT
 DOC = de.DOC
-OUT = os.path.join(ROOT, "OptionalConfigs", "English", "GameData", "CustomScienceContracts", "Contracts")
+OUT = os.path.join(ROOT, "GameData", "CustomScienceContracts", "Contracts")
 
 SPARTE = de.SPARTE
 
@@ -109,6 +108,10 @@ def title_for(m):
 
     if "RESOURCE_MIN" in kinds or "FUEL_MIN" in kinds:
         noun = f"Fuel Depot near {body}" if "LANDED" not in kinds else f"Fuel Depot on {body}"
+    elif "RETURN_FROM_BODY" in kinds and "FLYBY" in kinds:
+        noun = f"Flyby and Return from {body}"
+    elif "RETURN_FROM_BODY" in kinds and ("LANDED" in kinds or "MARKER_LANDING" in kinds):
+        noun = f"Landing and Return from {body}"
     elif "ORE_SURFACE" in kinds:
         noun = f"Ore Mining on {body}"
     elif "MARKER_LANDING" in kinds:
@@ -153,6 +156,10 @@ def mission_action(m, title):
 
     if m["id"].startswith("net_"):
         return f"Build the next communications layer around {body}. It replaces the aging early relay net with a stronger infrastructure backbone."
+    if "RETURN_FROM_BODY" in kinds and "FLYBY" in kinds:
+        return f"Fly crew past {body}, leave the encounter safely, and bring them back to Earth for recovery."
+    if "RETURN_FROM_BODY" in kinds and ("LANDED" in kinds or "MARKER_LANDING" in kinds):
+        return f"Land the crew on {body}, complete the surface objectives, and bring them safely back to Earth for recovery."
     if "VESSEL_COUNT_INCLINATION" in kinds:
         return f"Deploy a polar constellation around {body} and keep the required relay craft in orbit at the target inclination."
     if "VESSEL_COUNT" in kinds:
@@ -239,6 +246,10 @@ def label_for(kind, kvl, mission):
     if kind == "DURATION":
         days = float(kv["days"])
         return f"Hold continuously for {int(days) if days.is_integer() else kv['days']} day{'s' if days != 1 else ''}"
+    if kind == "RETURN_FROM_BODY":
+        home = disp(kv.get("returnBody", "Earth"))
+        mode = kv.get("returnMode", "")
+        return f"Fly by {body}, then return crew to {home}" if mode == "flyby" else f"Return crew safely from {body} to {home}"
     return kind.replace("_", " ").title()
 
 
@@ -264,7 +275,7 @@ def mission_contract(m):
 HEADER = ("// ===========================================================================\n"
           "//  {t}\n"
           "//  GENERATED from custom_science_contracts_missionsdesign.md (tools/gen_catalog_en.py).\n"
-          "//  Optional English replacement catalog. Do not edit generated cfg files by hand.\n"
+          "//  Default English SOL catalog. Do not edit generated cfg files by hand.\n"
           "//  Body names remain internal CelestialBody.name values (Moon = internal body Moon, star = Sun).\n"
           "// ===========================================================================\n\n"
           "CUSTOM_CONTRACT_CATALOG\n{{\n")
