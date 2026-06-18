@@ -6,7 +6,7 @@
 #
 # One release, three downloads (named so the main download sorts to the top of the asset list):
 #   1. CustomScienceContracts-vX.zip                  full mod, default SOL catalog
-#   2. CustomScienceContracts-vX_German-Config.zip    optional: swap catalog to German
+#   2. CustomScienceContracts-vX_Sol-German-Config.zip optional: swap SOL catalog to German
 #   3. CustomScienceContracts-vX_Stock-Config.zip     optional: swap catalog to stock KSP
 # The optional packs only replace GameData/CustomScienceContracts/Contracts/*.cfg; the shared
 # engine DLL already supports both the real-solar-system and stock bodies. See DEVELOPMENT.md.
@@ -62,7 +62,7 @@ STOCKZIP="$OUTDIR/CustomScienceContracts-v${VERSION}_Stock-Config.zip"; zipdir "
 GER="$OUTDIR/sol-german"; rm -rf "$GER"; mkdir -p "$GER"
 cp -R "$ROOT/OptionalConfigs/SOL-German/GameData" "$GER/"
 cp "$ROOT/OptionalConfigs/SOL-German/README.md" "$GER/"
-GZIP="$OUTDIR/CustomScienceContracts-v${VERSION}_German-Config.zip"; zipdir "$GER" "$GZIP"
+GZIP="$OUTDIR/CustomScienceContracts-v${VERSION}_Sol-German-Config.zip"; zipdir "$GER" "$GZIP"
 
 ASSETS=("$MAINZIP" "$STOCKZIP" "$GZIP")
 echo "==> Packaged:"; for a in "${ASSETS[@]}"; do echo "    $(basename "$a") ($(du -h "$a" | cut -f1))"; done
@@ -79,13 +79,17 @@ BODY="$(cat "$ROOT/tools/release_notes.md" 2>/dev/null || echo "CustomScienceCon
 echo "==> Publish single release $TAG"
 RID="$(curl -s -H "Authorization: token $TOKEN" "$API/releases/tags/$TAG" \
   | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('id',''))")"
-PAYLOAD="$(python3 -c "import json,sys;print(json.dumps({'tag_name':sys.argv[1],'target_commitish':sys.argv[2],'name':sys.argv[3],'body':sys.stdin.read(),'make_latest':'true','draft':False,'prerelease':False}))" \
+PAYLOAD="$(python3 -c "import json,sys;print(json.dumps({'tag_name':sys.argv[1],'target_commitish':sys.argv[2],'name':sys.argv[3] + ' (alpha)','body':sys.stdin.read(),'make_latest':'true','draft':False,'prerelease':True}))" \
   "$TAG" "$SHA" "$RELNAME" <<<"$BODY")"
 if [ -n "$RID" ]; then
   curl -s -X PATCH -H "Authorization: token $TOKEN" -H "Content-Type: application/json" --data "$PAYLOAD" "$API/releases/$RID" >/dev/null
 else
   RID="$(curl -s -X POST -H "Authorization: token $TOKEN" -H "Content-Type: application/json" --data "$PAYLOAD" "$API/releases" | python3 -c "import sys,json;print(json.load(sys.stdin)['id'])")"
 fi
+for stale in "CustomScienceContracts-v${VERSION}_German-Config.zip"; do
+  old="$(curl -s -H "Authorization: token $TOKEN" "$API/releases/$RID/assets" | python3 -c "import sys,json;[print(x['id']) for x in json.load(sys.stdin) if x['name']==sys.argv[1]]" "$stale")"
+  [ -n "$old" ] && curl -s -X DELETE -H "Authorization: token $TOKEN" "$API/releases/assets/$old" >/dev/null
+done
 for a in "${ASSETS[@]}"; do
   name="$(basename "$a")"
   old="$(curl -s -H "Authorization: token $TOKEN" "$API/releases/$RID/assets" | python3 -c "import sys,json;[print(x['id']) for x in json.load(sys.stdin) if x['name']==sys.argv[1]]" "$name")"

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CustomScienceContracts.Core
 {
-    /// <summary>Central tuning values from AGENTS.md / mission design. Defaults live here and can
+    /// <summary>Central tuning values from the mission design. Defaults live here and can
     /// be overridden at runtime through GameData/CustomScienceContracts/settings.cfg
     /// (CUSTOM_SCIENCE_CONTRACTS_SETTINGS node). Missing files or values keep the defaults.</summary>
     public static class Tuning

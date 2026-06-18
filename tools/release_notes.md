@@ -36,7 +36,7 @@ Run only **one** config at a time.
   Rebuilds the whole campaign for the stock system (Kerbin, the Mun, Minmus, Duna, Jool, Laythe,
   Eve …). For a stock, non-rescaled game.
 
-- **German** — **`CustomScienceContracts-v0.3.0_German-Config.zip`**
+- **German Sol** — **`CustomScienceContracts-v0.3.0_Sol-German-Config.zip`**
   The Sol campaign with all contract text in German. Same missions, only the language changes.
 
 To go back to the default, re-extract the four `Contracts/*.cfg` from the main download.

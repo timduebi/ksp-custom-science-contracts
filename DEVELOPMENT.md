@@ -36,7 +36,7 @@ packages all assets, and (with `--publish`) creates/updates the **single** GitHu
 
 ```
 CustomScienceContracts-vX.zip                # main download: engine + default SOL catalog
-CustomScienceContracts-vX_German-Config.zip  # optional overlay: German SOL catalog
+CustomScienceContracts-vX_Sol-German-Config.zip  # optional overlay: German SOL catalog
 CustomScienceContracts-vX_Stock-Config.zip   # optional overlay: stock KSP catalog
 ```
 

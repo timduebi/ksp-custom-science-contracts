@@ -79,7 +79,7 @@ Kerbal Space Program/
 The main download ships with the Sol campaign. Two optional config packs on the same release change **which missions you fly**. Each one replaces only the four catalog files in `GameData/CustomScienceContracts/Contracts/`. Install the main download first, then unzip one pack over it and confirm overwriting — run only **one** config at a time.
 
 - **`CustomScienceContracts-vX.Y.Z_Stock-Config.zip`** — rebuilds the whole campaign for the **stock Kerbol system** (Kerbin, the Mun, Minmus, Duna, Jool, Laythe, Eve …). For a stock, non-rescaled game.
-- **`CustomScienceContracts-vX.Y.Z_German-Config.zip`** — the Sol campaign with all contract text in **German**. Same missions, only the language changes.
+- **`CustomScienceContracts-vX.Y.Z_Sol-German-Config.zip`** — the Sol campaign with all contract text in **German**. Same missions, only the language changes.
 
 To go back to the default, re-extract the four `Contracts/*.cfg` from the main download.
 
