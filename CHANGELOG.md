@@ -3,6 +3,20 @@
 All notable changes to CustomScienceContracts are documented here.
 This project uses simple `MAJOR.MINOR.PATCH` versioning.
 
+The mod ships in two editions that share the same engine version: the **SOL** edition
+(real solar system, English main download + optional German config) and the **Stock**
+edition (stock KSP system, English only). This file is shared; entries note the edition
+where relevant.
+
+## [Stock 0.3.0] - 2026-06-18
+
+### Added
+- First release of the **Stock KSP** contract campaign as its own English-only main
+  download (built on the same engine as SOL 0.3.0). 76 missions across Pioneers (crewed),
+  Robotic Explorers and Lifelines: a crewed-first Kerbin program, Mun/Minmus core
+  progression, focused robotic support, communication and fuel networks, optional
+  grand-tour landings, and a Laythe-then-Eve landing-and-return finale.
+
 ## [0.3.0] - 2026-06-18
 
 ### Added

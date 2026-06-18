@@ -4,8 +4,9 @@
 Default target:
   GameData/CustomScienceContracts/Contracts
 
-Optional target:
+Optional target / profile:
   python3 tools/validate_catalog.py OptionalConfigs/SOL-German/GameData/CustomScienceContracts/Contracts
+  python3 tools/validate_catalog.py GameData/CustomScienceContracts/Contracts stock
 """
 import re, os, sys
 
@@ -13,6 +14,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CDIR = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "GameData", "CustomScienceContracts", "Contracts")
 if not os.path.isabs(CDIR):
     CDIR = os.path.join(ROOT, CDIR)
+PROFILE = (sys.argv[2].lower() if len(sys.argv) > 2 else ("stock" if "stock" in CDIR.lower() else "sol"))
 FILES = ["A_Pioniere.cfg", "B_Spaeher.cfg", "C_Lebensadern.cfg", "D_Stationen.cfg"]
 
 CHECK_KINDS = {"CREW_MIN","CREW_NONE","CREW_EXACT","ON_BODY","SITUATION","SUBORBITAL","LANDED",
@@ -27,7 +29,7 @@ SOL_BODIES = {"Amalthea","Ariel","Arrokoth","Callisto","Ceres","Charon","Dactyl"
   "Thebe","Titan","Titania","Triton","Umbriel","Uranus","Venus","Vesta"}
 STOCK_BODIES = {"Sun","Kerbin","Mun","Minmus","Moho","Eve","Gilly","Duna","Ike","Dres","Jool",
   "Laythe","Vall","Tylo","Bop","Pol","Eeloo"}
-BODIES = STOCK_BODIES if "stock" in CDIR.lower() else SOL_BODIES
+BODIES = STOCK_BODIES if PROFILE == "stock" else SOL_BODIES
 ICONS = {  # in GameData/.../Icons/UI vorhanden
   "TrackingStation_ButtonMapProbe","TrackingStation_ButtonMapLander","TrackingStation_ButtonMapFlag",
   "TrackingStation_ButtonMapEVA","TrackingStation_ButtonMapShips","TrackingStation_ButtonMapStation",
