@@ -1,16 +1,19 @@
-# Development — two editions, one engine
+# Development — one engine, three catalogs, one release
 
-CustomScienceContracts ships in **two editions that share a single engine** (one compiled
-`CustomScienceContracts.dll`). They differ only in the contract catalog:
+CustomScienceContracts has **one shared engine** (one compiled `CustomScienceContracts.dll`) and
+three interchangeable contract catalogs. They ship in a **single GitHub release**: the main
+download is the engine + the default catalog, and the other catalogs are optional config overlays
+that replace only `GameData/CustomScienceContracts/Contracts/*.cfg`.
 
-| Edition | Bodies | Design source | Catalog in repo | Downloads |
-|---------|--------|---------------|-----------------|-----------|
-| **SOL** | real solar system | `custom_science_contracts_missionsdesign.md` | `GameData/CustomScienceContracts/Contracts/` (default) + `OptionalConfigs/SOL-German/` | English (main) + German (optional config) |
-| **Stock** | stock KSP (Kerbin, Mun, …) | `custom_science_contracts_stock_missionsdesign.md` | `OptionalConfigs/Stock/` | English only |
+| Catalog | Bodies | Design source | Catalog in repo | In the release |
+|---------|--------|---------------|-----------------|----------------|
+| **SOL English** | real solar system | `custom_science_contracts_missionsdesign.md` | `GameData/CustomScienceContracts/Contracts/` (default) | main download |
+| **SOL German** | real solar system | same (German variant) | `OptionalConfigs/SOL-German/` | optional overlay |
+| **Stock** | stock KSP (Kerbin, Mun, …) | `custom_science_contracts_stock_missionsdesign.md` | `OptionalConfigs/Stock/` | optional overlay |
 
-Everything else — the engine in `src/`, icons, UI, validators, generators — is shared and
-lives on **`main`**. There is intentionally no per-edition branch: a single branch means an
-engine change is automatically part of both editions.
+Everything else — the engine in `src/`, icons, UI, validators, generators — is shared and lives on
+**`main`** (no per-edition branch). The same DLL handles real-solar-system and stock bodies, so an
+engine change applies to every catalog at once.
 
 ## Generators
 
@@ -26,19 +29,21 @@ Never edit generated `*.cfg` by hand — change the design `.md` and regenerate.
 - `tools/validate_catalog.py [dir] [sol|stock]` — pass the `stock` profile when validating the
   Stock catalog (its body set differs).
 
-## Building a release
+## Building the release
 
-`tools/make_release.sh <sol|stock> [--publish]` builds the shared DLL once, validates, packages
-the edition's download(s), and optionally creates/updates the GitHub release (SOL is published
-with `make_latest=true`, Stock with `make_latest=false`, so SOL keeps the "Latest" badge).
+`tools/make_release.sh [--publish]` builds the shared DLL once, validates all three catalogs,
+packages all assets, and (with `--publish`) creates/updates the **single** GitHub release:
 
 ```
-tools/make_release.sh sol      # CustomScienceContracts-SOL-vX.zip + -SOL-GermanConfig-vX.zip
-tools/make_release.sh stock    # CustomScienceContracts-Stock-vX.zip
+CustomScienceContracts-vX.zip                 # main download: engine + English SOL catalog
+CustomScienceContracts-StockConfig-vX.zip     # optional overlay: stock KSP catalog
+CustomScienceContracts-SOL-GermanConfig-vX.zip# optional overlay: German SOL catalog
 ```
 
-The version is read from `src/CustomScienceContracts/Core/ModInfo.cs` (keep it in sync with
-`<Version>` in `CustomScienceContracts.csproj`).
+The overlays contain only `GameData/CustomScienceContracts/Contracts/*.cfg`. The release notes come
+from `tools/release_notes.md` (placement instructions). Version is read from
+`src/CustomScienceContracts/Core/ModInfo.cs` (keep it in sync with `<Version>` in
+`CustomScienceContracts.csproj`).
 
 ## Adding an engine feature — do it for BOTH editions
 
@@ -54,8 +59,9 @@ feature lands in both editions, and **propose concrete mission placements for SO
 4. **Design docs:** add real usages to **both** `custom_science_contracts_missionsdesign.md`
    (SOL) **and** `custom_science_contracts_stock_missionsdesign.md` (Stock), choosing
    edition-appropriate bodies (e.g. Mars/Titan for SOL, Duna/Laythe for Stock).
-5. **Regenerate + validate** both catalogs (run all three generators, both validators green).
-6. **Release** both editions with `tools/make_release.sh sol` and `tools/make_release.sh stock`.
+5. **Regenerate + validate** all catalogs (run all three generators, every validator green).
+6. **Release** with `tools/make_release.sh --publish` (one release, all assets rebuilt from the
+   shared DLL).
 
-A change that touches `src/` but only one design doc is incomplete — it has shipped the engine
-to both editions but only wired it into one.
+A change that touches `src/` but only one design doc is incomplete — it has shipped the engine to
+every catalog but only wired the feature into one.

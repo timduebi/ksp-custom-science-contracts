@@ -25,9 +25,12 @@ no per-edition branch. Read `DEVELOPMENT.md` for the full architecture.
 
 ## Building and releasing
 
-- Build/package via **`tools/make_release.sh <sol|stock> [--publish]`** — it builds the shared
-  DLL once and is the only supported release path. SOL publishes with `make_latest=true`, Stock
-  with `make_latest=false` (SOL keeps GitHub's "Latest" badge).
+- There is **one** GitHub release. The main asset is the engine + English SOL catalog; the stock
+  and German catalogs ship as optional config overlays (they replace only the four
+  `Contracts/*.cfg`).
+- Build/package via **`tools/make_release.sh [--publish]`** — it builds the shared DLL once,
+  validates all three catalogs, and is the only supported release path. Release notes (placement
+  instructions) live in `tools/release_notes.md`.
 - To compile without touching the live KSP install use the plain
   `dotnet build -c Release -p:KSPManaged=…`; `build.sh` additionally copies into the KSP
   GameData and is only for local in-game testing.

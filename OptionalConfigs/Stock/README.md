@@ -1,13 +1,16 @@
-# Custom Science Contracts - Stock KSP campaign (English)
+# Stock KSP config (English)
 
-A custom science-mode contract campaign for **stock** Kerbal Space Program. This is the
-Stock edition main download and is English only. (The real-solar-system **SOL** edition
-is released separately.)
+Optional config pack that switches the contract catalog to the **stock** Kerbal Space Program
+system. It replaces only the four files in `GameData/CustomScienceContracts/Contracts/`; the
+plugin, icons and licenses come from the main download.
 
-Install by copying the `GameData` folder from this download into your KSP install root,
-merging it into your existing `GameData/`. You should end up with
-`Kerbal Space Program/GameData/CustomScienceContracts/` containing `Plugins/`,
-`Contracts/`, `Icons/` and `settings.cfg`.
+Install:
+1. Install the main mod download first.
+2. Copy this folder's `GameData` directory into your KSP install root.
+3. Confirm overwriting `A_Pioniere.cfg`, `B_Spaeher.cfg`, `C_Lebensadern.cfg`, `D_Stationen.cfg`
+   in `GameData/CustomScienceContracts/Contracts/`.
+
+To return to the default English SOL catalog, re-extract those four files from the main download.
 
 Campaign shape:
 - Crewed-first Kerbin program, then Mun and Minmus.
