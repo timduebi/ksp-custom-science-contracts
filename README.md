@@ -61,7 +61,6 @@ Kerbal Space Program/
 └── GameData/
     └── CustomScienceContracts/
         ├── Contracts/
-        ├── Fonts/
         ├── Icons/
         ├── Plugins/
         │   └── CustomScienceContracts.dll
@@ -94,4 +93,4 @@ The campaigns are generated from design plans; the generated `.cfg` files are **
 
 ## License and third-party assets
 
-Custom Science Contracts is licensed under the GNU General Public License 3.0 (see [`LICENSE`](LICENSE)). Some visual assets are third-party and shipped unmodified: ZTheme (GPL-3.0), Kerbal Planet Emblems (MIT), plus the bundled UI fonts listed in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). No code from those projects is used.
+Custom Science Contracts is licensed under the GNU General Public License 3.0 (see [`LICENSE`](LICENSE)). Some image assets are third-party and shipped unmodified: ZTheme (GPL-3.0) and Kerbal Planet Emblems (MIT). No code from those projects is used. Details in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

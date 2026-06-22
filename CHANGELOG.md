@@ -9,14 +9,13 @@ packs on the same release that swap the catalog to the stock KSP system or to Ge
 ## [0.4.1] - 2026-06-22
 
 ### Added
-- Added bundled atlas fonts: `Pixeled.ttf` for headings/bold labels and
-  `VCR_OSD_MONO_1.001.ttf` for body text, with safe runtime fallback.
-- Added two optional station-supported lunar precision landing missions after
-  the 3-Kerbal lunar station expansion.
+- Added two optional lunar base-site survey landings during the Earth station
+  phase.
 
 ### Changed
 - Moved the Moon base gate behind the second 150-day, 2-Kerbal lunar station
-  operation so surface bases follow sustained orbital infrastructure.
+  operation so surface bases follow sustained orbital infrastructure, while the
+  early site-survey landings stay optional.
 - Split early asteroid-belt scouting into Red Horizon and kept Beltworks focused
   on later belt landings, industry and crewed operations.
 - Removed unnecessary crewed-orbit prerequisites from the Phobos depot and Ceres

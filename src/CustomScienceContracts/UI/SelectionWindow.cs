@@ -14,7 +14,7 @@ namespace CustomScienceContracts.UI
         private static readonly Sparte[] Branches =
             { Sparte.Bemannt, Sparte.UnbemannteErkundung, Sparte.NetzwerkLogistik };
 
-        private const float CardW = 250f;
+        private const float CardW = 280f;
         private const float CardBaseH = 104f;
         private const float CardGap = 64f;
         private const float BodyLabelW = 132f;
@@ -439,9 +439,9 @@ namespace CustomScienceContracts.UI
                 string line = "- " + title + " (" + epoch + ")";
                 float h = TextHeight(Theme.CondBad, line, w);
                 GUI.Label(new Rect(x, y, w, h), line, Theme.CondBad);
-                y += h;
+                y += h + 3f;
             }
-            return y + 4f;
+            return y + 6f;
         }
 
         private float DrawUnlockRequirements(ContractManager mgr, HashSet<string> visible, MissionContract c,
@@ -454,13 +454,13 @@ namespace CustomScienceContracts.UI
             {
                 string text = "- " + line;
                 float h = TextHeight(Theme.CondBad, text, w - 14f);
-                Rect box = new Rect(x, y, w, h + 8f);
+                Rect box = new Rect(x, y, w, h + 12f);
                 if (Event.current.type == EventType.Repaint)
                     Theme.DrawRect(box, new Color(0.20f, 0.10f, 0.11f, 0.58f));
                 GUI.Label(new Rect(x + 7f, y + 4f, w - 14f, h), text, Theme.CondBad);
-                y += h + 12f;
+                y += h + 16f;
             }
-            return y + 2f;
+            return y + 6f;
         }
 
         private List<string> UnlockRequirementLines(ContractManager mgr, HashSet<string> visible,
@@ -718,9 +718,9 @@ namespace CustomScienceContracts.UI
                 {
                     string title = pre != null ? pre.Titel : "Unknown mission";
                     string epoch = pre != null ? EpochName(pre.Epoch) : "Unknown epoch";
-                    h += TextHeight(Theme.CondBad, "- " + title + " (" + epoch + ")", CardW - 20f);
+                    h += TextHeight(Theme.CondBad, "- " + title + " (" + epoch + ")", CardW - 20f) + 3f;
                 }
-                h += 4f;
+                h += 6f;
             }
 
             if (c.Status == MissionStatus.ReadyToClaim || canAccept)
@@ -756,8 +756,8 @@ namespace CustomScienceContracts.UI
         {
             float h = 22f;
             foreach (string line in UnlockRequirementLines(mgr, visible, c, canAccept))
-                h += TextHeight(Theme.CondBad, "- " + line, width - 14f) + 12f;
-            return h + 2f;
+                h += TextHeight(Theme.CondBad, "- " + line, width - 14f) + 16f;
+            return h + 6f;
         }
 
         private float ObjectiveHeight(ContractManager mgr, MissionContract c, float width)

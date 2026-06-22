@@ -545,7 +545,7 @@ def orbit_chain(key, body, sub, orbitword, km, stages, prereq0, station_word, mu
         prev_long = lng
     return "".join(out)
 
-def moon_station_precision_landings():
+def moon_base_site_survey_landings():
     def cks(lst): return [(c["kind"], [(k, v) for k, v in c.items() if k != "kind" and k != "label"], c.get("label", "")) for c in lst]
     common = [
         {"kind": "CREW_MIN", "min": 2, "label": "Bemannt mit mindestens 2 Kerbals an Bord"},
@@ -555,14 +555,14 @@ def moon_station_precision_landings():
     ]
     first = contract(
         "cr_luna_station_precision_landing_1",
-        "Stationsgestützte Präzisionslandung",
-        "Nutze die gewachsene Mondstation als Planungs- und Navigationsanker und setze eine Crew punktgenau auf Luna ab. Diese Bonusmission trainiert Landungen, ohne den Basisbau zu blockieren.",
+        "Erkundung erster Mondbasis-Standort",
+        "Nutze die Erfahrung aus der Erdorbitalstation, um einen möglichen Standort für eine spätere Mondbasis zu testen. Lande präzise, sammle Eindrücke vor Ort und bringe die Crew sicher zurück.",
         "Bemannt", "Luna", "TrackingStation_ButtonMapFlag", 176,
-        ["cr_moon_station_expand3"], cks(common), epoch=3)
+        ["cr_earth_station_build"], cks(common), epoch=3)
     second = contract(
         "cr_luna_station_precision_landing_2",
-        "Zweite stationsgestützte Präzisionslandung",
-        "Wiederhole die punktgenaue Mondlandung mit einer neuen Crew. Die Routine hält die Landefähigkeit frisch, während dein Programm die dauerhafte Infrastruktur vorbereitet.",
+        "Erkundung zweiter Mondbasis-Standort",
+        "Teste einen zweiten möglichen Standort für die spätere Mondbasis. Die Mission bleibt ein optionaler Vergleichsflug und blockiert keinen Ausbaupfad.",
         "Bemannt", "Luna", "TrackingStation_ButtonMapFlag", 188,
         ["cr_luna_station_precision_landing_1"], cks(common), epoch=3)
     return first + second
@@ -660,7 +660,7 @@ def build_stations():
     s += orbit_chain("moon_station", "Moon", "Luna", "Mondorbit", 25,
                      [2, 3, 4, 6, 8, 10], "cr_earth_station_longstay4", "Erste Mond-Raumstation im Mondorbit", 1.5)
     s += "\n    // ===== LUNA — Bonus-Praezisionslandungen nach Stationsausbau =====\n"
-    s += moon_station_precision_landings()
+    s += moon_base_site_survey_landings()
     s += "\n    // ===== LUNA — Oberflaechenbasis (ab 150 Tage Mondstation 2 Kerbals) =====\n"
     s += base_chain("moon_base", "Moon", "Luna", [2, 3, 4, 6, 8, 10],
                     "cr_moon_station_longstay2", "Erste Mondbasis", 1.5)

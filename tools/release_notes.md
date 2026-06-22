@@ -33,12 +33,11 @@ Install the main download first, then unzip one of these over it and overwrite t
 
 - Reworked Mission Control into a fullscreen-style, resizable mission atlas with epoch pages.
 - Added rounded mission dependency arrows, status colors, body rows and unlock previews.
-- Added bundled Pixeled/VCR-style UI fonts for the atlas heading and body text.
 - Added stricter robotic-first progression, including assigned docking targets and improved
   return, rover and relay checks.
 - Regenerated the Sol and German Sol catalogs with the updated Moon, Mars, Phobos and asteroid flow.
 - Reworked the Moon base gate so a base follows sustained lunar station operations, with two
-  optional station-supported precision landings as side missions.
+  optional early base-site survey landings as side missions.
 - Split early asteroid belt scouting into the Red Horizon chapter so Beltworks focuses on deeper
   belt operations.
 - Improved icon loading so the bundled `icon_...` mission icons win over cached/stock names.

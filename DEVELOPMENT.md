@@ -107,6 +107,3 @@ every catalog but only wired the feature into one.
 - Icon keys should be unique bundled assets where possible. `icon_...` files are
   preferred over KSP tracking-station names, and legacy keys should map through
   `IconLibrary` rather than depending on `GameDatabase` lookup order.
-- Font loading must be optional at runtime. Bundled fonts can improve the atlas,
-  but `Theme` should fall back to KSP/Unity defaults when a font file is missing
-  or rejected by the runtime.

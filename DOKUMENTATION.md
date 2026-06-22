@@ -206,8 +206,8 @@ needs structured generated behavior:
 - the first docking maneuver uses a generated recorded docking target,
 - generated station, base and depot chains are placed into epochs by id/stage,
 - the Moon base is gated behind the second 150-day, 2-Kerbal lunar station
-  operation, while the two station-supported lunar precision landings remain
-  optional side missions,
+  operation, while two early lunar base-site survey landings unlock during the
+  Earth station phase and remain optional side missions,
 - early asteroid-belt scouting can be placed in Red Horizon while Beltworks
   remains reserved for later belt landings, industry and crewed work,
 - Phobos depot and Ceres landing progression intentionally skip unnecessary
@@ -235,22 +235,6 @@ When adding a new mission icon:
 - prefer a unique `icon_...` key,
 - update `IconLibrary.MapUiIcon` if it replaces a legacy key,
 - add the key to `tools/validate_catalog.py`.
-
-## Fonts
-
-The atlas theme tries to load optional bundled fonts from:
-
-```text
-GameData/CustomScienceContracts/Fonts/
-```
-
-Current bundled fonts:
-
-- `Pixeled.ttf`: headings and bold labels.
-- `VCR_OSD_MONO_1.001.ttf`: body text and compact UI labels.
-
-Font loading is best-effort. If a font file is missing or Unity rejects it, the
-theme keeps the default KSP/Unity font so the UI stays usable.
 
 ## Validation
 
@@ -358,14 +342,10 @@ contract catalog files.
 
 ## Legal Notes
 
-The mod code is GPL-3.0. Some bundled visual assets are third-party assets:
+The mod code is GPL-3.0. Some bundled image assets are third-party assets:
 
 - ZTheme image assets, unmodified, GPL-3.0.
 - Kerbal Planet Emblems image assets, unmodified, MIT.
-- Pixeled font, unmodified, FontStruct Non-Commercial License according to
-  embedded font metadata.
-- VCR OSD Mono font, unmodified, embedded metadata names `MrManet` as creator
-  string.
 
 No code from those projects is used. Do not claim that all assets are original
 CustomScienceContracts artwork.

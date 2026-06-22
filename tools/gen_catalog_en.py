@@ -382,7 +382,7 @@ def orbit_chain(key, body, sub, orbitword, km, stages, prereq0, station_word, mu
     return "".join(out)
 
 
-def moon_station_precision_landings():
+def moon_base_site_survey_landings():
     common = [
         make_check("CREW_MIN", "Crewed with at least 2 Kerbals aboard", min=2),
         make_check("LANDED", "Landed on Moon", body="Moon"),
@@ -391,14 +391,14 @@ def moon_station_precision_landings():
     ]
     first = de.contract(
         "cr_luna_station_precision_landing_1",
-        "Station-Supported Precision Landing",
-        "Use the expanded lunar station as a planning and navigation anchor, then land a crew precisely on the Moon. This bonus mission keeps landing skills active without blocking base construction.",
+        "First Moon Base Site Survey",
+        "Use the experience from the Earth orbital station to test a possible site for a future Moon base. Land precisely, inspect the area and bring the crew safely home.",
         "Bemannt", "Moon", "TrackingStation_ButtonMapFlag", 176,
-        ["cr_moon_station_expand3"], common, epoch=3)
+        ["cr_earth_station_build"], common, epoch=3)
     second = de.contract(
         "cr_luna_station_precision_landing_2",
-        "Second Station-Supported Precision Landing",
-        "Repeat the precision lunar landing with a new crew. The extra practice keeps landing operations sharp while permanent infrastructure is prepared.",
+        "Second Moon Base Site Survey",
+        "Test a second possible site for the later Moon base. This remains an optional comparison flight and does not block the infrastructure path.",
         "Bemannt", "Moon", "TrackingStation_ButtonMapFlag", 188,
         ["cr_luna_station_precision_landing_1"], common, epoch=3)
     return first + second
@@ -488,7 +488,7 @@ def build_stations():
     s += orbit_chain("moon_station", "Moon", "Moon", "lunar orbit", 25,
                      [2, 3, 4, 6, 8, 10], "cr_earth_station_longstay4", "Lunar Orbital Station", 1.5)
     s += "\n    // ===== MOON - Bonus precision landings after station expansion =====\n"
-    s += moon_station_precision_landings()
+    s += moon_base_site_survey_landings()
     s += "\n    // ===== MOON - Surface base =====\n"
     s += base_chain("moon_base", "Moon", "Moon", [2, 3, 4, 6, 8, 10],
                     "cr_moon_station_longstay2", "Moon Base", 1.5)

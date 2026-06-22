@@ -1,4 +1,3 @@
-using System.IO;
 using UnityEngine;
 
 namespace CustomScienceContracts.UI
@@ -25,7 +24,6 @@ namespace CustomScienceContracts.UI
 
         private static bool _built;
         private static Texture2D _barTex, _ringTex;
-        private static Font _headingFont, _bodyFont;
         public static GUIStyle Window, Title, TabActive, TabInactive, GroupHeader, GroupHeaderPlain, MoonHeader,
                                ItemBox, ItemBoxReady, ItemTitle, ItemSub, ItemDesc, Pill, Locked,
                                AcceptBtn, ClaimBtn, CloseBtn, SettingsBtn, TopIconButton, Border, CondOk, CondBad, CondNeutral,
@@ -39,7 +37,6 @@ namespace CustomScienceContracts.UI
         {
             if (_built) return;
             White = Solid(Color.white);
-            LoadFonts();
 
             // Only the window stays rounded; all inner surfaces are square.
             Texture2D winTex   = Rounded(WinBg, 40, 12);
@@ -146,53 +143,8 @@ namespace CustomScienceContracts.UI
             RewardIcon = new GUIStyle { margin = new RectOffset(0, 2, 4, 0), padding = new RectOffset(0, 0, 0, 0) };
             RewardIcon.normal.background = null;
 
-            ApplyFontRoles();
             BuildScrollbarSkin();
             _built = true;
-        }
-
-        private static void LoadFonts()
-        {
-            _headingFont = LoadFontFile("Pixeled.ttf");
-            _bodyFont = LoadFontFile("VCR_OSD_MONO_1.001.ttf");
-        }
-
-        private static Font LoadFontFile(string fileName)
-        {
-            try
-            {
-                string path = Path.Combine(KSPUtil.ApplicationRootPath, "GameData",
-                    "CustomScienceContracts", "Fonts", fileName);
-                return File.Exists(path) ? new Font(path) : null;
-            }
-            catch (System.Exception)
-            {
-                return null;
-            }
-        }
-
-        private static void ApplyFontRoles()
-        {
-            UseHeading(Window, Title, TabActive, TabInactive, GroupHeader, GroupHeaderPlain, MoonHeader,
-                ItemTitle, Pill, CondOk, ClaimInfo, Station, AcceptBtn, ClaimBtn, CloseBtn,
-                SettingsBtn, TopIconButton, Warn, EpochTitle, CardTitle, StatusText, LockBadge,
-                UnlockHeader, UnlockTag, ConnectionArrow, EpochTabActive, EpochTabInactive,
-                FoldoutBtn, Reward);
-            UseBody(ItemSub, ItemDesc, Locked, CondBad, CondNeutral, BodyRowLabel, CardMeta);
-        }
-
-        private static void UseHeading(params GUIStyle[] styles)
-        {
-            if (_headingFont == null) return;
-            foreach (var style in styles)
-                if (style != null) style.font = _headingFont;
-        }
-
-        private static void UseBody(params GUIStyle[] styles)
-        {
-            if (_bodyFont == null) return;
-            foreach (var style in styles)
-                if (style != null) style.font = _bodyFont;
         }
 
         private static void BuildScrollbarSkin()
@@ -280,7 +232,6 @@ namespace CustomScienceContracts.UI
                 {
                     _rightSymbol = new GUIStyle(GUI.skin.label)
                     { fontSize = 18, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-                    if (_headingFont != null) _rightSymbol.font = _headingFont;
                     _rightSymbol.normal.textColor = _rightSymbol.hover.textColor = Color.white;
                 }
                 return _rightSymbol;
@@ -291,7 +242,6 @@ namespace CustomScienceContracts.UI
         private static GUIStyle Label(int size, FontStyle fs, Color col, TextAnchor a)
         {
             var s = new GUIStyle(GUI.skin.label) { fontSize = size, fontStyle = fs, alignment = a };
-            s.font = fs == FontStyle.Bold ? _headingFont : _bodyFont;
             s.normal.textColor = col; return s;
         }
 
@@ -302,7 +252,6 @@ namespace CustomScienceContracts.UI
             Texture2D tex = Rounded(col, size, 0);
             Texture2D hov = Rounded(Color.Lerp(col, Color.white, 0.16f), size, 0);
             var s = new GUIStyle(GUI.skin.button);
-            s.font = _bodyFont;
             s.normal.background = s.onNormal.background = s.active.background = s.focused.background = tex;
             s.hover.background = s.onHover.background = hov;
             s.border = new RectOffset(border, border, border, border);
