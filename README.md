@@ -44,6 +44,7 @@ Custom Science Contracts is made for players who love Science Mode but want thei
 - **Kerbal Space Program 1.12.x**, Science Mode.
 - **Stock Kerbol system** — via the optional Stock config (see below).
 - **[Sol](https://forum.kerbalspaceprogram.com/topic/229428-112x-sol-a-modern-recreation-of-our-home-system-at-real-quarter-and-stock-scale/)** — the main download is built for the Sol planet pack (a modern recreation of our home system at real, quarter and stock scale). It uses real body names like `Earth`, `Moon`, `Mars`, `Jupiter`, `Saturn` … and is tuned for the quarter-scale setup.
+- **Required for the campaign balance:** use a tech-tree or progression mod that unlocks probes before crewed command pods/crew access. The mission flow now assumes robotic spacecraft come first and crewed missions open later.
 - **Kerbalism is recommended** but not required: long missions, supply, life support, stations and bases gain even more meaning with it.
 - **No** Contract Configurator and **no** specific part packs needed — objectives only check stock state (orbit, landing, crew, vessel count, resources, flyby, time …).
 
@@ -60,6 +61,7 @@ Kerbal Space Program/
 └── GameData/
     └── CustomScienceContracts/
         ├── Contracts/
+        ├── Fonts/
         ├── Icons/
         ├── Plugins/
         │   └── CustomScienceContracts.dll
@@ -92,4 +94,4 @@ The campaigns are generated from design plans; the generated `.cfg` files are **
 
 ## License and third-party assets
 
-Custom Science Contracts is licensed under the GNU General Public License 3.0 (see [`LICENSE`](LICENSE)). Some image assets are third-party and shipped unmodified: ZTheme (GPL-3.0) and Kerbal Planet Emblems (MIT). No code from those projects is used. Details in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+Custom Science Contracts is licensed under the GNU General Public License 3.0 (see [`LICENSE`](LICENSE)). Some visual assets are third-party and shipped unmodified: ZTheme (GPL-3.0), Kerbal Planet Emblems (MIT), plus the bundled UI fonts listed in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). No code from those projects is used.

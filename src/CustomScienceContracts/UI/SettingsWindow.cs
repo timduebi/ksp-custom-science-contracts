@@ -24,6 +24,13 @@ namespace CustomScienceContracts.UI
             mgr.ScienceMultiplier = Mathf.Clamp(Mathf.Round(m * 10f) / 10f, 0.1f, 3.0f);
             GUILayout.Label("Applies to all future claimed rewards.", Theme.ItemSub);
 
+            // --- Mission Control size ---
+            GUILayout.Space(12);
+            GUILayout.Label($"Mission Control size:  {Tuning.MissionCenterScale * 100f:0}%", Theme.ItemTitle);
+            float size = GUILayout.HorizontalSlider(Tuning.MissionCenterScale, 0.55f, 1.0f, GUILayout.Height(20));
+            Tuning.MissionCenterScale = Mathf.Clamp(Mathf.Round(size * 100f) / 100f, 0.55f, 1.0f);
+            GUILayout.Label("You can also drag the lower-right corner of Mission Control.", Theme.ItemSub);
+
             // --- Unlock all ---
             GUILayout.Space(12);
             bool unlock = Tuning.UnlockAll;
@@ -41,7 +48,7 @@ namespace CustomScienceContracts.UI
             GUILayout.Label("Emergency exit for a broken or too difficult mission: counts as completed "
                           + "and unlocks follow-ups, but pays NO science points.", Theme.ItemSub);
 
-            _scroll = GUILayout.BeginScrollView(_scroll, GUILayout.Width(width - 8), GUILayout.Height(height - 270));
+            _scroll = GUILayout.BeginScrollView(_scroll, GUILayout.Width(width - 8), GUILayout.Height(height - 330));
             var active = mgr.ActiveContracts().ToList();
             if (active.Count == 0)
                 GUILayout.Label("No active missions.", Theme.Locked);

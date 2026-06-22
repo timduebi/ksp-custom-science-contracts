@@ -13,6 +13,7 @@ namespace CustomScienceContracts.Model
         public string Beschreibung = "";
         public Sparte HeimatSparte;            // Bemannt / UnbemannteErkundung / NetzwerkLogistik
         public string Unterkategorie = "";     // body/category label
+        public int Epoch = 1;                   // campaign chapter used by Mission Control UI
         /// <summary>Optional UI icon selected per mission, as filename in Icons/UI without
         /// extension, e.g. "TrackingStation_ButtonMapLander". Empty means fallback by mission shape.</summary>
         public string IconKey = "";

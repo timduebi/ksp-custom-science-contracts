@@ -218,6 +218,11 @@ namespace CustomScienceContracts.Conditions
                            VesselQuery.Resource(v, "Ore") > 0.0;
                 case CheckKind.FUEL_MIN:     return VesselQuery.Fuel(v) > chk.Amount;
                 case CheckKind.RESOURCE_MIN: return VesselQuery.Resource(v, chk.Resource) > chk.Amount;
+                case CheckKind.WHEEL_MOTION:
+                    return body != null && v.mainBody == body &&
+                           v.situation == Vessel.Situations.LANDED &&
+                           HasWheelModule(v) &&
+                           v.srfSpeed >= chk.SpeedMin;
                 case CheckKind.EVA:
                     if (!v.isEVA) return false;
                     if (body != null && v.mainBody != body) return false;
@@ -249,12 +254,17 @@ namespace CustomScienceContracts.Conditions
             CelestialBody body = BodyResolver.Resolve(chk.Body);
             if (body == null) return false;
             double minM = chk.Km * 1000.0;
+            bool relayRequired = chk.Kind == CheckKind.RELAY_VESSEL_COUNT ||
+                                 chk.Kind == CheckKind.RELAY_VESSEL_COUNT_INCLINATION;
+            bool inclinationRequired = chk.Kind == CheckKind.VESSEL_COUNT_INCLINATION ||
+                                       chk.Kind == CheckKind.RELAY_VESSEL_COUNT_INCLINATION;
             int count = VesselQuery.RealVessels(ctx.Vessels).Count(v =>
                 v.mainBody == body &&
                 v.situation == Vessel.Situations.ORBITING &&
                 v.orbit != null &&
                 (minM <= 0.0 || v.orbit.PeA > minM) &&
-                (chk.Kind != CheckKind.VESSEL_COUNT_INCLINATION || v.orbit.inclination >= chk.InclinationMin));
+                (!inclinationRequired || v.orbit.inclination >= chk.InclinationMin) &&
+                (!relayRequired || HasRelayTransmitter(v)));
             return count >= chk.Count;
         }
 
@@ -288,6 +298,7 @@ namespace CustomScienceContracts.Conditions
                         v.situation == Vessel.Situations.DOCKED)
                         orbited = 1;
                     bestApproach = Math.Min(bestApproach, minPeA);
+                    c.Progress.SetValue("fb_seen", "1", true);
                     WriteVessel(vn, inSOI, orbited, minPeA);
                 }
                 else if (vn != null && NInt(vn, "inSOI") == 1)
@@ -362,13 +373,17 @@ namespace CustomScienceContracts.Conditions
             var home = BodyResolver.Resolve(string.IsNullOrEmpty(chk.ReturnBody) ? "Kerbin" : chk.ReturnBody);
             if (from == null || home == null) return false;
             bool flybyMode = string.Equals(chk.ReturnMode, "flyby", StringComparison.OrdinalIgnoreCase);
+            bool visitMode = flybyMode || string.Equals(chk.ReturnMode, "visit", StringComparison.OrdinalIgnoreCase);
+            bool homeMode = string.Equals(chk.ReturnMode, "home", StringComparison.OrdinalIgnoreCase);
 
             bool seenSource = NInt(node, "seenSource") == 1;
             bool justLoggedSource = false;
             foreach (var v in VesselQuery.RealVessels(ctx.Vessels))
             {
                 if (!Crewed(v)) continue;
-                bool atSource = v.mainBody == from && (flybyMode || Surface(v));
+                bool atSource = homeMode
+                    ? v.mainBody == from && !Surface(v) && v.situation != Vessel.Situations.PRELAUNCH
+                    : v.mainBody == from && (visitMode || Surface(v));
                 bool atHomeSurface = v.mainBody == home && Surface(v);
                 if (!seenSource && atSource)
                 {
@@ -377,7 +392,7 @@ namespace CustomScienceContracts.Conditions
                     justLoggedSource = true;
                     node.SetValue("seenSource", "1", true);
                     node.SetValue("sourceVessel", v.persistentId.ToString(), true);
-                    c.Progress.SetValue("ret_status", flybyMode ? "visit_logged" : "source_logged", true);
+                    c.Progress.SetValue("ret_status", visitMode || homeMode ? "visit_logged" : "source_logged", true);
                 }
                 if (seenSource && !justLoggedSource && atHomeSurface && !IsRememberedHomeVessel(node, v.persistentId))
                 {
@@ -388,13 +403,55 @@ namespace CustomScienceContracts.Conditions
                 }
             }
 
-            c.Progress.SetValue("ret_status", seenSource ? "awaiting_return" : (flybyMode ? "awaiting_visit" : "awaiting_source"), true);
+            c.Progress.SetValue("ret_status", seenSource ? "awaiting_return" : (visitMode || homeMode ? "awaiting_visit" : "awaiting_source"), true);
             return false;
         }
 
         private static bool Crewed(Vessel v) => v != null && VesselQuery.EffectiveCrew(v) > 0;
         private static bool Surface(Vessel v) =>
             v != null && (v.situation == Vessel.Situations.LANDED || v.situation == Vessel.Situations.SPLASHED);
+        private static bool HasWheelModule(Vessel v)
+        {
+            if (v == null || v.parts == null) return false;
+            foreach (var p in v.parts)
+            {
+                if (p == null || p.Modules == null) continue;
+                foreach (PartModule module in p.Modules)
+                {
+                    string name = module?.moduleName ?? module?.GetType().Name ?? "";
+                    if (name.IndexOf("ModuleWheel", StringComparison.OrdinalIgnoreCase) >= 0)
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        private static bool HasRelayTransmitter(Vessel v)
+        {
+            if (v == null || v.parts == null) return false;
+            foreach (var p in v.parts)
+            {
+                if (p == null || p.Modules == null) continue;
+                foreach (PartModule module in p.Modules)
+                {
+                    if (module == null) continue;
+                    string name = module.moduleName ?? module.GetType().Name ?? "";
+                    if (!string.Equals(name, "ModuleDataTransmitter", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    object antennaType = module.GetType().GetField("antennaType")?.GetValue(module);
+                    if (antennaType != null &&
+                        antennaType.ToString().IndexOf("RELAY", StringComparison.OrdinalIgnoreCase) >= 0)
+                        return true;
+
+                    string fieldValue = module.Fields?.GetValue("antennaType")?.ToString();
+                    if (!string.IsNullOrEmpty(fieldValue) &&
+                        fieldValue.IndexOf("RELAY", StringComparison.OrdinalIgnoreCase) >= 0)
+                        return true;
+                }
+            }
+            return false;
+        }
         private static void RememberHomeVessels(ConfigNode node, EvaluationContext ctx, CelestialBody home)
         {
             ConfigNode homeNode = StateNode(node, "HOME_BASELINE");

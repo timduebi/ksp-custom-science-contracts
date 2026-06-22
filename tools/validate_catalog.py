@@ -19,8 +19,9 @@ FILES = ["A_Pioniere.cfg", "B_Spaeher.cfg", "C_Lebensadern.cfg", "D_Stationen.cf
 
 CHECK_KINDS = {"CREW_MIN","CREW_NONE","CREW_EXACT","ON_BODY","SITUATION","SUBORBITAL","LANDED",
   "PERIAPSIS_MIN","ORBIT_ABOVE","INCLINATION_MIN","ABOVE_ATMOSPHERE","SUBORBITAL_ABOVE_ATMO","ATMO_FRACTION",
-  "ORE_PRESENT","ORE_SURFACE","FUEL_MIN","RESOURCE_MIN","EVA","DOCK_STATION","DOCK_ANY",
-  "VESSEL_COUNT","VESSEL_COUNT_INCLINATION","FLYBY","MARKER_LANDING","RETURN_FROM_BODY","HOLD","DURATION"}
+  "ORE_PRESENT","ORE_SURFACE","FUEL_MIN","RESOURCE_MIN","WHEEL_MOTION","EVA","DOCK_STATION","DOCK_ANY",
+  "VESSEL_COUNT","VESSEL_COUNT_INCLINATION","RELAY_VESSEL_COUNT","RELAY_VESSEL_COUNT_INCLINATION",
+  "FLYBY","MARKER_LANDING","RETURN_FROM_BODY","HOLD","DURATION"}
 SPARTEN = {"Bemannt","UnbemannteErkundung","NetzwerkLogistik"}
 SOL_BODIES = {"Amalthea","Ariel","Arrokoth","Callisto","Ceres","Charon","Dactyl","Deimos","Dione",
   "Earth","Enceladus","Eros","Europa","Ganymede","Hydra","Hyperion","Iapetus","Ida","Io","Jupiter",
@@ -34,7 +35,9 @@ ICONS = {  # in GameData/.../Icons/UI vorhanden
   "TrackingStation_ButtonMapProbe","TrackingStation_ButtonMapLander","TrackingStation_ButtonMapFlag",
   "TrackingStation_ButtonMapEVA","TrackingStation_ButtonMapShips","TrackingStation_ButtonMapStation",
   "TrackingStation_ButtonMapBase","TrackingStation_ButtonMapCommunicationsRelay",
-  "TrackingStation_ButtonMapAircraft","TrackingStation_ButtonMapRover"}
+  "TrackingStation_ButtonMapAircraft","TrackingStation_ButtonMapRover",
+  "icon_Aircraft","icon_EVA","icon_base","icon_flag","icon_lander","icon_probe","icon_relay",
+  "icon_rover","icon_ships","icon_station"}
 
 def blocks(text, name):
     """Return all brace-aware '{name} { ... }' blocks. The node name must be on its own line so
@@ -81,6 +84,9 @@ for cid, (fn, c) in contracts.items():
     if sp not in SPARTEN: issues.append(f"{cid}: branch '{sp}'")
     if not val(c, "title"): issues.append(f"{cid}: missing title")
     if not val(c, "description"): issues.append(f"{cid}: missing description")
+    ep = val(c, "epoch")
+    if ep and (not ep.isdigit() or not 1 <= int(ep) <= 9):
+        issues.append(f"{cid}: invalid epoch '{ep}'")
     ic = val(c, "icon")
     if ic and ic not in ICONS: issues.append(f"{cid}: unknown icon '{ic}'")
     if val(c, "recordStationKey"): record_keys.add(val(c, "recordStationKey"))

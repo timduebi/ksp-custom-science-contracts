@@ -23,6 +23,21 @@ engine change applies to every catalog at once.
 
 Never edit generated `*.cfg` by hand — change the design `.md` and regenerate.
 
+Generated catalogs can still contain curated logic that is easier to express in
+the generator than in every mission block. Examples from the SOL campaign:
+
+- generated return checks for crewed non-base missions,
+- generated rover wheel-motion checks,
+- relay-specific network checks,
+- generated station/base/depot chains,
+- generated support missions such as the first docking target,
+- optional generated side missions that are deliberately not prerequisites,
+- epoch placement through `EPOCH_EXACT` / `epoch_for_id`.
+
+Treat those generator overrides as source. If a generated mission should move,
+disappear or change checks, update the generator and regenerate every affected
+catalog.
+
 ## Validators (keep green)
 
 - `tools/validate_design.py [doc]` — auto-detects the `stock` profile from the filename.
@@ -45,6 +60,15 @@ from `tools/release_notes.md` (placement instructions). Version is read from
 `src/CustomScienceContracts/Core/ModInfo.cs` (keep it in sync with `<Version>` in
 `CustomScienceContracts.csproj`).
 
+The main ZIP is assembled from `GameData/` plus player-facing docs and licenses.
+`tools/make_release.sh` removes nested `*.zip` files from the copied `GameData`
+folder before packaging so stale local archives do not ship accidentally.
+
+Release notes and README must call out gameplay assumptions that are not enforced
+by code. Since v0.4.0, the important assumption is a probe-first tech progression:
+players should use a tech-tree/progression mod that unlocks probes before crewed
+command pods or crew access.
+
 ## Adding an engine feature — do it for BOTH editions
 
 When you add or change engine behavior (e.g. a new `CheckKind`), complete this checklist so the
@@ -65,3 +89,24 @@ feature lands in both editions, and **propose concrete mission placements for SO
 
 A change that touches `src/` but only one design doc is incomplete — it has shipped the engine to
 every catalog but only wired the feature into one.
+
+## UI and catalog learnings from 0.4
+
+- The Mission Control atlas is a presentation layer over real prerequisites. Do
+  not use visual placement to imply campaign order; only actual prerequisites
+  should produce arrows.
+- Rounded Bezier arrows are easier to read than right-angle connectors when the
+  atlas has several cross-branch dependencies.
+- Epoch assignment controls pacing and readability. Moving a mission between
+  epochs should not change its prerequisites unless the gameplay dependency
+  really changes.
+- Same-body missions that do not depend on each other should share a dependency
+  column and use vertical lanes, so optional work looks parallel.
+- Locked cards should show what unlocks them, not full mission objectives.
+  Objectives are useful once the mission is unlocked or accepted.
+- Icon keys should be unique bundled assets where possible. `icon_...` files are
+  preferred over KSP tracking-station names, and legacy keys should map through
+  `IconLibrary` rather than depending on `GameDatabase` lookup order.
+- Font loading must be optional at runtime. Bundled fonts can improve the atlas,
+  but `Theme` should fall back to KSP/Unity defaults when a font file is missing
+  or rejected by the runtime.

@@ -6,6 +6,47 @@ This project uses simple `MAJOR.MINOR.PATCH` versioning.
 The mod ships as one download with the SOL (real solar system) campaign, plus optional config
 packs on the same release that swap the catalog to the stock KSP system or to German.
 
+## [0.4.1] - 2026-06-22
+
+### Added
+- Added bundled atlas fonts: `Pixeled.ttf` for headings/bold labels and
+  `VCR_OSD_MONO_1.001.ttf` for body text, with safe runtime fallback.
+- Added two optional station-supported lunar precision landing missions after
+  the 3-Kerbal lunar station expansion.
+
+### Changed
+- Moved the Moon base gate behind the second 150-day, 2-Kerbal lunar station
+  operation so surface bases follow sustained orbital infrastructure.
+- Split early asteroid-belt scouting into Red Horizon and kept Beltworks focused
+  on later belt landings, industry and crewed operations.
+- Removed unnecessary crewed-orbit prerequisites from the Phobos depot and Ceres
+  landing path.
+- Replaced hard-corner atlas dependency lines with rounded arrow connectors for
+  clearer crossings.
+
+## [0.4.0] - 2026-06-22
+
+### Added
+- Added the fullscreen-style Mission Control atlas with epoch pages, branch rows,
+  dependency arrows, cross-epoch unlock hints and expandable objectives.
+- Added a resizable Mission Control window and a settings slider for its initial
+  size.
+- Added assigned docking-target flow for the first docking maneuver.
+- Added stricter objective checks for rover movement, relay satellite networks
+  and crew returns on non-base crewed missions.
+
+### Changed
+- Rebalanced the Sol campaign around a probe-first progression. Use a tech-tree
+  or progression mod that unlocks probes before crewed command pods/crew access.
+- Updated the Moon crew requirements, Moon mission titles, Mars/Phobos epoch
+  placement and Phobos fuel-depot flow.
+- Made Mission Control backgrounds more opaque.
+- Mission icons now prefer the bundled `icon_...` files to avoid stock/cached
+  tracking-station icon mixups.
+
+### Removed
+- Removed the Deimos fuel-depot mission from the generated Sol catalogs.
+
 ## [0.3.0] - 2026-06-18
 
 ### Added

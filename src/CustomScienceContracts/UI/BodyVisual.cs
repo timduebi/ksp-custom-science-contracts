@@ -21,13 +21,13 @@ namespace CustomScienceContracts.UI
             // Star
             { "Sun",     ("pol",    RGB(255,210,80)) },
             // Stock KSP
-            { "Kerbin",  ("kerbin", RGB(46,111,176)) },
-            { "Mun",     ("mun",    RGB(158,158,158)) },
+            { "Kerbin",  ("kerbin", RGB(54,140,216)) },
+            { "Mun",     ("mun",    RGB(174,174,174)) },
             { "Minmus",  ("ovok",   RGB(149,218,200)) },
             { "Moho",    ("moho",   RGB(140,123,107)) },
             { "Eve",     ("eve",    RGB(139,88,186)) },
             { "Gilly",   ("gilly",  RGB(134,122,105)) },
-            { "Duna",    ("duna",   RGB(193,80,46)) },
+            { "Duna",    ("duna",   RGB(216,96,58)) },
             { "Ike",     ("mun",    RGB(118,112,105)) },
             { "Dres",    ("ovok",   RGB(150,142,126)) },
             { "Jool",    ("jool",   RGB(107,185,80)) },
@@ -38,16 +38,16 @@ namespace CustomScienceContracts.UI
             { "Pol",     ("pol",    RGB(213,190,75)) },
             { "Eeloo",   ("plock",  RGB(213,213,201)) },
             // Planets
-            { "Earth",   ("kerbin", RGB(46,111,176)) },
-            { "Moon",    ("mun",    RGB(158,158,158)) },
-            { "Mars",    ("duna",   RGB(193,80,46)) },
-            { "Mercury", ("moho",   RGB(140,123,107)) },
-            { "Venus",   ("eve",    RGB(217,180,90)) },
-            { "Jupiter", ("jool",   RGB(200,150,75)) },
-            { "Saturn",  ("sarnus", RGB(217,198,138)) },
-            { "Uranus",  ("urlum",  RGB(143,217,212)) },
-            { "Neptune", ("neidon", RGB(63,95,192)) },
-            { "Pluto",   ("plock",  RGB(181,158,132)) },
+            { "Earth",   ("kerbin", RGB(54,140,216)) },
+            { "Moon",    ("mun",    RGB(174,174,174)) },
+            { "Mars",    ("duna",   RGB(216,96,58)) },
+            { "Mercury", ("moho",   RGB(162,142,122)) },
+            { "Venus",   ("eve",    RGB(232,194,92)) },
+            { "Jupiter", ("jool",   RGB(224,166,88)) },
+            { "Saturn",  ("sarnus", RGB(234,214,148)) },
+            { "Uranus",  ("urlum",  RGB(116,224,222)) },
+            { "Neptune", ("neidon", RGB(74,116,224)) },
+            { "Pluto",   ("plock",  RGB(196,170,140)) },
             // Martian moons
             { "Phobos", ("gilly", RGB(110,102,90)) },
             { "Deimos", ("gilly", RGB(124,114,100)) },
@@ -156,11 +156,11 @@ namespace CustomScienceContracts.UI
         public static Visual ForBody(string bodyName)
         {
             if (bodyName != null && _bodies.TryGetValue(bodyName, out var v))
-                return new Visual { Icon = TintedBodyIcon(v.icon, v.col), Color = v.col };
+                return new Visual { Icon = BodyIcon(v.icon, v.col), Color = v.col };
             return new Visual { Icon = IconLibrary.Body("mun"), Color = RGB(150,150,150) };
         }
 
-        private static Texture2D TintedBodyIcon(string iconKey, Color tint)
+        private static Texture2D BodyIcon(string iconKey, Color tint)
         {
             string cacheKey = $"{iconKey}:{ColorUtility.ToHtmlStringRGB(tint)}";
             if (_bodyTintCache.TryGetValue(cacheKey, out var cached))
@@ -177,17 +177,30 @@ namespace CustomScienceContracts.UI
                 var outPx = new Color32[px.Length];
                 for (int i = 0; i < px.Length; i++)
                 {
-                    float shade = (px[i].r + px[i].g + px[i].b) / (255f * 3f);
-                    float lift = Mathf.Clamp01(0.38f + shade * 0.82f);
+                    Color sourceColor = px[i];
+                    float shade = (sourceColor.r + sourceColor.g + sourceColor.b) / 3f;
+                    float colorfulness = Mathf.Max(sourceColor.r, Mathf.Max(sourceColor.g, sourceColor.b)) -
+                                         Mathf.Min(sourceColor.r, Mathf.Min(sourceColor.g, sourceColor.b));
+                    float tintStrength = Mathf.Lerp(0.80f, 0.18f, Mathf.Clamp01(colorfulness * 2.2f));
+                    if (shade > 0.82f) tintStrength *= 0.34f;
+                    if (shade < 0.08f) tintStrength *= 0.50f;
+
+                    Color tinted = Color.Lerp(new Color(shade, shade, shade, sourceColor.a), tint, 0.88f);
+                    Color outCol = Color.Lerp(sourceColor, tinted, tintStrength);
+                    Color.RGBToHSV(outCol, out float h, out float s, out float v);
+                    s = Mathf.Clamp01(s * 1.42f + 0.05f);
+                    v = Mathf.Clamp01(v * 1.08f);
+                    outCol = Color.HSVToRGB(h, s, v);
+                    outCol.a = sourceColor.a;
                     outPx[i] = new Color32(
-                        (byte)Mathf.Clamp(Mathf.RoundToInt(tint.r * 255f * lift), 0, 255),
-                        (byte)Mathf.Clamp(Mathf.RoundToInt(tint.g * 255f * lift), 0, 255),
-                        (byte)Mathf.Clamp(Mathf.RoundToInt(tint.b * 255f * lift), 0, 255),
+                        (byte)Mathf.Clamp(Mathf.RoundToInt(outCol.r * 255f), 0, 255),
+                        (byte)Mathf.Clamp(Mathf.RoundToInt(outCol.g * 255f), 0, 255),
+                        (byte)Mathf.Clamp(Mathf.RoundToInt(outCol.b * 255f), 0, 255),
                         px[i].a);
                 }
                 var tex = new Texture2D(src.width, src.height, TextureFormat.RGBA32, false)
                 {
-                    name = "CSC_TintedBody_" + cacheKey,
+                    name = "CSC_BodyIcon_" + cacheKey,
                     wrapMode = TextureWrapMode.Clamp,
                     filterMode = src.filterMode,
                     hideFlags = HideFlags.HideAndDontSave
@@ -294,6 +307,8 @@ namespace CustomScienceContracts.UI
                                 break;
                             case CheckKind.VESSEL_COUNT:
                             case CheckKind.VESSEL_COUNT_INCLINATION:
+                            case CheckKind.RELAY_VESSEL_COUNT:
+                            case CheckKind.RELAY_VESSEL_COUNT_INCLINATION:
                                 hasFleet = true;
                                 break;
                             case CheckKind.ATMO_FRACTION:

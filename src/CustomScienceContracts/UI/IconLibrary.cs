@@ -13,9 +13,32 @@ namespace CustomScienceContracts.UI
         private static readonly Dictionary<string, Texture2D> _cache = new Dictionary<string, Texture2D>();
         private static readonly HashSet<string> _missingLogged = new HashSet<string>();
 
-        public static Texture2D UI(string name) => Load(Base + "/UI/" + name);
+        public static Texture2D UI(string name)
+        {
+            string mapped = MapUiIcon(name);
+            Texture2D tex = Load(Base + "/UI/" + mapped);
+            return tex != null || mapped == name ? tex : Load(Base + "/UI/" + name);
+        }
         public static Texture2D Body(string name) => Load(Base + "/Bodies/" + name);
         public static Texture2D App(string name) => Load(Base + "/App/" + name);
+
+        private static string MapUiIcon(string name)
+        {
+            switch (name)
+            {
+                case "TrackingStation_ButtonMapAircraft": return "icon_Aircraft";
+                case "TrackingStation_ButtonMapBase": return "icon_base";
+                case "TrackingStation_ButtonMapCommunicationsRelay": return "icon_relay";
+                case "TrackingStation_ButtonMapEVA": return "icon_EVA";
+                case "TrackingStation_ButtonMapFlag": return "icon_flag";
+                case "TrackingStation_ButtonMapLander": return "icon_lander";
+                case "TrackingStation_ButtonMapProbe": return "icon_probe";
+                case "TrackingStation_ButtonMapRover": return "icon_rover";
+                case "TrackingStation_ButtonMapShips": return "icon_ships";
+                case "TrackingStation_ButtonMapStation": return "icon_station";
+                default: return name;
+            }
+        }
 
         private static Texture2D Load(string url)
         {

@@ -17,11 +17,17 @@ namespace CustomScienceContracts.UI
         private readonly SettingsWindow _settings = new SettingsWindow();
         private bool _settingsOpen;
 
-        private const float SelW = 560f, SelH = 690f, ActW = 480f, ActH = 620f, ConfW = 340f, ConfH = 178f;
-        private const float SetW = 440f, SetH = 520f;
-        private Rect _selRect = new Rect(110, 80, SelW, SelH);
+        private const float ActW = 480f, ActH = 620f, ConfW = 340f, ConfH = 178f;
+        private const float SetW = 440f, SetH = 560f;
+        private const float MinSelW = 760f, MinSelH = 520f;
+        private Rect _selRect = new Rect(24, 24, 1200, 760);
         private Rect _actRect = new Rect(700, 80, ActW, ActH);
         private Rect _setRect = new Rect(180, 120, SetW, SetH);
+        private bool _selRectInitialized;
+        private bool _resizingSelection;
+        private Vector2 _resizeStartMouse;
+        private Vector2 _resizeStartSize;
+        private float _appliedMissionCenterScale = -1f;
 
         public void Bind(ContractManager mgr) => _mgr = mgr;
 
@@ -49,7 +55,7 @@ namespace CustomScienceContracts.UI
 
             if (_btnAvail == null)
                 _btnAvail = ApplicationLauncher.Instance.AddModApplication(
-                    () => _availOpen = true, () => _availOpen = false, null, null, null, null,
+                    OpenAvail, CloseAvail, null, null, null, null,
                     planning, IconApp("missionen"));
         }
 
@@ -74,10 +80,13 @@ namespace CustomScienceContracts.UI
 
                 if (_availOpen && AvailableSceneAllowed)
                 {
-                    _selRect = GUILayout.Window(GetInstanceID(), _selRect,
-                        _ => _selection.Draw(_mgr, SelW, SelH, CloseAvail), "Mission Control", Theme.Window,
-                        GUILayout.Width(SelW), GUILayout.Height(SelH));
-                    Theme.DrawWindowBorder(new Rect(_selRect.x, _selRect.y, SelW, SelH));
+                    EnsureMissionCenterRect();
+                    _selRect = GUI.Window(GetInstanceID(), _selRect,
+                        _ => _selection.Draw(_mgr, _selRect.width, _selRect.height, CloseAvail),
+                        "Mission Control", Theme.Window);
+                    _selRect = ClampSelectionRect(_selRect);
+                    Theme.DrawWindowBorder(_selRect);
+                    DrawSelectionResizeHandle();
 
                     if (_selection.SettingsToggleRequested)
                     { _settingsOpen = !_settingsOpen; _selection.SettingsToggleRequested = false; }
@@ -113,8 +122,87 @@ namespace CustomScienceContracts.UI
             finally { GUI.skin = prevSkin; }
         }
 
-        private void CloseAvail() { _availOpen = false; _btnAvail?.SetFalse(false); }
+        private void OpenAvail()
+        {
+            _availOpen = true;
+            _selRect = MissionCenterRect();
+            _selRectInitialized = true;
+            _appliedMissionCenterScale = Tuning.MissionCenterScale;
+        }
+
+        private void CloseAvail() { _availOpen = false; _resizingSelection = false; _btnAvail?.SetFalse(false); }
         private void CloseActive() { _activeOpen = false; _btnActive?.SetFalse(false); }
+
+        private static Rect MissionCenterRect()
+        {
+            const float margin = 24f;
+            float scale = Mathf.Clamp(Tuning.MissionCenterScale, 0.55f, 1.0f);
+            float maxW = Mathf.Max(MinSelW, Screen.width - margin * 2f);
+            float maxH = Mathf.Max(MinSelH, Screen.height - margin * 2f);
+            float w = Mathf.Clamp(maxW * scale, MinSelW, maxW);
+            float h = Mathf.Clamp(maxH * scale, MinSelH, maxH);
+            return new Rect((Screen.width - w) * 0.5f, (Screen.height - h) * 0.5f, w, h);
+        }
+
+        private void EnsureMissionCenterRect()
+        {
+            bool scaleChanged = Mathf.Abs(_appliedMissionCenterScale - Tuning.MissionCenterScale) > 0.001f;
+            if (!_selRectInitialized || scaleChanged)
+            {
+                _selRect = MissionCenterRect();
+                _selRectInitialized = true;
+                _appliedMissionCenterScale = Tuning.MissionCenterScale;
+            }
+            _selRect = ClampSelectionRect(_selRect);
+        }
+
+        private static Rect ClampSelectionRect(Rect r)
+        {
+            float maxW = Mathf.Max(MinSelW, Screen.width - 8f);
+            float maxH = Mathf.Max(MinSelH, Screen.height - 8f);
+            r.width = Mathf.Clamp(r.width, MinSelW, maxW);
+            r.height = Mathf.Clamp(r.height, MinSelH, maxH);
+            r.x = Mathf.Clamp(r.x, 4f, Mathf.Max(4f, Screen.width - r.width - 4f));
+            r.y = Mathf.Clamp(r.y, 4f, Mathf.Max(4f, Screen.height - r.height - 4f));
+            return r;
+        }
+
+        private void DrawSelectionResizeHandle()
+        {
+            Rect handle = new Rect(_selRect.xMax - 26f, _selRect.yMax - 26f, 20f, 20f);
+            Event ev = Event.current;
+
+            if (ev.type == EventType.Repaint)
+            {
+                Color line = new Color(0.32f, 0.80f, 1.00f, handle.Contains(ev.mousePosition) ? 0.82f : 0.46f);
+                Theme.DrawRect(new Rect(handle.x + 13f, handle.y + 4f, 2f, 12f), line);
+                Theme.DrawRect(new Rect(handle.x + 7f, handle.y + 10f, 8f, 2f), line);
+                Theme.DrawRect(new Rect(handle.x + 10f, handle.y + 15f, 6f, 2f), line);
+            }
+
+            if (ev.type == EventType.MouseDown && ev.button == 0 && handle.Contains(ev.mousePosition))
+            {
+                _resizingSelection = true;
+                _resizeStartMouse = ev.mousePosition;
+                _resizeStartSize = new Vector2(_selRect.width, _selRect.height);
+                ev.Use();
+            }
+
+            if (!_resizingSelection) return;
+            if (ev.type == EventType.MouseDrag || ev.type == EventType.Repaint)
+            {
+                Vector2 delta = ev.mousePosition - _resizeStartMouse;
+                _selRect.width = _resizeStartSize.x + delta.x;
+                _selRect.height = _resizeStartSize.y + delta.y;
+                _selRect = ClampSelectionRect(_selRect);
+                if (ev.type == EventType.MouseDrag) ev.Use();
+            }
+            if (ev.type == EventType.MouseUp)
+            {
+                _resizingSelection = false;
+                ev.Use();
+            }
+        }
 
         private static Texture2D IconApp(string name)
         {

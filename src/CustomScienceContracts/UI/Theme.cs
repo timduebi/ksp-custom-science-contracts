@@ -1,3 +1,4 @@
+using System.IO;
 using UnityEngine;
 
 namespace CustomScienceContracts.UI
@@ -10,7 +11,7 @@ namespace CustomScienceContracts.UI
         public static readonly Color TextBright  = new Color(0.95f, 0.97f, 0.99f);
         public static readonly Color TextDim     = new Color(0.80f, 0.84f, 0.90f);   // brighter for readability
         public static readonly Color TextGrey    = new Color(0.70f, 0.74f, 0.80f);
-        public static readonly Color WinBg       = new Color(0.07f, 0.08f, 0.11f, 0.98f);
+        public static readonly Color WinBg       = new Color(0.07f, 0.08f, 0.11f, 1.00f);
         public static readonly Color FieldBg     = new Color(0.13f, 0.16f, 0.26f, 1f); // dark blue, slightly lifted
         public static readonly Color FieldBgRdy  = new Color(0.10f, 0.20f, 0.14f, 1f); // greenish ReadyToClaim
         public static readonly Color Ok          = new Color(0.42f, 0.86f, 0.50f);   // fulfilled
@@ -24,20 +25,33 @@ namespace CustomScienceContracts.UI
 
         private static bool _built;
         private static Texture2D _barTex, _ringTex;
+        private static Font _headingFont, _bodyFont;
         public static GUIStyle Window, Title, TabActive, TabInactive, GroupHeader, GroupHeaderPlain, MoonHeader,
                                ItemBox, ItemBoxReady, ItemTitle, ItemSub, ItemDesc, Pill, Locked,
                                AcceptBtn, ClaimBtn, CloseBtn, SettingsBtn, TopIconButton, Border, CondOk, CondBad, CondNeutral,
-                               ClaimInfo, Station, Bar, Warn, Reward, RewardIcon;
+                               ClaimInfo, Station, Bar, Warn, Reward, RewardIcon, EpochPanel, DetailBox,
+                               CardLocked, CardAvailable, CardActive, CardReady, CardCompleted,
+                               EpochTitle, BodyRowLabel, CardTitle, CardMeta, StatusText, FoldoutBtn,
+                               LockBadge, UnlockHeader, UnlockTag, ConnectionArrow,
+                               EpochTabActive, EpochTabInactive;
 
         public static void EnsureBuilt()
         {
             if (_built) return;
             White = Solid(Color.white);
+            LoadFonts();
 
             // Only the window stays rounded; all inner surfaces are square.
             Texture2D winTex   = Rounded(WinBg, 40, 12);
             Texture2D fieldTex = Rounded(FieldBg, 28, 0);
             Texture2D readyTex = Rounded(FieldBgRdy, 28, 0);
+            Texture2D epochTex = Rounded(new Color(0.09f, 0.11f, 0.16f, 1.00f), 28, 6);
+            Texture2D detailTex = Rounded(new Color(0.08f, 0.10f, 0.15f, 1.00f), 24, 4);
+            Texture2D cardLockedTex = Rounded(new Color(0.09f, 0.10f, 0.13f, 0.98f), 24, 4);
+            Texture2D cardAvailTex = Rounded(new Color(0.15f, 0.27f, 0.36f, 0.98f), 24, 4);
+            Texture2D cardActiveTex = Rounded(new Color(0.21f, 0.17f, 0.10f, 0.98f), 24, 4);
+            Texture2D cardReadyTex = Rounded(new Color(0.10f, 0.22f, 0.14f, 0.98f), 24, 4);
+            Texture2D cardDoneTex = Rounded(new Color(0.10f, 0.18f, 0.12f, 0.98f), 24, 4);
             Color btnCol = new Color(0.20f, 0.23f, 0.30f);
             Color tabOnCol = new Color(0.18f, 0.40f, 0.52f), tabOffCol = new Color(0.14f, 0.16f, 0.20f);
             Color headCol = new Color(0.16f, 0.19f, 0.27f);
@@ -82,6 +96,17 @@ namespace CustomScienceContracts.UI
 
             ItemBox = new GUIStyle(GUI.skin.box); Bg(ItemBox, fieldTex, 9); ItemBox.padding = new RectOffset(40, 44, 8, 8);
             ItemBoxReady = new GUIStyle(ItemBox); Bg(ItemBoxReady, readyTex, 9);
+            EpochPanel = new GUIStyle(GUI.skin.box); Bg(EpochPanel, epochTex, 9);
+            EpochPanel.padding = new RectOffset(12, 12, 10, 12);
+            EpochPanel.margin = new RectOffset(0, 10, 0, 12);
+            DetailBox = new GUIStyle(GUI.skin.box); Bg(DetailBox, detailTex, 8);
+            DetailBox.padding = new RectOffset(10, 10, 8, 8);
+            DetailBox.margin = new RectOffset(0, 0, 8, 0);
+            CardLocked = MissionCard(cardLockedTex);
+            CardAvailable = MissionCard(cardAvailTex);
+            CardActive = MissionCard(cardActiveTex);
+            CardReady = MissionCard(cardReadyTex);
+            CardCompleted = MissionCard(cardDoneTex);
 
             AcceptBtn = Btn(Accent,     Color.black, 7); AcceptBtn.fontSize = 15; AcceptBtn.fontStyle = FontStyle.Bold; AcceptBtn.padding = new RectOffset(12, 12, 7, 7);
             ClaimBtn  = Btn(ClaimGreen, Color.black, 7); ClaimBtn.fontSize = 16; ClaimBtn.fontStyle = FontStyle.Bold; ClaimBtn.padding = new RectOffset(12, 12, 7, 7);
@@ -91,14 +116,83 @@ namespace CustomScienceContracts.UI
             TopIconButton = Btn(new Color(0.10f, 0.13f, 0.20f, 0.94f), TextBright, 6); TopIconButton.padding = new RectOffset(3, 3, 3, 3); TopIconButton.alignment = TextAnchor.MiddleCenter;
 
             Warn = Label(14, FontStyle.Bold, AbortRed, TextAnchor.UpperLeft); Warn.wordWrap = true;
+            EpochTitle = Label(20, FontStyle.Bold, TextBright, TextAnchor.MiddleLeft);
+            BodyRowLabel = Label(13, FontStyle.Bold, TextGrey, TextAnchor.MiddleLeft); BodyRowLabel.wordWrap = true;
+            CardTitle = Label(14, FontStyle.Bold, TextBright, TextAnchor.UpperLeft); CardTitle.wordWrap = true;
+            CardMeta = Label(12, FontStyle.Normal, TextDim, TextAnchor.MiddleLeft); CardMeta.wordWrap = true;
+            StatusText = Label(12, FontStyle.Bold, Accent, TextAnchor.MiddleRight);
+            LockBadge = Label(10, FontStyle.Bold, Bad, TextAnchor.MiddleRight);
+            UnlockHeader = Label(13, FontStyle.Bold, Bad, TextAnchor.MiddleLeft);
+            UnlockTag = Label(10, FontStyle.Bold, Accent, TextAnchor.MiddleCenter);
+            ConnectionArrow = Label(14, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter);
+            EpochTabActive = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 22,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft,
+                padding = new RectOffset(10, 10, 4, 4)
+            };
+            EpochTabActive.normal.background = EpochTabActive.hover.background = EpochTabActive.active.background = null;
+            EpochTabActive.normal.textColor = EpochTabActive.hover.textColor = EpochTabActive.active.textColor = TextBright;
+            EpochTabInactive = new GUIStyle(EpochTabActive) { fontStyle = FontStyle.Normal };
+            EpochTabInactive.normal.textColor = EpochTabInactive.hover.textColor =
+                EpochTabInactive.active.textColor = new Color(0.60f, 0.63f, 0.68f);
+            FoldoutBtn = Btn(new Color(0.15f, 0.18f, 0.24f), TextBright, 6);
+            FoldoutBtn.fontSize = 13; FoldoutBtn.fontStyle = FontStyle.Bold;
+            FoldoutBtn.alignment = TextAnchor.MiddleLeft; FoldoutBtn.padding = new RectOffset(10, 10, 5, 5);
 
             // Science value text, tinted at runtime together with the science symbol.
             Reward = Label(16, FontStyle.Bold, TextBright, TextAnchor.MiddleRight);
             RewardIcon = new GUIStyle { margin = new RectOffset(0, 2, 4, 0), padding = new RectOffset(0, 0, 0, 0) };
             RewardIcon.normal.background = null;
 
+            ApplyFontRoles();
             BuildScrollbarSkin();
             _built = true;
+        }
+
+        private static void LoadFonts()
+        {
+            _headingFont = LoadFontFile("Pixeled.ttf");
+            _bodyFont = LoadFontFile("VCR_OSD_MONO_1.001.ttf");
+        }
+
+        private static Font LoadFontFile(string fileName)
+        {
+            try
+            {
+                string path = Path.Combine(KSPUtil.ApplicationRootPath, "GameData",
+                    "CustomScienceContracts", "Fonts", fileName);
+                return File.Exists(path) ? new Font(path) : null;
+            }
+            catch (System.Exception)
+            {
+                return null;
+            }
+        }
+
+        private static void ApplyFontRoles()
+        {
+            UseHeading(Window, Title, TabActive, TabInactive, GroupHeader, GroupHeaderPlain, MoonHeader,
+                ItemTitle, Pill, CondOk, ClaimInfo, Station, AcceptBtn, ClaimBtn, CloseBtn,
+                SettingsBtn, TopIconButton, Warn, EpochTitle, CardTitle, StatusText, LockBadge,
+                UnlockHeader, UnlockTag, ConnectionArrow, EpochTabActive, EpochTabInactive,
+                FoldoutBtn, Reward);
+            UseBody(ItemSub, ItemDesc, Locked, CondBad, CondNeutral, BodyRowLabel, CardMeta);
+        }
+
+        private static void UseHeading(params GUIStyle[] styles)
+        {
+            if (_headingFont == null) return;
+            foreach (var style in styles)
+                if (style != null) style.font = _headingFont;
+        }
+
+        private static void UseBody(params GUIStyle[] styles)
+        {
+            if (_bodyFont == null) return;
+            foreach (var style in styles)
+                if (style != null) style.font = _bodyFont;
         }
 
         private static void BuildScrollbarSkin()
@@ -121,6 +215,17 @@ namespace CustomScienceContracts.UI
             // Hide arrow buttons for a cleaner look.
             Skin.verticalScrollbarUpButton = new GUIStyle();
             Skin.verticalScrollbarDownButton = new GUIStyle();
+
+            var hsb = Skin.horizontalScrollbar;
+            hsb.normal.background = track; hsb.border = new RectOffset(6, 6, 6, 6);
+            hsb.fixedHeight = 11; hsb.margin = new RectOffset(0, 0, 2, 0); hsb.padding = new RectOffset(0, 0, 0, 0);
+
+            var hth = Skin.horizontalScrollbarThumb;
+            hth.normal.background = thumb; hth.hover.background = hth.active.background = thumbHi;
+            hth.border = new RectOffset(6, 6, 6, 6); hth.fixedHeight = 11;
+
+            Skin.horizontalScrollbarLeftButton = new GUIStyle();
+            Skin.horizontalScrollbarRightButton = new GUIStyle();
         }
 
         /// <summary>Thin rounded accent frame drawn over all four sides of a window.</summary>
@@ -128,6 +233,15 @@ namespace CustomScienceContracts.UI
         {
             if (Event.current.type != EventType.Repaint) return;
             GUI.Box(r, GUIContent.none, Border);
+        }
+
+        public static void DrawRect(Rect r, Color color)
+        {
+            if (Event.current.type != EventType.Repaint || White == null) return;
+            var prev = GUI.color;
+            GUI.color = color;
+            GUI.DrawTexture(r, White);
+            GUI.color = prev;
         }
 
         /// <summary>Colored left bar plus tinted icon for a row.</summary>
@@ -166,6 +280,7 @@ namespace CustomScienceContracts.UI
                 {
                     _rightSymbol = new GUIStyle(GUI.skin.label)
                     { fontSize = 18, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+                    if (_headingFont != null) _rightSymbol.font = _headingFont;
                     _rightSymbol.normal.textColor = _rightSymbol.hover.textColor = Color.white;
                 }
                 return _rightSymbol;
@@ -176,6 +291,7 @@ namespace CustomScienceContracts.UI
         private static GUIStyle Label(int size, FontStyle fs, Color col, TextAnchor a)
         {
             var s = new GUIStyle(GUI.skin.label) { fontSize = size, fontStyle = fs, alignment = a };
+            s.font = fs == FontStyle.Bold ? _headingFont : _bodyFont;
             s.normal.textColor = col; return s;
         }
 
@@ -186,6 +302,7 @@ namespace CustomScienceContracts.UI
             Texture2D tex = Rounded(col, size, 0);
             Texture2D hov = Rounded(Color.Lerp(col, Color.white, 0.16f), size, 0);
             var s = new GUIStyle(GUI.skin.button);
+            s.font = _bodyFont;
             s.normal.background = s.onNormal.background = s.active.background = s.focused.background = tex;
             s.hover.background = s.onHover.background = hov;
             s.border = new RectOffset(border, border, border, border);
@@ -198,6 +315,15 @@ namespace CustomScienceContracts.UI
             s.normal.background = s.onNormal.background = s.hover.background =
                 s.active.background = s.focused.background = tex;
             s.border = new RectOffset(border, border, border, border);
+        }
+
+        private static GUIStyle MissionCard(Texture2D tex)
+        {
+            var s = new GUIStyle(GUI.skin.box);
+            Bg(s, tex, 8);
+            s.padding = new RectOffset(10, 10, 8, 8);
+            s.margin = new RectOffset(0, 8, 0, 8);
+            return s;
         }
 
         private static Texture2D Solid(Color c)

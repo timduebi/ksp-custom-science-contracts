@@ -75,6 +75,9 @@ namespace CustomScienceContracts.Data
                 System.Globalization.CultureInfo.InvariantCulture, out reward);
             mc.ScienceReward = reward;
 
+            if (int.TryParse(node.GetValue("epoch"), out int epoch))
+                mc.Epoch = Math.Max(1, epoch);
+
             bool rep;
             bool.TryParse(node.GetValue("repeatable"), out rep);
             mc.Repeatable = rep;

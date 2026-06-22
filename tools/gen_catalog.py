@@ -36,6 +36,111 @@ SUBCAT = {"Earth": "Erde", "Moon": "Luna", "Mercury": "Merkur", "Sun": "Interpla
 REVEAL = {"Jupiter": "un_jupiter_flyby", "Saturn": "un_saturn_flyby", "Uranus": "un_uranus_flyby",
           "Neptun": "un_neptune_flyby", "Pluto": "un_pluto_flyby"}
 
+EPOCH_EXACT = {
+    # Epoch 1: Earth test flights and first orbital techniques.
+    "un_earth_pad_clear": 1, "un_earth_upper_atmo": 1, "un_earth_suborbital": 1,
+    "un_earth_orbit": 1, "un_earth_science_satellite": 1, "un_earth_satellite_pair": 1,
+    "un_earth_high_satellite": 1, "cr_earth_suborbital": 1, "cr_earth_orbit": 1,
+    "cr_earth_orbit_eva": 1, "cr_earth_duration_3d": 1,
+    "cr_earth_docking_target": 1, "cr_earth_docking_demo": 1,
+    "cr_earth_duration_7d": 1, "cr_earth_trial_station": 1,
+
+    # Epoch 2: Luna as the first major horizon.
+    "un_luna_flyby": 2, "un_luna_orbit": 2, "un_luna_polar_mapping": 2,
+    "un_luna_polar_landing": 2, "un_luna_landing": 2, "un_luna_rover": 2,
+    "cr_luna_flyby_crewed": 2, "cr_luna_orbit": 2, "cr_luna_landing": 2,
+    "cr_luna_stay_2d": 2, "cr_luna_precision_landing": 2, "cr_luna_stay_7d": 2,
+
+    # Epoch 3: permanent Earth orbit, lunar infrastructure and first lifelines.
+    "net_earth_comm_network3": 3, "net_earth_polar_comm_network": 3,
+    "net_luna_comm_network3": 3, "net_luna_polar_comm_network": 3,
+    "un_venus_flyby": 3, "un_mercury_flyby": 3, "un_mars_flyby": 3,
+    "cr_luna_station_precision_landing_1": 3, "cr_luna_station_precision_landing_2": 3,
+
+    # Epoch 4: inner worlds after the first interplanetary probes.
+    "cr_venus_flyby": 4, "cr_venus_orbit": 4,
+
+    # Epoch 5: Mars as the second main crewed arc.
+    "un_mars_orbit": 5, "un_mars_polar_mapping": 5,
+    "un_mars_polar_landing": 5, "un_mars_landing": 5, "un_mars_rover": 5,
+    "un_mars_precision_landing": 5,
+    "cr_mars_flyby": 5, "cr_mars_orbit": 5,
+    "cr_mars_landing": 5, "cr_mars_precision_landing": 5, "cr_mars_stay_10d": 5,
+    "cr_mars_stay_30d": 5,
+    "net_mars_comm_network": 5, "net_mars_orbit_supply": 5,
+    "un_eros_flyby": 5, "un_vesta_flyby": 5, "un_ceres_flyby": 5,
+    "un_eros_orbit": 5, "un_vesta_orbit": 5, "un_ceres_orbit": 5,
+    "un_psyche_flyby": 5,
+
+    # Epoch 6: asteroid belt, Mars moons and optional industry.
+    "un_phobos_flyby": 6, "un_phobos_orbit": 6,
+    "un_deimos_flyby": 6, "un_deimos_orbit": 6,
+    "cr_phobos_orbit": 6, "cr_phobos_landing": 6,
+    "cr_deimos_orbit": 6, "cr_deimos_landing": 6,
+    "net_solar_comm_network": 6, "net_phobos_cache": 6,
+    "un_ceres_landing": 6, "un_vesta_landing": 6,
+    "un_pallas_flyby": 6, "un_pallas_orbit": 6, "un_psyche_orbit": 6,
+    "un_ryugu_flyby": 6, "un_ryugu_landing": 6, "un_ida_flyby": 6,
+    "un_dactyl_flyby": 6, "cr_ceres_flyby": 6, "cr_ceres_orbit": 6,
+    "cr_ceres_landing": 6, "cr_ceres_stay_7d": 6, "net_ceres_ore_test": 6,
+    "net_ceres_supply_cache": 6, "net_psyche_ore_test": 6, "net_vesta_supply_cache": 6,
+
+    # Epoch 7: Jupiter system.
+    "net_jupiter_comm_network": 7, "net_callisto_ore_test": 7, "net_callisto_supply_cache": 7,
+    "cr_jupiter_flyby": 7, "cr_jupiter_orbit": 7, "cr_ganymede_orbit": 7,
+    "cr_ganymede_landing": 7, "cr_ganymede_stay_7d": 7,
+
+    # Epoch 8: Saturn system and Titan.
+    "net_saturn_comm_network": 8, "net_titan_supply_test": 8, "net_saturn_transfer_cache": 8,
+    "cr_saturn_flyby": 8, "cr_saturn_orbit": 8, "cr_titan_orbit": 8,
+    "cr_titan_landing": 8, "cr_titan_stay_7d": 8,
+
+    # Epoch 9: far probes and Titan base finale.
+    "cr_titan_base4": 9, "cr_titan_base6": 9, "cr_titan_base8": 9,
+}
+
+def _stage_from_chain_suffix(action, stage):
+    if action == "build":
+        return 2
+    return int(stage)
+
+def epoch_for_id(cid):
+    if cid in EPOCH_EXACT:
+        return EPOCH_EXACT[cid]
+
+    m = re.match(r"cr_(earth_station|moon_station|moon_base|mars_station|mars_base|earth_fuel_depot)_(build|expand|supply|longstay)(\d*)$", cid)
+    if m:
+        key, action, raw_stage = m.groups()
+        stage = _stage_from_chain_suffix(action, raw_stage or "2")
+        if key == "earth_station":
+            return 3 if stage <= 4 else 4 if stage <= 8 else 6
+        if key in ("moon_station", "moon_base"):
+            return 3 if stage <= 3 else 4 if stage <= 6 else 6
+        if key in ("mars_station", "mars_base"):
+            return 5 if stage <= 3 else 6
+        if key == "earth_fuel_depot":
+            return 4 if stage <= 4 else 6
+
+    if cid.startswith(("un_venus_", "un_mercury_", "un_sun_", "un_mars_", "un_phobos_", "un_deimos_")):
+        return 4
+    if cid.startswith("cr_mars_"):
+        return 5
+    if cid.startswith(("un_jupiter_", "un_io_", "un_europa_", "un_ganymede_", "un_callisto_")):
+        return 7
+    if cid.startswith(("un_saturn_", "un_titan_", "un_enceladus_", "un_rhea_", "un_iapetus_",
+                       "un_dione_", "un_tethys_", "un_mimas_", "un_hyperion_", "un_phoebe_")):
+        return 8
+    if cid.startswith(("un_uranus_", "un_titania_", "un_oberon_", "un_ariel_", "un_umbriel_",
+                       "un_miranda_", "un_puck_", "un_neptune_", "un_triton_", "un_nereid_",
+                       "un_proteus_", "un_pluto_", "un_charon_", "un_arrokoth_")):
+        return 9
+    if cid.startswith(("un_luna_", "cr_luna_")):
+        return 2
+    if cid.startswith(("un_earth_", "cr_earth_")):
+        return 1
+
+    return 1
+
 # Kuratierte Titel (wo die Formel unschoen waere)
 TITLE = {
  "un_earth_pad_clear": "Erster Testflug", "un_earth_upper_atmo": "Obere Erdatmosphäre",
@@ -59,9 +164,15 @@ TITLE = {
  "net_jupiter_comm_network": "Jupiter-Kommunikationsnetz",
  "net_saturn_comm_network": "Saturn-Kommunikationsnetz",
  "cr_earth_orbit": "Erster bemannter Erdorbit", "cr_earth_orbit_eva": "Erste EVA im Erdorbit",
- "cr_earth_duration_3d": "Drei Tage im Erdorbit", "cr_earth_docking_demo": "Erstes Andockmanöver",
+ "cr_earth_duration_3d": "Drei Tage im Erdorbit",
+ "cr_earth_docking_target": "Andockziel im Erdorbit", "cr_earth_docking_demo": "Erstes Andockmanöver",
  "cr_earth_duration_7d": "Eine Woche im Erdorbit", "cr_earth_trial_station": "Ein-Modul-Labor im Orbit",
  "un_sun_inner_probe": "Sonnennahe Sonde", "cr_luna_flyby_crewed": "Erster bemannter Mond-Vorbeiflug",
+ "cr_luna_orbit": "Bemannter Mondorbit und Rückkehr",
+ "cr_luna_landing": "Erste bemannte Mondlandung",
+ "cr_luna_stay_2d": "Zwei Tage auf Luna",
+ "cr_luna_precision_landing": "Präzisionslandung auf Luna",
+ "cr_luna_stay_7d": "Sieben Tage auf Luna",
  "cr_titan_base4": "Titanbasis (4 Kerbals)", "cr_titan_base6": "Titanbasis-Ausbau (6 Kerbals)",
  "cr_titan_base8": "Titanbasis-Ausbau (8 Kerbals)",
  "un_luna_rover": "Rover-Landung auf Luna", "un_mars_rover": "Rover-Landung auf Mars",
@@ -96,9 +207,15 @@ def parse_check(s):
     elif kind == "EVA": kv = [("body", a[0])] + ([("situation", a[1])] if len(a) > 1 else [])
     elif kind == "FUEL_MIN": kv = [("amount", a[0])]
     elif kind == "RESOURCE_MIN": kv = [("resource", a[0]), ("amount", a[1])]
+    elif kind == "WHEEL_MOTION": kv = [("body", a[0]), ("speed", a[1])]
     elif kind == "DOCK_ANY": kv = []
+    elif kind == "DOCK_STATION": kv = [("stationKey", a[0])]
     elif kind == "HOLD": kv = [("seconds", a[0])]
     elif kind == "DURATION": kv = [("days", a[0])]
+    elif kind == "RELAY_VESSEL_COUNT":
+        kv = [("body", a[0]), ("count", a[1])] + ([("km", a[2])] if len(a) > 2 else [])
+    elif kind == "RELAY_VESSEL_COUNT_INCLINATION":
+        kv = [("body", a[0]), ("count", a[1]), ("inclinationMin", a[2])] + ([("km", a[3])] if len(a) > 3 else [])
     elif kind == "RETURN_FROM_BODY":
         kv = [("body", a[0]), ("returnBody", a[1])]
         if len(a) > 2: kv.append(("returnMode", a[2]))
@@ -141,7 +258,7 @@ def title_for(m):
                 else f"Treibstofflager auf {body}" if "LANDED" in kinds else f"Treibstoffdepot bei {body}")
     elif "ORE_SURFACE" in kinds: noun = f"Ore-Förderung auf {body}"
     elif "MARKER_LANDING" in kinds: noun = f"Präzisionslandung auf {body}"
-    elif "DOCK_ANY" in kinds: noun = f"Andockmanöver im Orbit um {body}"
+    elif "DOCK_ANY" in kinds or "DOCK_STATION" in kinds: noun = f"Andockmanöver im Orbit um {body}"
     elif "EVA" in kinds and "LANDED" not in kinds: noun = f"Ausstieg im Orbit um {body}"
     elif "LANDED" in kinds:
         noun = f"{int(float(days))} Tage auf {body}" if days else f"Landung auf {body}"
@@ -167,7 +284,7 @@ def icon_for(m):
     if "MARKER_LANDING" in kinds: return "TrackingStation_ButtonMapFlag"
     if "FUEL_MIN" in kinds: return "TrackingStation_ButtonMapBase"
     if "ORE_SURFACE" in kinds: return "TrackingStation_ButtonMapBase"
-    if "DOCK_ANY" in kinds: return "TrackingStation_ButtonMapStation"
+    if "DOCK_ANY" in kinds or "DOCK_STATION" in kinds: return "TrackingStation_ButtonMapStation"
     if "EVA" in kinds and "LANDED" not in kinds: return "TrackingStation_ButtonMapEVA"
     if "LANDED" in kinds: return "TrackingStation_ButtonMapBase" if has_dur else "TrackingStation_ButtonMapLander"
     if "FLYBY" in kinds: return "TrackingStation_ButtonMapProbe"
@@ -192,11 +309,12 @@ def emit_checks(checks):
     return s
 
 def contract(cid, title, desc, sparte, sub, icon, reward, prereqs, checks,
-             repeatable=False, reveal=None, record=None, ref=None):
+             repeatable=False, reveal=None, record=None, ref=None, epoch=None):
     s = "    CONTRACT\n    {\n"
     s += f"        id = {cid}\n        title = {title}\n        description = {desc}\n"
     s += f"        sparte = {sparte}\n        subcategory = {sub}\n        icon = {icon}\n"
     s += f"        reward = {reward}\n"
+    s += f"        epoch = {epoch if epoch is not None else epoch_for_id(cid)}\n"
     if repeatable: s += "        repeatable = true\n"
     if reveal:  s += f"        revealAllAfter = {reveal}\n"
     if record:  s += f"        recordStationKey = {record}\n"
@@ -207,13 +325,143 @@ def contract(cid, title, desc, sparte, sub, icon, reward, prereqs, checks,
     s += "        }\n    }\n"
     return s
 
+SKIP_IDS = {"net_deimos_cache"}
+
+def contract_prereqs(m):
+    if m["id"] == "cr_earth_docking_demo":
+        return ["cr_earth_docking_target"]
+    if m["id"] == "net_phobos_cache":
+        return ["cr_mars_landing", "un_phobos_orbit"]
+    if m["id"] == "cr_ceres_landing":
+        return ["cr_ceres_flyby"]
+    return [] if m.get("prereq", "-") in ("-", "") else [p.strip() for p in m["prereq"].split(",")]
+
+def docking_target_contract():
+    checks = [
+        ("CREW_NONE", [], "unbemannt"),
+        ("ORBIT_ABOVE", [("body", "Earth"), ("km", "130")],
+         "Stabiler Erdorbit, Periapsis über 130 km"),
+        ("HOLD", [("seconds", "10")], "10 Sekunden stabil halten"),
+    ]
+    desc = ("Bringe ein unbemanntes Andockziel in einen stabilen Erdorbit. Es bleibt als "
+            "Trainingsziel registriert, damit die erste Crew gezielt an einem echten Objekt "
+            "andocken kann.")
+    return contract("cr_earth_docking_target", TITLE["cr_earth_docking_target"], desc,
+                    "Bemannt", "Erde", "TrackingStation_ButtonMapStation", 62,
+                    ["cr_earth_duration_3d"], checks,
+                    record="earth_docking_target", epoch=1)
+
 def mission_contract(m):
-    prereqs = [] if m.get("prereq", "-") in ("-", "") else [p.strip() for p in m["prereq"].split(",")]
+    prereqs = contract_prereqs(m)
     sub = SUBCAT[m["body"]]
     reveal = REVEAL.get(sub) if m["sparte"] == "Robotische Erkunder" else None
-    return contract(m["id"], title_for(m), m["beschreibung"], SPARTE[m["sparte"]], sub,
-                    m.get("icon") or icon_for(m), m["reward"], prereqs, m["checks"],
+    checks = catalog_checks(m)
+    title_model = dict(m)
+    title_model["checks"] = checks
+    return contract(m["id"], title_for(title_model), description_for_catalog(m, m["beschreibung"], checks),
+                    SPARTE[m["sparte"]], sub,
+                    m.get("icon") or icon_for(title_model), m["reward"], prereqs, checks,
                     repeatable=(m.get("repeatable") == "yes"), reveal=reveal)
+
+def catalog_checks(m):
+    checks = [normalize_network_check(m, c) for c in m["checks"]]
+    checks = apply_curated_check_overrides(m, checks)
+    if m["id"].endswith("_rover"):
+        checks.append(("WHEEL_MOTION", [("body", m["body"]), ("speed", "4")],
+                       "Rover mit Rädern fährt am Boden mindestens 4 m/s"))
+
+    if should_add_return_check(m, checks):
+        checks.append(return_check_for(m))
+    return checks
+
+def apply_curated_check_overrides(m, checks):
+    cid = m["id"]
+
+    if cid == "cr_earth_docking_demo":
+        return [("DOCK_STATION", [("stationKey", "earth_docking_target")], "Am Andockziel angedockt")
+                if kind == "DOCK_ANY" else (kind, kvl, label)
+                for kind, kvl, label in checks]
+
+    if cid == "net_phobos_cache":
+        return [
+            ("CREW_NONE", [], "unbemannt"),
+            ("ORBIT_ABOVE", [("body", "Phobos"), ("km", "8")],
+             "Stabiler Orbit um Phobos, Periapsis über 8 km"),
+            ("FUEL_MIN", [("amount", "500")], "Treibstoff über 500"),
+            ("HOLD", [("seconds", "10")], "10 Sekunden stabil halten"),
+        ]
+
+    crew_overrides = {
+        "cr_luna_flyby_crewed": 2,
+        "cr_luna_orbit": 3,
+        "cr_luna_landing": 1,
+        "cr_luna_stay_2d": 2,
+        "cr_luna_stay_7d": 2,
+    }
+    if cid not in crew_overrides:
+        return checks
+
+    need = crew_overrides[cid]
+    label = f"mindestens {need} Kerbal{'s' if need != 1 else ''} an Bord"
+    out = []
+    replaced = False
+    for kind, kvl, old_label in checks:
+        if not replaced and kind in ("CREW_MIN", "CREW_EXACT"):
+            out.append(("CREW_MIN", [("min", str(need))], label))
+            replaced = True
+        else:
+            out.append((kind, kvl, old_label))
+    return out
+
+def normalize_network_check(m, check):
+    kind, kvl, label = check
+    if kind not in ("VESSEL_COUNT", "VESSEL_COUNT_INCLINATION"):
+        return check
+    if not is_satellite_network(m, kind, kvl):
+        return check
+
+    new_kind = "RELAY_VESSEL_COUNT_INCLINATION" if kind == "VESSEL_COUNT_INCLINATION" else "RELAY_VESSEL_COUNT"
+    suffix = " (jede Sonde mit Relaisantenne)"
+    return new_kind, kvl, label + ("" if "Relaisantenne" in label else suffix)
+
+def is_satellite_network(m, kind, kvl):
+    values = dict(kvl)
+    count = int(values.get("count", "1"))
+    if count < 2:
+        return False
+    return m["sparte"] == "Versorgungsnetz" or m["id"] == "un_earth_satellite_pair"
+
+def should_add_return_check(m, checks):
+    if m["sparte"] != "Pioniere":
+        return False
+    if "_base" in m["id"]:
+        return False
+    return not any(kind == "RETURN_FROM_BODY" for kind, _, _ in checks)
+
+def return_check_for(m):
+    kinds = [kind for kind, _, _ in m["checks"]]
+    mode = None
+    if "FLYBY" in kinds:
+        mode = "flyby"
+    elif m["body"] == "Earth":
+        mode = "home"
+    elif not any(kind in ("LANDED", "MARKER_LANDING") for kind in kinds):
+        mode = "visit"
+
+    kv = [("body", m["body"]), ("returnBody", "Earth")]
+    if mode:
+        kv.append(("returnMode", mode))
+    return "RETURN_FROM_BODY", kv, "Crew sicher zur Erde zurückbringen"
+
+def description_for_catalog(m, desc, checks):
+    if m["id"] == "net_phobos_cache":
+        return ("Richte ein unbemanntes Treibstoffdepot im Orbit um Phobos ein. Der kleine "
+                "Mond wird zum stillen Helfer für alle künftigen Marsoperationen.")
+    original_has_return = any(kind == "RETURN_FROM_BODY" for kind, _, _ in m["checks"])
+    generated_has_return = any(kind == "RETURN_FROM_BODY" for kind, _, _ in checks)
+    if generated_has_return and not original_has_return:
+        return desc.rstrip() + " Die Mission zählt erst, wenn die Crew sicher zur Erde zurückgekehrt ist."
+    return desc
 
 HEADER = ("// ===========================================================================\n"
           "//  {t}\n"
@@ -296,6 +544,28 @@ def orbit_chain(key, body, sub, orbitword, km, stages, prereq0, station_word, mu
                    ref=key))
         prev_long = lng
     return "".join(out)
+
+def moon_station_precision_landings():
+    def cks(lst): return [(c["kind"], [(k, v) for k, v in c.items() if k != "kind" and k != "label"], c.get("label", "")) for c in lst]
+    common = [
+        {"kind": "CREW_MIN", "min": 2, "label": "Bemannt mit mindestens 2 Kerbals an Bord"},
+        {"kind": "LANDED", "body": "Moon", "label": "Auf Luna gelandet"},
+        {"kind": "MARKER_LANDING", "body": "Moon", "km": 5, "label": "Präzisionslandung im Umkreis von 5 km"},
+        {"kind": "RETURN_FROM_BODY", "body": "Moon", "returnBody": "Earth", "label": "Crew sicher zur Erde zurückbringen"},
+    ]
+    first = contract(
+        "cr_luna_station_precision_landing_1",
+        "Stationsgestützte Präzisionslandung",
+        "Nutze die gewachsene Mondstation als Planungs- und Navigationsanker und setze eine Crew punktgenau auf Luna ab. Diese Bonusmission trainiert Landungen, ohne den Basisbau zu blockieren.",
+        "Bemannt", "Luna", "TrackingStation_ButtonMapFlag", 176,
+        ["cr_moon_station_expand3"], cks(common), epoch=3)
+    second = contract(
+        "cr_luna_station_precision_landing_2",
+        "Zweite stationsgestützte Präzisionslandung",
+        "Wiederhole die punktgenaue Mondlandung mit einer neuen Crew. Die Routine hält die Landefähigkeit frisch, während dein Programm die dauerhafte Infrastruktur vorbereitet.",
+        "Bemannt", "Luna", "TrackingStation_ButtonMapFlag", 188,
+        ["cr_luna_station_precision_landing_1"], cks(common), epoch=3)
+    return first + second
 
 def base_chain(key, body, sub, stages, prereq0, base_word, mult):
     out, prev_long = [], None
@@ -389,9 +659,11 @@ def build_stations():
     s += "\n    // ===== LUNA — Raumstation (ab Erd-Dauerbetrieb 4) =====\n"
     s += orbit_chain("moon_station", "Moon", "Luna", "Mondorbit", 25,
                      [2, 3, 4, 6, 8, 10], "cr_earth_station_longstay4", "Erste Mond-Raumstation im Mondorbit", 1.5)
-    s += "\n    // ===== LUNA — Oberflaechenbasis (ab Praezisionslandung + 7 Tage) =====\n"
+    s += "\n    // ===== LUNA — Bonus-Praezisionslandungen nach Stationsausbau =====\n"
+    s += moon_station_precision_landings()
+    s += "\n    // ===== LUNA — Oberflaechenbasis (ab 150 Tage Mondstation 2 Kerbals) =====\n"
     s += base_chain("moon_base", "Moon", "Luna", [2, 3, 4, 6, 8, 10],
-                    ["cr_luna_precision_landing", "cr_luna_stay_7d"], "Erste Mondbasis", 1.5)
+                    "cr_moon_station_longstay2", "Erste Mondbasis", 1.5)
     s += "\n    // ===== MARS — Raumstation (ab 10 Tage auf Mars) =====\n"
     s += orbit_chain("mars_station", "Mars", "Mars", "Marsorbit", 90,
                      [2, 3, 4, 6], "cr_mars_stay_10d", "Erste Mars-Raumstation im Marsorbit", 2.4)
@@ -406,7 +678,12 @@ def main():
     text = open(DOC, encoding="utf-8").read()
     missions = parse_missions(text)
     buckets = {"Pioniere": [], "Robotische Erkunder": [], "Versorgungsnetz": []}
-    for m in missions: buckets[m["sparte"]].append(mission_contract(m))
+    for m in missions:
+        if m["id"] in SKIP_IDS:
+            continue
+        if m["id"] == "cr_earth_docking_demo":
+            buckets["Pioniere"].append(docking_target_contract())
+        buckets[m["sparte"]].append(mission_contract(m))
     write_file(os.path.join(OUT, "A_Pioniere.cfg"), "SPARTE A — PIONIERE (bemannt)", "".join(buckets["Pioniere"]))
     write_file(os.path.join(OUT, "B_Spaeher.cfg"), "SPARTE B — ROBOTISCHE ERKUNDER (unbemannt)", "".join(buckets["Robotische Erkunder"]))
     write_file(os.path.join(OUT, "C_Lebensadern.cfg"), "SPARTE C — VERSORGUNGSNETZ (Logistik)", "".join(buckets["Versorgungsnetz"]))

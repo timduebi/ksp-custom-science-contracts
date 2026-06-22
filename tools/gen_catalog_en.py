@@ -56,10 +56,16 @@ TITLE = {
     "cr_earth_orbit": "First Crewed Earth Orbit",
     "cr_earth_orbit_eva": "First EVA in Earth Orbit",
     "cr_earth_duration_3d": "Three Days in Earth Orbit",
+    "cr_earth_docking_target": "Earth Orbit Docking Target",
     "cr_earth_docking_demo": "First Docking Maneuver",
     "cr_earth_duration_7d": "One Week in Earth Orbit",
     "cr_earth_trial_station": "Single-Module Orbital Laboratory",
     "cr_luna_flyby_crewed": "First Crewed Lunar Flyby",
+    "cr_luna_orbit": "Crewed Lunar Orbit and Return",
+    "cr_luna_landing": "First Crewed Lunar Landing",
+    "cr_luna_stay_2d": "Two-Day Lunar Surface Stay",
+    "cr_luna_precision_landing": "Precision Lunar Landing",
+    "cr_luna_stay_7d": "Seven-Day Lunar Surface Expedition",
     "un_luna_rover": "Rover Landing on the Moon",
     "un_mars_rover": "Rover Landing on Mars",
     "un_luna_polar_landing": "Polar Landing on the Moon",
@@ -107,7 +113,8 @@ def title_for(m):
         return next((dict(kvl) for kk, kvl, _ in m["checks"] if kk == kind), {})
 
     if "RESOURCE_MIN" in kinds or "FUEL_MIN" in kinds:
-        noun = f"Fuel Depot near {body}" if "LANDED" not in kinds else f"Fuel Depot on {body}"
+        noun = f"Fuel Depot in {body} Orbit" if "ORBIT_ABOVE" in kinds else (
+            f"Fuel Depot on {body}" if "LANDED" in kinds else f"Fuel Depot near {body}")
     elif "RETURN_FROM_BODY" in kinds and "FLYBY" in kinds:
         noun = f"Flyby and Return from {body}"
     elif "RETURN_FROM_BODY" in kinds and ("LANDED" in kinds or "MARKER_LANDING" in kinds):
@@ -116,7 +123,7 @@ def title_for(m):
         noun = f"Ore Mining on {body}"
     elif "MARKER_LANDING" in kinds:
         noun = f"Precision Landing on {body}"
-    elif "DOCK_ANY" in kinds:
+    elif "DOCK_ANY" in kinds or "DOCK_STATION" in kinds:
         noun = f"Docking Maneuver in {body} Orbit"
     elif "EVA" in kinds and "LANDED" not in kinds:
         noun = f"EVA in {body} Orbit"
@@ -211,6 +218,8 @@ def label_for(kind, kvl, mission):
         return f"Landed on {body}"
     if kind == "ORE_SURFACE":
         return f"Mine Ore on {body}"
+    if kind == "WHEEL_MOTION":
+        return f"Wheeled rover moving on {body} at {float(kv['speed']):.0f}+ m/s"
     if kind == "ORBIT_ABOVE":
         return f"Periapsis above {kv['km']} km" if "km" in kv else f"Stable orbit above {body}'s atmosphere"
     if kind == "INCLINATION_MIN":
@@ -228,6 +237,12 @@ def label_for(kind, kvl, mission):
     if kind == "VESSEL_COUNT_INCLINATION":
         km = f" above {kv['km']} km" if "km" in kv else ""
         return f"{kv['count']} vessels in orbit{km} around {body} at {kv['inclinationMin']}+ degrees inclination"
+    if kind == "RELAY_VESSEL_COUNT":
+        km = f" above {kv['km']} km" if "km" in kv else ""
+        return f"{kv['count']} relay satellites in orbit{km} around {body}"
+    if kind == "RELAY_VESSEL_COUNT_INCLINATION":
+        km = f" above {kv['km']} km" if "km" in kv else ""
+        return f"{kv['count']} relay satellites in orbit{km} around {body} at {kv['inclinationMin']}+ degrees inclination"
     if kind == "EVA":
         return f"EVA at {body}" if body else "EVA"
     if kind == "FUEL_MIN":
@@ -237,6 +252,8 @@ def label_for(kind, kvl, mission):
     if kind == "DOCK_ANY":
         return "Complete any docking maneuver"
     if kind == "DOCK_STATION":
+        if kv.get("stationKey") == "earth_docking_target":
+            return "Dock to the assigned docking target"
         return "Dock to the recorded station"
     if kind == "HOLD":
         return f"Hold for {kv['seconds']} seconds"
@@ -246,7 +263,11 @@ def label_for(kind, kvl, mission):
     if kind == "RETURN_FROM_BODY":
         home = disp(kv.get("returnBody", "Earth"))
         mode = kv.get("returnMode", "")
-        return f"Fly by {body}, then return crew to {home}" if mode == "flyby" else f"Return crew safely from {body} to {home}"
+        if mode == "flyby":
+            return f"Fly by {body}, then return crew to {home}"
+        if mode in ("visit", "home"):
+            return f"Return crew safely to {home}"
+        return f"Return crew safely from {body} to {home}"
     return kind.replace("_", " ").title()
 
 
@@ -255,18 +276,48 @@ def pct(v):
 
 
 def english_checks(m):
-    return [(kind, kvl, label_for(kind, kvl, m)) for kind, kvl, _ in m["checks"]]
+    return [(kind, kvl, label_for(kind, kvl, m)) for kind, kvl, _ in de.catalog_checks(m)]
+
+
+def description_for_catalog(m, title, checks):
+    if m["id"] == "net_phobos_cache":
+        return ("Set up an uncrewed fuel depot in orbit around Phobos. The small moon becomes "
+                "a quiet helper for all future Mars operations.")
+    desc = description_for(m, title)
+    original_has_return = any(kind == "RETURN_FROM_BODY" for kind, _, _ in m["checks"])
+    generated_has_return = any(kind == "RETURN_FROM_BODY" for kind, _, _ in checks)
+    if generated_has_return and not original_has_return:
+        return desc.rstrip() + " The mission is only complete after the crew returns safely to Earth."
+    return desc
 
 
 def mission_contract(m):
-    prereqs = [] if m.get("prereq", "-") in ("-", "") else [p.strip() for p in m["prereq"].split(",")]
+    prereqs = de.contract_prereqs(m)
     sub = SUBCAT[m["body"]]
     reveal = REVEAL.get(sub) if m["sparte"] == "Robotische Erkunder" else None
-    title = title_for(m)
+    checks = english_checks(m)
+    title_model = dict(m)
+    title_model["checks"] = checks
+    title = title_for(title_model)
     return de.contract(
-        m["id"], title, description_for(m, title), SPARTE[m["sparte"]], sub,
-        m.get("icon") or de.icon_for(m), m["reward"], prereqs, english_checks(m),
+        m["id"], title, description_for_catalog(m, title, checks), SPARTE[m["sparte"]], sub,
+        m.get("icon") or de.icon_for(title_model), m["reward"], prereqs, checks,
         repeatable=(m.get("repeatable") == "yes"), reveal=reveal)
+
+
+def docking_target_contract():
+    checks = [
+        ("CREW_NONE", [], "Uncrewed, no Kerbals aboard"),
+        ("ORBIT_ABOVE", [("body", "Earth"), ("km", "130")],
+         "Stable Earth orbit, periapsis above 130 km"),
+        ("HOLD", [("seconds", "10")], "Hold for 10 seconds"),
+    ]
+    desc = ("Launch an uncrewed docking target into stable Earth orbit. It stays registered "
+            "as the assigned practice target for the first crewed docking attempt.")
+    return de.contract("cr_earth_docking_target", TITLE["cr_earth_docking_target"], desc,
+                       "Bemannt", "Earth", "TrackingStation_ButtonMapStation", 62,
+                       ["cr_earth_duration_3d"], checks,
+                       record="earth_docking_target", epoch=1)
 
 
 HEADER = ("// ===========================================================================\n"
@@ -329,6 +380,28 @@ def orbit_chain(key, body, sub, orbitword, km, stages, prereq0, station_word, mu
                    ref=key))
         prev_long = lng
     return "".join(out)
+
+
+def moon_station_precision_landings():
+    common = [
+        make_check("CREW_MIN", "Crewed with at least 2 Kerbals aboard", min=2),
+        make_check("LANDED", "Landed on Moon", body="Moon"),
+        make_check("MARKER_LANDING", "Precision landing within 5 km of the target marker", body="Moon", km=5),
+        make_check("RETURN_FROM_BODY", "Return crew safely from Moon to Earth", body="Moon", returnBody="Earth"),
+    ]
+    first = de.contract(
+        "cr_luna_station_precision_landing_1",
+        "Station-Supported Precision Landing",
+        "Use the expanded lunar station as a planning and navigation anchor, then land a crew precisely on the Moon. This bonus mission keeps landing skills active without blocking base construction.",
+        "Bemannt", "Moon", "TrackingStation_ButtonMapFlag", 176,
+        ["cr_moon_station_expand3"], common, epoch=3)
+    second = de.contract(
+        "cr_luna_station_precision_landing_2",
+        "Second Station-Supported Precision Landing",
+        "Repeat the precision lunar landing with a new crew. The extra practice keeps landing operations sharp while permanent infrastructure is prepared.",
+        "Bemannt", "Moon", "TrackingStation_ButtonMapFlag", 188,
+        ["cr_luna_station_precision_landing_1"], common, epoch=3)
+    return first + second
 
 
 def base_chain(key, body, sub, stages, prereq0, base_word, mult):
@@ -414,9 +487,11 @@ def build_stations():
     s += "\n    // ===== MOON - Space station =====\n"
     s += orbit_chain("moon_station", "Moon", "Moon", "lunar orbit", 25,
                      [2, 3, 4, 6, 8, 10], "cr_earth_station_longstay4", "Lunar Orbital Station", 1.5)
+    s += "\n    // ===== MOON - Bonus precision landings after station expansion =====\n"
+    s += moon_station_precision_landings()
     s += "\n    // ===== MOON - Surface base =====\n"
     s += base_chain("moon_base", "Moon", "Moon", [2, 3, 4, 6, 8, 10],
-                    ["cr_luna_precision_landing", "cr_luna_stay_7d"], "Moon Base", 1.5)
+                    "cr_moon_station_longstay2", "Moon Base", 1.5)
     s += "\n    // ===== MARS - Space station =====\n"
     s += orbit_chain("mars_station", "Mars", "Mars", "Mars orbit", 90,
                      [2, 3, 4, 6], "cr_mars_stay_10d", "Mars Orbital Station", 2.4)
@@ -432,6 +507,10 @@ def main():
     missions = de.parse_missions(text)
     buckets = {"Pioniere": [], "Robotische Erkunder": [], "Versorgungsnetz": []}
     for m in missions:
+        if m["id"] in de.SKIP_IDS:
+            continue
+        if m["id"] == "cr_earth_docking_demo":
+            buckets["Pioniere"].append(docking_target_contract())
         buckets[m["sparte"]].append(mission_contract(m))
     write_file(os.path.join(OUT, "A_Pioniere.cfg"), "BRANCH A - PIONEERS (crewed)", "".join(buckets["Pioniere"]))
     write_file(os.path.join(OUT, "B_Spaeher.cfg"), "BRANCH B - ROBOTIC EXPLORERS", "".join(buckets["Robotische Erkunder"]))

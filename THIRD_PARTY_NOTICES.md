@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-CustomScienceContracts includes third-party image assets. These notices apply
+CustomScienceContracts includes third-party visual assets. These notices apply
 to those assets only. No code from the projects listed below was used.
 
 ## ZTheme
@@ -23,3 +23,16 @@ to those assets only. No code from the projects listed below was used.
   standalone license file, so the included text reproduces the standard MIT
   license with the author attribution taken from the official SpaceDock listing.
 
+## Pixeled
+
+- This mod includes `Pixeled.ttf` for Mission Control headings.
+- Font metadata identifies the author as OmegaPC777 and the license as
+  "FontStruct Non-Commercial License".
+- The font file is included unmodified.
+
+## VCR OSD Mono
+
+- This mod includes `VCR_OSD_MONO_1.001.ttf` for Mission Control body text.
+- Font metadata identifies it as "VCR OSD Mono", version 1.001, with the
+  embedded creator string `MrManet`.
+- The font file is included unmodified.

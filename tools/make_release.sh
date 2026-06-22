@@ -48,6 +48,7 @@ zipdir() { ( cd "$1" && rm -f "$2" && zip -rq "$2" . -x '*.DS_Store' ); }
 # --- 1. Main download: full mod, default SOL catalog ----------------------------------
 MAIN="$OUTDIR/main"; rm -rf "$MAIN"; mkdir -p "$MAIN"
 cp -R "$ROOT/GameData" "$MAIN/"
+find "$MAIN/GameData" -name '*.zip' -delete
 # Player download: only the mod plus README and license files. No Logo/CHANGELOG/DEVELOPMENT/DOKUMENTATION (repo/dev docs).
 cp "$ROOT/README.md" "$ROOT/LICENSE" "$ROOT/THIRD_PARTY_NOTICES.md" "$MAIN/"
 cp -R "$ROOT/LICENSES" "$MAIN/"

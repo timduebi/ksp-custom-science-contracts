@@ -37,6 +37,9 @@ namespace CustomScienceContracts.Core
         public static float ActiveButtonY = 2f;      // top spacing in px
         public static float ActiveButtonSize = 32f;  // button size in px
 
+        // --- Mission Control window ---
+        public static float MissionCenterScale = 0.96f; // fraction of the screen used when opened
+
         // --- Locked mission preview ---
         /// <summary>Once this contract is complete, the next locked mission per body is shown as a
         /// greyed preview with a red prerequisite line.</summary>
@@ -77,6 +80,7 @@ namespace CustomScienceContracts.Core
                 ActiveButtonX         = GetF(n, "activeButtonX", ActiveButtonX);
                 ActiveButtonY         = GetF(n, "activeButtonY", ActiveButtonY);
                 ActiveButtonSize      = GetF(n, "activeButtonSize", ActiveButtonSize);
+                MissionCenterScale    = Mathf.Clamp(GetF(n, "missionCenterScale", MissionCenterScale), 0.55f, 1.0f);
                 LockedPreviewTrigger  = n.GetValue("lockedPreviewTrigger") ?? LockedPreviewTrigger;
                 VerboseLogging        = GetB(n, "verboseLogging", VerboseLogging);
                 UnlockAll             = GetB(n, "unlockAll", UnlockAll);

@@ -232,6 +232,7 @@ namespace CustomScienceContracts.UI
                 case CheckKind.ATMO_FRACTION: return $"Within {chk.FracMin * 100:0}-{chk.FracMax * 100:0}% of atmosphere height";
                 case CheckKind.ORE_PRESENT: return "Ore mined aboard";
                 case CheckKind.ORE_SURFACE: return $"Mine Ore on the surface of {body}";
+                case CheckKind.WHEEL_MOTION: return $"Drive a wheeled rover on {body} at {chk.SpeedMin:0.0} m/s or faster";
                 case CheckKind.FLYBY:       return chk.Km > 0
                     ? $"Fly by {body} with closest approach below {chk.Km:0} km"
                     : $"Fly by {body}";
@@ -240,6 +241,9 @@ namespace CustomScienceContracts.UI
                     string home = BodyVisual.DisplayName(string.IsNullOrEmpty(chk.ReturnBody) ? "Kerbin" : chk.ReturnBody);
                     return string.Equals(chk.ReturnMode, "flyby", System.StringComparison.OrdinalIgnoreCase)
                         ? $"Fly by {body}, then return to {home}"
+                        : string.Equals(chk.ReturnMode, "visit", System.StringComparison.OrdinalIgnoreCase) ||
+                          string.Equals(chk.ReturnMode, "home", System.StringComparison.OrdinalIgnoreCase)
+                            ? $"Complete the visit, then return to {home}"
                         : $"Return from {body} to {home}";
                 case CheckKind.FUEL_MIN:    return $"More than {chk.Amount:0} units of fuel aboard";
                 case CheckKind.RESOURCE_MIN:return $"More than {chk.Amount:0} {chk.Resource} aboard";
@@ -251,6 +255,10 @@ namespace CustomScienceContracts.UI
                 case CheckKind.VESSEL_COUNT:return $"{chk.Count} satellites simultaneously in orbit around {body}";
                 case CheckKind.VESSEL_COUNT_INCLINATION:
                     return $"{chk.Count} satellites simultaneously in orbit around {body}, inclination at least {chk.InclinationMin:0} degrees";
+                case CheckKind.RELAY_VESSEL_COUNT:
+                    return $"{chk.Count} relay satellites simultaneously in orbit around {body}";
+                case CheckKind.RELAY_VESSEL_COUNT_INCLINATION:
+                    return $"{chk.Count} relay satellites simultaneously in orbit around {body}, inclination at least {chk.InclinationMin:0} degrees";
                 case CheckKind.HOLD:        return $"Hold state for {chk.Seconds:0} seconds";
                 case CheckKind.DURATION:    return $"Hold continuously for {chk.Days:0} days";
                 default:                    return chk.Kind.ToString();
@@ -284,12 +292,8 @@ namespace CustomScienceContracts.UI
                 return $"Time left: {secs / VesselQueryDays():0.0} days";
             if (TryD(p, "ml_dist", out double dist))
                 return $"Distance to marker: {dist / 1000.0:0.0} km";
-            if (TryD(p, "fb_bestApproach", out double app) && app < 1e29)
-                return $"Closest approach: {app / 1000.0:0} km";
-            string ret = p.GetValue("ret_status");
-            if (ret == "awaiting_return") return "Return landing logged: come home";
-            if (ret == "awaiting_source") return "Waiting for destination landing";
-            if (ret == "awaiting_visit") return "Waiting for destination flyby";
+            if (p.GetValue("fb_seen") == "1" && TryD(p, "fb_bestApproach", out double app) && app < 1e29)
+                return $"Closest approach: {System.Math.Max(0.0, app / 1000.0):0} km";
             return null;
         }
 

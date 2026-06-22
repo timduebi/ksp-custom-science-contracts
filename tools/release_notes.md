@@ -1,42 +1,44 @@
-## Custom Science Contracts
+## Custom Science Contracts 0.4.1
 
-**Custom Science Contracts** finally gives KSP's Science Mode a clear thread to follow.
+**Custom Science Contracts** gives KSP Science Mode a structured mission campaign:
+robotic scouting, crewed milestones, stations, bases, supply routes, relays and long-duration
+operations all feed into one progression.
 
-It adds its own realistic science campaign that takes you from your first spaceflight attempts to
-conquering the solar system. Instead of aimless science grinding or random Career-Mode contracts,
-you get clear missions with meaningful progression: robotic missions come before crewed ones, long
-space-station stays prepare interplanetary crews, and infrastructure — stations, bases, supply
-routes, ore mining and networks — becomes an important part of your space program.
+> Alpha release: expect rough edges. Bug reports are welcome on GitHub; KSP version, active config,
+> mission id/name and `KSP.log` are the most useful details.
 
-Supports the **stock Kerbol system** and **[Sol](https://forum.kerbalspaceprogram.com/topic/229428-112x-sol-a-modern-recreation-of-our-home-system-at-real-quarter-and-stock-scale/)** (a modern recreation of our home system at real, quarter and stock scale). Best enjoyed together with **Kerbalism**.
+### Important requirement
 
-> ⚠️ **Work in progress — first alpha.** Expect rough edges, and bugs may show up. Bug reports and
-> suggestions are very welcome: please open an issue on the
-> [GitHub issue tracker](https://github.com/timduebi/ksp-custom-science-contracts/issues)
-> (KSP version, which config you run, the mission, and a `KSP.log` help a lot).
+This release assumes a probe-first progression. Use a tech-tree or progression mod that unlocks
+probes before crewed command pods/crew access; otherwise the campaign balance and early mission
+flow will not line up correctly.
 
----
+### Main download
 
-### 1. Main download — required
-**`CustomScienceContracts-v0.3.0.zip`** — the complete mod with the Sol campaign.
+**`CustomScienceContracts-v0.4.1.zip`** — the complete mod with the default Sol campaign.
 
 1. Download and unzip.
-2. Copy the `GameData` folder from the zip into your KSP install root (merge it into your existing
-   `GameData/`).
-3. Result: `Kerbal Space Program/GameData/CustomScienceContracts/` with `Plugins/`, `Contracts/`,
-   `Icons/` and `settings.cfg`. Done — playable in a Science Mode save.
+2. Copy the `GameData` folder into your KSP install root.
+3. Start a Science Mode save and open Mission Control from the toolbar.
 
-### 2. Optional config swaps
-These packs change **which missions you fly** without touching the plugin. Each one replaces only
-the four catalog files in `GameData/CustomScienceContracts/Contracts/`. Install the main download
-first, then unzip one of these into your KSP install root and confirm overwriting the four files.
-Run only **one** config at a time.
+### Optional config swaps
 
-- **Stock Kerbol system** — **`CustomScienceContracts-v0.3.0_Stock-Config.zip`**
-  Rebuilds the whole campaign for the stock system (Kerbin, the Mun, Minmus, Duna, Jool, Laythe,
-  Eve …). For a stock, non-rescaled game.
+Install the main download first, then unzip one of these over it and overwrite the four
+`GameData/CustomScienceContracts/Contracts/*.cfg` files. Use only one config swap at a time.
 
-- **German Sol** — **`CustomScienceContracts-v0.3.0_Sol-German-Config.zip`**
-  The Sol campaign with all contract text in German. Same missions, only the language changes.
+- **Stock Kerbol system** — **`CustomScienceContracts-v0.4.1_Stock-Config.zip`**
+- **German Sol** — **`CustomScienceContracts-v0.4.1_Sol-German-Config.zip`**
 
-To go back to the default, re-extract the four `Contracts/*.cfg` from the main download.
+### Highlights in 0.4.1
+
+- Reworked Mission Control into a fullscreen-style, resizable mission atlas with epoch pages.
+- Added rounded mission dependency arrows, status colors, body rows and unlock previews.
+- Added bundled Pixeled/VCR-style UI fonts for the atlas heading and body text.
+- Added stricter robotic-first progression, including assigned docking targets and improved
+  return, rover and relay checks.
+- Regenerated the Sol and German Sol catalogs with the updated Moon, Mars, Phobos and asteroid flow.
+- Reworked the Moon base gate so a base follows sustained lunar station operations, with two
+  optional station-supported precision landings as side missions.
+- Split early asteroid belt scouting into the Red Horizon chapter so Beltworks focuses on deeper
+  belt operations.
+- Improved icon loading so the bundled `icon_...` mission icons win over cached/stock names.
