@@ -48,6 +48,7 @@ chain: body=Laythe | key=laythe_base | typ=base | prereq=base_laythe_base3 | stu
 
 === MISSION ===
 id: cr_kerbin_first_launch
+title: First Crewed Hop
 sparte: Pioniere
 body: Kerbin
 prereq: -
