@@ -45,7 +45,7 @@ for blk in text.split("=== MISSION ===")[1:]:
         if s.startswith("=="): break
         if s.startswith("check:"):
             checks.append(s[len("check:"):].strip()); continue
-        mm = re.match(r"(id|sparte|body|prereq|reward|repeatable|recordStation|stationRef|beschreibung_en|beschreibung|description|icon):\s*(.*)$", s)
+        mm = re.match(r"(id|title|sparte|body|epoche|epoch|epochName|prereq|reward|repeatable|recordStation|stationRef|beschreibung_en|beschreibung|description|icon):\s*(.*)$", s)
         if mm: m[mm.group(1)] = mm.group(2).strip()
     if "id" in m:
         m["checks"] = checks
@@ -130,6 +130,22 @@ ref_keys    = {m["stationRef"]    for m in missions if m.get("stationRef","-") !
 # Every SOL mission must carry a hand-written English translation (beschreibung_en).
 # The stock design doc uses its own English `description` field instead.
 missing_en = sorted(m["id"] for m in missions if not m.get("beschreibung_en","").strip()) if PROFILE != "stock" else []
+missing_stock_title = sorted(m["id"] for m in missions if PROFILE == "stock" and not m.get("title","").strip())
+missing_stock_epoch = sorted(m["id"] for m in missions if PROFILE == "stock" and not (m.get("epoche") or m.get("epoch") or "").strip())
+bad_stock_epoch = []
+for m in missions:
+    if PROFILE != "stock":
+        continue
+    value = (m.get("epoche") or m.get("epoch") or "").strip()
+    if not value:
+        continue
+    try:
+        epoch = int(value)
+    except ValueError:
+        bad_stock_epoch.append(f"{m['id']}:{value}")
+        continue
+    if epoch < 1 or epoch > 9:
+        bad_stock_epoch.append(f"{m['id']}:{value}")
 
 # ---- Report ----
 print("Design file:", DOC)
@@ -152,12 +168,16 @@ show("Unknown check types", unknown_checks)
 show("Unknown/invented bodies", unknown_bodies)
 show("Invalid branches", bad_sparte)
 show("Missions without beschreibung_en", missing_en)
+show("Stock missions without title", missing_stock_title)
+show("Stock missions without epoche", missing_stock_epoch)
+show("Invalid Stock epoche values", bad_stock_epoch)
 print()
 print("recordStation-Keys:", sorted(record_keys) or "—")
 print("stationRef-Keys:", sorted(ref_keys) or "—")
 print("Referenced generated station ids:",
       sorted({p for _,p in prereq_edges if p in gen_ids}))
 
-ok = not (dups or dangling or unknown_checks or unknown_bodies or bad_sparte or missing_en)
+ok = not (dups or dangling or unknown_checks or unknown_bodies or bad_sparte or missing_en or
+          missing_stock_title or missing_stock_epoch or bad_stock_epoch)
 print("\n==> " + ("VALIDATION OK" if ok else "VALIDATION HAS FINDINGS"))
 sys.exit(0 if ok else 1)

@@ -198,6 +198,19 @@ only player-facing titles, descriptions, subcategory labels and checklist labels
 The Stock KSP campaign ships as an optional config pack (`OptionalConfigs/Stock/`)
 on the same release, replacing only the four catalog files above.
 
+Stock is generated from:
+
+```text
+custom_science_contracts_stock_missionsdesign.md
+```
+
+Each Stock mission block must include an explicit `title:` and `epoche:` value.
+`tools/gen_catalog_stock.py` reads the Stock chapter names from the `Epoche N —
+Name:` lines in the design source and writes both `epoch` and `epochName` into
+the generated optional config. `tools/validate_design.py ... stock` fails when a
+Stock mission is missing either field, which prevents new mission ids from
+falling back into the first chapter.
+
 Catalog generation contains curated SOL flow overrides when the mission design
 needs structured generated behavior:
 
@@ -222,9 +235,11 @@ needs structured generated behavior:
   filtered in the generator, not by editing `.cfg` output.
 
 The key learning from the 0.4 atlas work is that epoch assignment is a
-presentation and pacing layer, not a dependency layer. Move missions between
-epochs only by changing `epoch_for_id` / `EPOCH_EXACT`; do not change mission
-order or prerequisites unless the gameplay flow itself is intentionally changing.
+presentation and pacing layer, not a dependency layer. For SOL, move missions
+between epochs through the generator's `epoch_for_id` / `EPOCH_EXACT` rules. For
+Stock, move missions by changing the mission's `epoche:` value in the Stock
+design source. Do not change mission order or prerequisites unless the gameplay
+flow itself is intentionally changing.
 
 ## Icons
 

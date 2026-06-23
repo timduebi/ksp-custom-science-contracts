@@ -366,6 +366,7 @@ beschreibung_en: Set an uncrewed rover down precisely at the prepared lunar site
 check: CREW_NONE | unbemannt
 check: LANDED Moon | auf Luna gelandet
 check: MARKER_LANDING Moon 5 | Landung im Umkreis von 5 km
+check: WHEEL_MOTION Moon 4 | Rover mit Rädern fährt am Boden mindestens 4 m/s
 
 === MISSION ===
 id: cr_luna_orbit
@@ -788,6 +789,7 @@ beschreibung_en: Set an uncrewed rover down precisely at the prepared Mars site.
 check: CREW_NONE | unbemannt
 check: LANDED Mars | auf Mars gelandet
 check: MARKER_LANDING Mars 10 | Landung im Umkreis von 10 km
+check: WHEEL_MOTION Mars 4 | Rover mit Rädern fährt am Boden mindestens 4 m/s
 
 === MISSION ===
 id: un_mars_precision_landing

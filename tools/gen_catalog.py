@@ -375,7 +375,7 @@ def catalog_checks(m):
     checks = [normalize_network_check(m, c) for c in m["checks"]]
     checks = apply_curated_check_overrides(m, checks)
     checks = ensure_crewed_orbit_requirements(m, checks)
-    if m["id"].endswith("_rover"):
+    if m["id"].endswith("_rover") and not any(kind == "WHEEL_MOTION" for kind, _, _ in checks):
         checks.append(("WHEEL_MOTION", [("body", m["body"]), ("speed", "4")],
                        "Rover mit Rädern fährt am Boden mindestens 4 m/s"))
 

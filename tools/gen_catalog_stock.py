@@ -168,16 +168,16 @@ EPOCH_EXACT = {
     "cr_eve_landing_return": 9,
 }
 
-EPOCH_NAMES = {
-    1: "Getting Away With It",
-    2: "Small Station, Big Ideas",
+DEFAULT_EPOCH_NAMES = {
+    1: "First Sparks",
+    2: "Orbital Habits",
     3: "Mun or Bust",
-    4: "Minty Fuel Dreams",
-    5: "Inner Worlds, Bad Ideas",
-    6: "Red Dust, Real Plans",
-    7: "The Deep-Space Switchboard",
-    8: "Jool, Beaches and Regrets",
-    9: "The Purple Final Exam",
+    4: "Minty Operations",
+    5: "Inner Mischief",
+    6: "Red Dust",
+    7: "Deep-Space Lifeline",
+    8: "Jool Frontier",
+    9: "The Purple Finale",
 }
 
 HEADER = """// ===========================================================================
@@ -254,9 +254,18 @@ def parse_check(s):
     return kind, kv, label
 
 
+def parse_epoch_names(text):
+    names = dict(DEFAULT_EPOCH_NAMES)
+    for line in text.splitlines():
+        match = re.match(r"Epoche\s+(\d+)\s+[—-]\s+([^:]+):", line.strip())
+        if match:
+            names[int(match.group(1))] = match.group(2).strip()
+    return names
+
+
 def parse_missions(text):
     missions = []
-    keys = ("id|title|sparte|body|subcategory|prereq|reward|repeatable|recordStation|"
+    keys = ("id|title|sparte|body|subcategory|epoche|epoch|epochName|prereq|reward|repeatable|recordStation|"
             "stationRef|description|beschreibung|beschreibung_en|icon")
     for blk in text.split("=== MISSION ===")[1:]:
         m, checks = {}, []
@@ -278,7 +287,7 @@ def parse_missions(text):
     return missions
 
 
-def epoch_for_id(cid):
+def fallback_epoch_for_id(cid):
     if cid in EPOCH_EXACT:
         return EPOCH_EXACT[cid]
     if cid.startswith(("un_eve_", "cr_eve_", "cr_gilly_", "un_gilly_", "un_moho_", "cr_moho_", "un_dres_", "cr_dres_", "st_eve_", "un_gilly_")):
@@ -290,6 +299,19 @@ def epoch_for_id(cid):
                        "cr_bop_", "un_pol_", "cr_pol_", "rep_laythe_")):
         return 8
     return 1
+
+
+def epoch_for(m):
+    value = m.get("epoche") or m.get("epoch")
+    if value:
+        try:
+            epoch = int(value)
+        except ValueError:
+            raise SystemExit(f"Invalid epoche '{value}' for mission '{m['id']}'")
+        if 1 <= epoch <= 9:
+            return epoch
+        raise SystemExit(f"Invalid epoche '{value}' for mission '{m['id']}'")
+    return fallback_epoch_for_id(m["id"])
 
 
 def title_for(m):
@@ -367,7 +389,7 @@ def emit_checks(checks):
     return out
 
 
-def contract(m):
+def contract(m, epoch_names):
     prereqs = [] if m.get("prereq", "-") in ("-", "") else [p.strip() for p in m["prereq"].split(",")]
     sparte = SPARTE[m["sparte"]]
     sub = m.get("subcategory") or SUBCAT[m["body"]]
@@ -379,9 +401,9 @@ def contract(m):
     out += f"        subcategory = {sub}\n"
     out += f"        icon = {m.get('icon') or icon_for(m)}\n"
     out += f"        reward = {m['reward']}\n"
-    epoch = epoch_for_id(m["id"])
+    epoch = epoch_for(m)
     out += f"        epoch = {epoch}\n"
-    out += f"        epochName = {EPOCH_NAMES[epoch]}\n"
+    out += f"        epochName = {m.get('epochName') or epoch_names.get(epoch, DEFAULT_EPOCH_NAMES[epoch])}\n"
     if m.get("repeatable") == "yes":
         out += "        repeatable = true\n"
     if m.get("recordStation", "-") != "-":
@@ -404,7 +426,7 @@ def write_file(path, title, body):
         f.write(HEADER.format(title=title) + body + "}\n")
 
 
-def write_readme(counts):
+def write_readme(counts, epoch_names):
     readme = os.path.join(ROOT, "OptionalConfigs", "Stock", "README.md")
     os.makedirs(os.path.dirname(readme), exist_ok=True)
     text = f"""# Stock KSP config
@@ -421,19 +443,11 @@ Install:
 Run only one config at a time. To go back to SOL, restore the four default catalog files
 from the main download.
 
-Requires CustomScienceContracts 0.4.2 or newer. Older plugin builds ignore the Stock
+Requires CustomScienceContracts 0.4.3 or newer. Older plugin builds ignore the Stock
 chapter names and older Stock config files did not contain epoch assignments.
 
 Campaign chapters:
-1. Getting Away With It
-2. Small Station, Big Ideas
-3. Mun or Bust
-4. Minty Fuel Dreams
-5. Inner Worlds, Bad Ideas
-6. Red Dust, Real Plans
-7. The Deep-Space Switchboard
-8. Jool, Beaches and Regrets
-9. The Purple Final Exam
+{os.linesep.join(f"{i}. {epoch_names.get(i, DEFAULT_EPOCH_NAMES[i])}" for i in range(1, 10))}
 
 Generated mission counts:
 - Pioneers: {counts.get('Bemannt', 0)}
@@ -445,14 +459,16 @@ Generated mission counts:
 
 
 def main():
-    missions = parse_missions(open(DOC, encoding="utf-8").read())
+    text = open(DOC, encoding="utf-8").read()
+    missions = parse_missions(text)
+    epoch_names = parse_epoch_names(text)
     buckets = {name: [] for name in BUCKET_FILES}
     for m in missions:
-        buckets[SPARTE[m["sparte"]]].append(contract(m))
+        buckets[SPARTE[m["sparte"]]].append(contract(m, epoch_names))
     for name, (fn, title) in BUCKET_FILES.items():
         write_file(os.path.join(OUT, fn), title, "".join(buckets[name]))
     write_file(os.path.join(OUT, "D_Stationen.cfg"), "STATION CHAINS - explicit in Stock branches", "")
-    write_readme({k: len(v) for k, v in buckets.items()})
+    write_readme({k: len(v) for k, v in buckets.items()}, epoch_names)
     for name, items in buckets.items():
         print(f"{name}: {len(items)}")
     print("Written to", OUT)

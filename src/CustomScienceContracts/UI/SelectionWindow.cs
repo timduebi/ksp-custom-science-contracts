@@ -124,7 +124,7 @@ namespace CustomScienceContracts.UI
             var columns = ComputeDisplayColumns(mgr, epochContracts);
             float y = 12f;
 
-            foreach (var branch in Branches)
+            foreach (var branch in BranchOrderFor(epochContracts))
             {
                 var branchContracts = epochContracts
                     .Where(c => c.HeimatSparte == branch)
@@ -206,6 +206,39 @@ namespace CustomScienceContracts.UI
         private static Dictionary<string, int> ComputeDisplayColumns(ContractManager mgr, List<MissionContract> contracts)
         {
             return ComputeDependencyColumns(contracts);
+        }
+
+        private static IEnumerable<Sparte> BranchOrderFor(List<MissionContract> contracts)
+        {
+            var byId = contracts.ToDictionary(c => c.Id);
+            var score = Branches.ToDictionary(b => b, b => 0);
+            var seen = new HashSet<string>();
+
+            foreach (var c in contracts)
+            {
+                foreach (string preId in c.Voraussetzungen)
+                {
+                    if (!byId.TryGetValue(preId, out var pre) || pre.HeimatSparte == c.HeimatSparte)
+                        continue;
+
+                    string key = ((int)pre.HeimatSparte) + ">" + ((int)c.HeimatSparte);
+                    if (!seen.Add(key)) continue;
+                    score[pre.HeimatSparte] += 2;
+                    score[c.HeimatSparte] -= 2;
+                }
+            }
+
+            return Branches
+                .OrderByDescending(b => score[b])
+                .ThenBy(BranchDefaultIndex)
+                .ToList();
+        }
+
+        private static int BranchDefaultIndex(Sparte branch)
+        {
+            for (int i = 0; i < Branches.Length; i++)
+                if (Branches[i] == branch) return i;
+            return int.MaxValue;
         }
 
         private static string LayoutRowKey(MissionContract c) =>
@@ -617,28 +650,78 @@ namespace CustomScienceContracts.UI
         {
             if (Event.current.type != EventType.Repaint) return;
             var ids = new HashSet<string>(cards.Select(e => e.Contract.Id));
+            var sourceSlots = BuildSourceConnectionSlots(cards, ids);
+            var sourceCounts = BuildSourceConnectionCounts(cards, ids);
             foreach (var entry in cards)
             {
                 Rect to = entry.Rect;
-                foreach (string preId in entry.Contract.Voraussetzungen)
+                var prereqs = entry.Contract.Voraussetzungen
+                    .Where(id => ids.Contains(id) && _cardRects.ContainsKey(id))
+                    .OrderBy(id => _cardRects[id].y)
+                    .ThenBy(id => _cardRects[id].x)
+                    .ToList();
+
+                for (int i = 0; i < prereqs.Count; i++)
                 {
-                    if (!ids.Contains(preId) || !_cardRects.TryGetValue(preId, out Rect from)) continue;
+                    string preId = prereqs[i];
+                    if (!_cardRects.TryGetValue(preId, out Rect from)) continue;
                     var pre = mgr.Catalog.Get(preId);
                     bool done = ContractManager.IsCompleted(pre);
                     Color col = done ? new Color(0.42f, 0.86f, 0.50f, 0.34f)
                                      : new Color(0.72f, 0.78f, 0.86f, 0.25f);
-                    DrawConnection(from, to, col);
+                    string key = EdgeKey(preId, entry.Contract.Id);
+                    int sourceSlot = sourceSlots.TryGetValue(key, out int slot) ? slot : 0;
+                    int sourceCount = sourceCounts.TryGetValue(preId, out int count) ? count : 1;
+                    DrawConnection(from, to, col, sourceSlot, sourceCount, i, prereqs.Count);
                 }
             }
         }
 
-        private static void DrawConnection(Rect from, Rect to, Color color)
+        private static Dictionary<string, int> BuildSourceConnectionSlots(List<CardEntry> cards, HashSet<string> visibleIds)
+        {
+            var slots = new Dictionary<string, int>();
+            foreach (string sourceId in visibleIds)
+            {
+                var targets = cards
+                    .Where(e => e.Contract.Voraussetzungen.Contains(sourceId))
+                    .OrderBy(e => e.Rect.y)
+                    .ThenBy(e => e.Rect.x)
+                    .ToList();
+                for (int i = 0; i < targets.Count; i++)
+                    slots[EdgeKey(sourceId, targets[i].Contract.Id)] = i;
+            }
+            return slots;
+        }
+
+        private static Dictionary<string, int> BuildSourceConnectionCounts(List<CardEntry> cards, HashSet<string> visibleIds)
+        {
+            var counts = new Dictionary<string, int>();
+            foreach (string sourceId in visibleIds)
+                counts[sourceId] = cards.Count(e => e.Contract.Voraussetzungen.Contains(sourceId));
+            return counts;
+        }
+
+        private static string EdgeKey(string sourceId, string targetId) => sourceId + "->" + targetId;
+
+        private static void DrawConnection(Rect from, Rect to, Color color,
+            int sourceSlot, int sourceCount, int targetSlot, int targetCount)
         {
             float x1 = from.xMax;
-            float y1 = from.y + CardBaseH * 0.5f;
+            float y1 = ConnectionAnchorY(from, sourceSlot, sourceCount);
             float x2 = to.x;
-            float y2 = to.y + CardBaseH * 0.5f;
-            float mid = x2 > x1 ? (x1 + x2) * 0.5f : x1 + 42f;
+            float y2 = ConnectionAnchorY(to, targetSlot, targetCount);
+            float mid;
+            if (x2 > x1)
+            {
+                float gap = x2 - x1;
+                float bend = Mathf.Clamp(Mathf.Abs(y2 - y1) * 0.08f, 0f, 34f);
+                mid = x1 + gap * 0.52f + (y2 >= y1 ? bend : -bend);
+                mid = Mathf.Clamp(mid, x1 + 24f, x2 - 24f);
+            }
+            else
+            {
+                mid = x1 + 58f;
+            }
             float endX = x2 - 8f;
 
             Vector2 p0 = new Vector2(x1, y1);
@@ -648,6 +731,14 @@ namespace CustomScienceContracts.UI
 
             DrawBezier(p0, p1, p2, p3, color, 2.2f);
             DrawArrowHead(new Vector2(x2 - 6f, y2), (p3 - p2).normalized, color);
+        }
+
+        private static float ConnectionAnchorY(Rect r, int slot, int count)
+        {
+            if (count <= 1) return r.y + CardBaseH * 0.5f;
+            float band = Mathf.Min(62f, CardBaseH - 34f);
+            float top = r.y + (CardBaseH - band) * 0.5f;
+            return top + band * (slot + 1f) / (count + 1f);
         }
 
         private static void DrawBezier(Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3, Color color, float thickness)
@@ -888,15 +979,15 @@ namespace CustomScienceContracts.UI
         {
             switch (epoch)
             {
-                case 1: return "Getting Away With It";
-                case 2: return "Small Station, Big Ideas";
+                case 1: return "First Sparks";
+                case 2: return "Orbital Habits";
                 case 3: return "Mun or Bust";
-                case 4: return "Minty Fuel Dreams";
-                case 5: return "Inner Worlds, Bad Ideas";
-                case 6: return "Red Dust, Real Plans";
-                case 7: return "The Deep-Space Switchboard";
-                case 8: return "Jool, Beaches and Regrets";
-                case 9: return "The Purple Final Exam";
+                case 4: return "Minty Operations";
+                case 5: return "Inner Mischief";
+                case 6: return "Red Dust";
+                case 7: return "Deep-Space Lifeline";
+                case 8: return "Jool Frontier";
+                case 9: return "The Purple Finale";
                 default: return "Campaign";
             }
         }

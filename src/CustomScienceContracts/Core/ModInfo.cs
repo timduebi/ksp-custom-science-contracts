@@ -5,6 +5,6 @@ namespace CustomScienceContracts.Core
     public static class ModInfo
     {
         public const string Name = "CustomScienceContracts";
-        public const string Version = "0.4.2";
+        public const string Version = "0.4.3";
     }
 }

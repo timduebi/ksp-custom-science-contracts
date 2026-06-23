@@ -12,21 +12,21 @@ Install:
 Run only one config at a time. To go back to SOL, restore the four default catalog files
 from the main download.
 
-Requires CustomScienceContracts 0.4.2 or newer. Older plugin builds ignore the Stock
+Requires CustomScienceContracts 0.4.3 or newer. Older plugin builds ignore the Stock
 chapter names and older Stock config files did not contain epoch assignments.
 
 Campaign chapters:
-1. Getting Away With It
-2. Small Station, Big Ideas
+1. First Sparks
+2. Orbital Habits
 3. Mun or Bust
-4. Minty Fuel Dreams
-5. Inner Worlds, Bad Ideas
-6. Red Dust, Real Plans
-7. The Deep-Space Switchboard
-8. Jool, Beaches and Regrets
-9. The Purple Final Exam
+4. Minty Operations
+5. Inner Mischief
+6. Red Dust
+7. Deep-Space Lifeline
+8. Jool Frontier
+9. The Purple Finale
 
 Generated mission counts:
 - Pioneers: 31
 - Robotic Explorers: 30
-- Lifelines: 53
+- Lifelines: 57
