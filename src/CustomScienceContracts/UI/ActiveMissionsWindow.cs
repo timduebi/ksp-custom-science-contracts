@@ -94,6 +94,9 @@ namespace CustomScienceContracts.UI
             string prog = ProgressLine(c);
             if (prog != null) GUILayout.Label(prog, Theme.Pill);
 
+            // Vessel assignment block (which craft this mission tracks). Hidden once claimable.
+            if (!ready) DrawAssignment(mgr, c);
+
             GUILayout.EndVertical();
             Rect r = GUILayoutUtility.GetLastRect();
             // Left bar: body-colored, green when claimable, with mission icon.
@@ -110,6 +113,86 @@ namespace CustomScienceContracts.UI
                 if (Theme.DrawRightAction(r, Theme.AbortRed, "✕")) PendingAbortId = c.Id;
             }
             GUILayout.Space(5);
+        }
+
+        /// <summary>Vessel-to-mission binding controls: one assigned craft for single-vessel missions,
+        /// or a satellite list for network missions. Assigning needs flight; other scenes show status.</summary>
+        private void DrawAssignment(ContractManager mgr, MissionContract c)
+        {
+            bool fleet = ContractManager.IsFleetMission(c);
+            if (!fleet && !ContractManager.IsSingleBindable(c)) return;
+
+            bool inFlight = HighLogic.LoadedSceneIsFlight && FlightGlobals.ActiveVessel != null;
+            GUILayout.Space(3);
+            GUILayout.BeginVertical(Theme.DetailBox);
+            if (fleet) DrawFleetAssignment(mgr, c, inFlight);
+            else DrawSingleAssignment(mgr, c, inFlight);
+            GUILayout.EndVertical();
+        }
+
+        private static void DrawSingleAssignment(ContractManager mgr, MissionContract c, bool inFlight)
+        {
+            if (MissionBinding.IsLost(c))
+            {
+                GUILayout.Label("Assigned vessel lost - reassign", Theme.Warn);
+                if (inFlight && GUILayout.Button("Assign current vessel", Theme.FoldoutBtn, GUILayout.Height(24)))
+                    mgr.AssignActiveVessel(c.Id);
+                return;
+            }
+            uint vid = MissionBinding.AssignedVid(c);
+            if (vid != 0)
+            {
+                bool present = FlightGlobals.Vessels != null &&
+                               FlightGlobals.Vessels.Any(v => v != null && v.persistentId == vid);
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"Vessel: {MissionBinding.AssignedName(c)}{(present ? "" : "  (not visible)")}", Theme.Station);
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("Detach", Theme.FoldoutBtn, GUILayout.Width(74), GUILayout.Height(22)))
+                    mgr.ClearAssignment(c.Id);
+                GUILayout.EndHorizontal();
+            }
+            else
+            {
+                if (ContractManager.RequiresAssignment(c))
+                    GUILayout.Label("Assign the station vessel so this mission can finish.", Theme.Warn);
+                if (inFlight)
+                {
+                    if (GUILayout.Button("Assign current vessel", Theme.FoldoutBtn, GUILayout.Height(24)))
+                        mgr.AssignActiveVessel(c.Id);
+                    GUILayout.Label("Tip: assign once the craft is in its final stage configuration.", Theme.Locked);
+                }
+                else
+                {
+                    GUILayout.Label("Tracks the active vessel. Assign a craft in flight to pin it.", Theme.Locked);
+                }
+            }
+        }
+
+        private static void DrawFleetAssignment(ContractManager mgr, MissionContract c, bool inFlight)
+        {
+            var members = mgr.FleetMembers(c);
+            if (members.Count == 0)
+            {
+                GUILayout.Label("No satellites assigned yet - add this network's satellites to count them.", Theme.Warn);
+            }
+            else
+            {
+                int ok = 0;
+                foreach (var m in members) if (m.Qualifies) ok++;
+                GUILayout.Label($"Fleet: {ok}/{members.Count} qualifying", Theme.ItemSub);
+                foreach (var m in members)
+                {
+                    GUILayout.BeginHorizontal();
+                    string line = (m.Qualifies ? "✓  " : "✗  ") + m.Name + (m.Qualifies ? "" : $"  - {m.Reason}");
+                    GUILayout.Label(line, m.Qualifies ? Theme.CondOk : Theme.CondBad);
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("✕", Theme.FoldoutBtn, GUILayout.Width(26), GUILayout.Height(20)))
+                        mgr.RemoveFleetVessel(c.Id, m.Vid);
+                    GUILayout.EndHorizontal();
+                }
+            }
+            if (inFlight && GUILayout.Button("Add current vessel", Theme.FoldoutBtn, GUILayout.Height(24)))
+                mgr.AssignActiveVessel(c.Id);
         }
 
         /// <summary>Abort confirmation dialog drawn as its own CscUI window.</summary>

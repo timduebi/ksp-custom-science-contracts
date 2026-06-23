@@ -49,6 +49,30 @@ namespace CustomScienceContracts.Conditions
 
         public static int CrewCount(Vessel v) => v.GetCrewCount();
 
+        /// <summary>Total crew seats on the vessel, robust for unloaded/on-rails vessels: a packed
+        /// vessel has an empty <see cref="Vessel.parts"/> list, so capacity is read from the
+        /// protoVessel part snapshots instead. Without this, a station-build duration timer would
+        /// reset every time the station unloads (vessel switch / Space Center).</summary>
+        public static int CrewCapacity(Vessel v)
+        {
+            if (v == null) return 0;
+            int cap = 0;
+            if (v.loaded && v.parts != null)
+            {
+                foreach (var p in v.parts)
+                    if (p != null && p.CrewCapacity > 0) cap += p.CrewCapacity;
+                return cap;
+            }
+            if (v.protoVessel != null && v.protoVessel.protoPartSnapshots != null)
+                foreach (var pps in v.protoVessel.protoPartSnapshots)
+                {
+                    int c = pps != null && pps.partInfo != null && pps.partInfo.partPrefab != null
+                        ? pps.partInfo.partPrefab.CrewCapacity : 0;
+                    if (c > 0) cap += c;
+                }
+            return cap;
+        }
+
         /// <summary>Effective crew for crew checks: onboard crew plus nearby EVA Kerbals in the same
         /// SOI. This keeps a short EVA near a station from breaking a crew-duration timer.</summary>
         public static int EffectiveCrew(Vessel v)

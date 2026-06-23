@@ -6,6 +6,24 @@ This project uses simple `MAJOR.MINOR.PATCH` versioning.
 The mod ships as one download with the SOL (real solar system) campaign, plus optional config
 packs on the same release that swap the catalog to the stock KSP system or to German.
 
+## [0.4.4] - 2026-06-23
+
+### Added
+- Added explicit vessel assignment for active single-vessel missions and
+  assigned satellite fleets for network missions.
+- Added completed network fleet persistence so follow-up network missions can
+  inherit the predecessor satellites.
+
+### Fixed
+- Repeatable station, base and depot resupply missions now remain visible in the
+  Campaign Atlas after first completion instead of disappearing from every
+  infrastructure chain.
+- Registered station ids, assigned vessels and fleet members now follow docking
+  merge survivors, keeping station resupply and long-duration tracking attached
+  after docking.
+- Crew capacity and relay checks now work against unloaded/on-rails vessels more
+  reliably.
+
 ## [0.4.1] - 2026-06-22
 
 ### Added

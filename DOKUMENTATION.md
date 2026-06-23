@@ -42,17 +42,19 @@ Each mission moves through these states:
 - `ReadyToClaim`: all objectives are complete; reward is waiting.
 - `CompletedOnce`: claimed at least once.
 
-Repeatable missions stay in their home branch until first completion. After that
-they appear only in the repeatable branch and require two other mission
-completions before they can be accepted again.
+Repeatable missions stay in their home branch after first completion so
+completed supply steps remain visible in their station/base chain. They also
+appear in the repeatable branch and require two other mission completions before
+they can be accepted again.
 
 ## Branches
 
 Mission Control has two top-level pools:
 
-- Campaign Atlas: the normal one-time campaign missions.
-- Repeatables: missions that have completed once and are now in their cooldown
-  pool.
+- Campaign Atlas: the normal campaign flow, including completed repeatable
+  cards in their original home branch for context.
+- Repeatables: a shortcut pool for missions that have completed once and are
+  now in their cooldown pool.
 
 Within an epoch page, the campaign atlas displays three branch rows:
 
@@ -82,6 +84,9 @@ The layout is:
 Columns are based only on real prerequisites. Cards that share a body row but do
 not depend on each other are placed in vertical lanes instead of being pushed
 horizontally, so optional side missions do not look like false blockers.
+Repeatable cards remain part of the campaign layout after completion. This keeps
+station resupply, base supply and depot supply steps visible between their
+build/expansion and long-stay follow-ups instead of leaving holes in the atlas.
 
 Mission cards show only the compact summary by default: title, body and science
 reward. Expanding a card shows description, action, requirements, cross-epoch
@@ -131,6 +136,32 @@ Supported check types include:
 All body sizes, atmosphere heights and day lengths are read from the KSP API at
 runtime. The code must not hardcode those values.
 
+## Vessel Binding
+
+Active single-vessel missions can be pinned to a concrete craft from the Active
+Missions window. `MissionBinding` stores `assignedVid`, `assignedName` and
+`assignedLost` inside the mission `PROGRESS` node. When a vessel is assigned,
+single-vessel checks, flybys, EVA proximity and duration timers use that vessel
+instead of whichever craft happens to be focused.
+
+Missions with `recordStationKey` must have an assigned vessel before they can
+complete, so station/base identity is recorded from the intended craft. Follow-up
+long-stay and expansion missions with `stationRef` auto-assign the registered
+station on accept. Supply missions with `DOCK_STATION` are not auto-assigned to
+the station; they keep tracking the player's supply craft while docking is
+checked against the registered station.
+
+Docking merges are remapped every tick for timer subjects, mission assignments,
+fleet members and `StationRegistry` entries. This keeps station references valid
+after a resupply craft docks and KSP replaces one persistent vessel id with the
+docking survivor.
+
+Network missions are fleet-bindable. Assigned satellites are stored as `FLEET`
+nodes in active mission progress; network checks count only those assigned
+vessels so unrelated craft cannot satisfy the objective. On claim, the completed
+fleet is copied into `FleetRegistry` as `FLEET_RECORD` nodes, allowing follow-up
+network missions to inherit the predecessor's satellites.
+
 ## Waypoints
 
 Precision landing missions use `MARKER_LANDING`. The target coordinates are
@@ -154,10 +185,13 @@ It contains:
 - total completions,
 - repeatable cooldown counters,
 - active mission progress,
+- assigned vessel ids/names/lost flags,
+- active fleet assignments,
 - timer state,
 - flyby state,
 - marker target state,
 - registered station/base vessels,
+- completed network fleet records,
 - science multiplier and unlock-all test setting.
 
 If the state file is missing or broken, the mod seeds state from the catalog.

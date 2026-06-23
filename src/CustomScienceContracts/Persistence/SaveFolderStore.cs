@@ -41,6 +41,7 @@ namespace CustomScienceContracts.Persistence
                         n.AddNode(c.Progress.CreateCopy());
                 }
                 mgr.Stations.Save(root);
+                mgr.Fleets.Save(root);
                 root.Save(StateFilePath);
                 Debug.Log($"[CSC] State saved -> {StateFilePath}");
             }
@@ -80,6 +81,7 @@ namespace CustomScienceContracts.Persistence
                 }
 
                 mgr.Stations.Load(root);
+                mgr.Fleets.Load(root);
 
                 // Recompute availability after load in case the catalog changed.
                 mgr.RecomputeAvailability();

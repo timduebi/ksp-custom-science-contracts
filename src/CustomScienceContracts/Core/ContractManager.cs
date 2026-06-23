@@ -15,6 +15,7 @@ namespace CustomScienceContracts.Core
         public ConditionEvaluatorRegistry Evaluators { get; } = new ConditionEvaluatorRegistry();
         public GameEventBridge Events { get; } = new GameEventBridge();
         public StationRegistry Stations { get; } = new StationRegistry();
+        public FleetRegistry Fleets { get; } = new FleetRegistry();
 
         /// <summary>Global factor for all paid science rewards (settings, 0.1-3.0).</summary>
         public double ScienceMultiplier = 1.0;
@@ -68,6 +69,8 @@ namespace CustomScienceContracts.Core
             if (!CanAccept(c)) return false;
             c.Status = MissionStatus.Active;
             c.Progress = new ConfigNode("PROGRESS");
+            InheritFleetFromPrereqs(c);   // follow-up networks pre-fill the predecessor's satellites
+            AutoAssignStationOnAccept(c);  // longstay/expand pin the registered station automatically
             Evaluators.NotifyAccepted(c);
             Debug.Log($"[CSC] Accepted: {c.Id}");
             return true;
@@ -105,6 +108,7 @@ namespace CustomScienceContracts.Core
         {
             var c = Catalog.Get(id);
             if (c == null || (c.Status != MissionStatus.Active && c.Status != MissionStatus.ReadyToClaim)) return false;
+            StoreFleetIfNetwork(c);
             Evaluators.NotifyCleared(c);
             c.Progress = new ConfigNode("PROGRESS");
             c.TotalCompletions++;
@@ -115,24 +119,247 @@ namespace CustomScienceContracts.Core
             return true;
         }
 
+        // --- Vessel binding ---
+
+        /// <summary>A network/fleet mission counts multiple vessels (VESSEL_COUNT / RELAY_...).</summary>
+        public static bool IsFleetMission(MissionContract c)
+        {
+            if (c == null) return false;
+            foreach (var cond in c.Bedingungen)
+                foreach (var chk in cond.Checks)
+                    if (chk.IsFleet) return true;
+            return false;
+        }
+
+        /// <summary>A single-vessel mission (incl. flyby) that has at least one real single-vessel
+        /// check and can be pinned to one assigned vessel.</summary>
+        public static bool IsSingleBindable(MissionContract c)
+        {
+            if (c == null || IsFleetMission(c)) return false;
+            foreach (var cond in c.Bedingungen)
+                foreach (var chk in cond.Checks)
+                    if (!chk.IsSpecial) return true;
+            return false;
+        }
+
+        public static bool IsBindable(MissionContract c) => IsFleetMission(c) || IsSingleBindable(c);
+
+        /// <summary>Identity-establishing missions (those that record a station) must have a vessel
+        /// assigned before they complete, so the recorded station is correct for all follow-ups.</summary>
+        public static bool RequiresAssignment(MissionContract c) =>
+            c != null && !string.IsNullOrEmpty(c.RecordStationKey);
+
+        /// <summary>Longstay/expand missions track the existing station: they reference it (stationRef)
+        /// but neither record it nor dock a new craft, so the registered station is auto-assigned on
+        /// accept. Supply missions (with DOCK_STATION) keep the player's supply ship instead.</summary>
+        private static bool AutoAssignsStation(MissionContract c)
+        {
+            if (c == null || string.IsNullOrEmpty(c.StationRef) || !string.IsNullOrEmpty(c.RecordStationKey))
+                return false;
+            foreach (var cond in c.Bedingungen)
+                foreach (var chk in cond.Checks)
+                    if (chk.Kind == CheckKind.DOCK_STATION) return false;
+            return true;
+        }
+
+        private void AutoAssignStationOnAccept(MissionContract c)
+        {
+            if (!AutoAssignsStation(c)) return;
+            var entry = Stations.Get(c.StationRef);
+            if (entry == null || entry.PersistentId == 0) return;
+            MissionBinding.Assign(c, entry.PersistentId, entry.Name);
+            for (int i = 0; i < c.Bedingungen.Count; i++)
+                c.Progress.SetValue($"c{i}_vid", entry.PersistentId.ToString(), true);
+            Log.Info($"Auto-assigned station '{c.StationRef}' (id {entry.PersistentId}) to {c.Id}");
+        }
+
+        private void InheritFleetFromPrereqs(MissionContract c)
+        {
+            if (!IsFleetMission(c)) return;
+            foreach (string preId in c.Voraussetzungen)
+            {
+                var rec = Fleets.Get(preId);
+                if (rec == null) continue;
+                foreach (var m in rec) MissionBinding.FleetAdd(c, m.Vid, m.Name);
+            }
+        }
+
+        private void StoreFleetIfNetwork(MissionContract c)
+        {
+            if (!IsFleetMission(c)) return;
+            var members = MissionBinding.Fleet(c)
+                .Select(fe => new FleetRegistry.Member { Vid = fe.Vid, Name = fe.Name })
+                .ToList();
+            Fleets.Set(c.Id, members);
+        }
+
+        /// <summary>Pin the active vessel to a mission: a single binding, or a fleet member for
+        /// network missions. Only valid in flight on an active mission.</summary>
+        public bool AssignActiveVessel(string id)
+        {
+            var c = Catalog.Get(id);
+            if (c == null || c.Status != MissionStatus.Active) return false;
+            var v = Conditions.VesselQuery.Active;
+            if (v == null) return false;
+
+            if (IsFleetMission(c))
+            {
+                MissionBinding.FleetAdd(c, v.persistentId, v.vesselName);
+            }
+            else
+            {
+                MissionBinding.Assign(c, v.persistentId, v.vesselName);
+                // Re-lock per-condition timers/bindings onto the new subject so they restart cleanly.
+                for (int i = 0; i < c.Bedingungen.Count; i++)
+                {
+                    c.Progress.SetValue($"c{i}_vid", v.persistentId.ToString(), true);
+                    c.Progress.RemoveValue($"c{i}_t0");
+                }
+            }
+            Log.Info($"Assigned vessel {v.persistentId} ({v.vesselName}) to {c.Id}");
+            return true;
+        }
+
+        /// <summary>Drop the single-vessel binding (mission falls back to the active vessel).</summary>
+        public bool ClearAssignment(string id)
+        {
+            var c = Catalog.Get(id);
+            if (c == null) return false;
+            MissionBinding.Clear(c);
+            for (int i = 0; i < c.Bedingungen.Count; i++)
+            {
+                c.Progress.RemoveValue($"c{i}_vid");
+                c.Progress.RemoveValue($"c{i}_t0");
+            }
+            return true;
+        }
+
+        public bool RemoveFleetVessel(string id, uint vid)
+        {
+            var c = Catalog.Get(id);
+            if (c == null) return false;
+            MissionBinding.FleetRemove(c, vid);
+            return true;
+        }
+
+        /// <summary>Assigned satellites of a network mission with their current qualifying status.</summary>
+        public List<FleetMemberInfo> FleetMembers(MissionContract c)
+        {
+            var result = new List<FleetMemberInfo>();
+            if (c == null) return result;
+            Model.Check fleetChk = null;
+            foreach (var cond in c.Bedingungen)
+            {
+                foreach (var chk in cond.Checks) if (chk.IsFleet) { fleetChk = chk; break; }
+                if (fleetChk != null) break;
+            }
+            foreach (var fe in MissionBinding.Fleet(c))
+            {
+                var v = FlightGlobals.Vessels?.FirstOrDefault(x => x != null && x.persistentId == fe.Vid);
+                var info = new FleetMemberInfo { Vid = fe.Vid, Name = fe.Name, Present = v != null };
+                if (v == null) { info.Qualifies = false; info.Reason = "not visible"; }
+                else info.Qualifies = Conditions.CheckEvaluation.FleetMemberQualifies(fleetChk, v, out info.Reason);
+                result.Add(info);
+            }
+            return result;
+        }
+
+        /// <summary>Reacts to recovery/destruction of an assigned vessel. Recovery at home completes
+        /// an open crewed return; otherwise the binding is marked lost (timer pauses, not resets).
+        /// A destroy is debounced one tick so a scene-load drop is not mistaken for a real loss.</summary>
+        private void ProcessAssignedLifecycle(MissionContract c, EvaluationContext ctx)
+        {
+            uint vid = MissionBinding.AssignedVid(c);
+            if (vid == 0 || c.Progress == null) return;
+
+            bool recovered = false, destroyed = false;
+            var events = ctx.Events?.Lifecycles;
+            if (events != null)
+                for (int i = 0; i < events.Count; i++)
+                    if (events[i].Id == vid) { if (events[i].Recovered) recovered = true; else destroyed = true; }
+
+            bool present = ctx.Vessels != null && ctx.Vessels.Any(v => v != null && v.persistentId == vid);
+
+            if (recovered)
+            {
+                // Recovered on the home body: complete an open crewed return, else the craft is gone.
+                MissionBinding.SetLost(c, !TryCompleteReturnOnRecovery(c));
+                c.Progress.RemoveValue("assignedDestroyPending");
+                return;
+            }
+            if (present)
+            {
+                c.Progress.RemoveValue("assignedDestroyPending");
+                return;
+            }
+            if (destroyed)
+            {
+                if (c.Progress.GetValue("assignedDestroyPending") == "1") MissionBinding.SetLost(c, true);
+                else c.Progress.SetValue("assignedDestroyPending", "1", true);
+                return;
+            }
+            // No event and gone: confirm a pending destroy (it did not reappear), else hold (transient).
+            if (c.Progress.GetValue("assignedDestroyPending") == "1") MissionBinding.SetLost(c, true);
+        }
+
+        /// <summary>Marks an open crewed RETURN check as done when its source visit was already
+        /// logged, so a vessel recovered at home still pays out. Returns false when the mission has no
+        /// such pending return.</summary>
+        private static bool TryCompleteReturnOnRecovery(MissionContract c)
+        {
+            bool any = false;
+            for (int ci = 0; ci < c.Bedingungen.Count; ci++)
+            {
+                var cond = c.Bedingungen[ci];
+                for (int j = 0; j < cond.Checks.Count; j++)
+                {
+                    if (!cond.Checks[j].IsReturn) continue;
+                    var node = c.Progress.GetNode($"ret{ci}_{j}");
+                    if (node == null) continue;
+                    if (node.GetValue("done") == "1") { any = true; continue; }
+                    if (node.GetValue("seenSource") == "1")
+                    {
+                        node.SetValue("done", "1", true);
+                        c.Progress.SetValue("ret_status", "returned", true);
+                        any = true;
+                    }
+                }
+            }
+            return any;
+        }
+
         // --- Check loop ---
 
         /// <summary>Checks active contracts; fulfilled contracts become ReadyToClaim, but are not
         /// paid yet. Stores the fulfilled state per condition for the UI.</summary>
         public void Tick(EvaluationContext ctx)
         {
+            // Follow recorded stations across docking merges once per tick, so a resupply docking does
+            // not leave DOCK_STATION matching or station tracking pointing at a vanished id.
+            if (Events.Merges.Count > 0) Stations.Remap(Events.Merges, ctx.Vessels);
+
             var active = Catalog.All.Where(c => c.Status == MissionStatus.Active).ToList();
             foreach (var c in active)
             {
+                // Recovery/destruction of an assigned vessel before reading bindings, so a returned
+                // crew can complete and a lost craft pauses instead of resetting.
+                ProcessAssignedLifecycle(c, ctx);
                 // Process docking merges before reading bindings, so timers survive resupply docking.
                 Conditions.CheckEvaluation.RemapDockedSubjects(c, ctx);
                 if (EvaluateAll(c, ctx))
                 {
+                    // Identity-establishing missions only complete once a vessel is assigned, so the
+                    // recorded station is the intended one, not whatever happens to be active.
+                    if (RequiresAssignment(c) && MissionBinding.AssignedVid(c) == 0)
+                        continue;
+                    if (!string.IsNullOrEmpty(c.RecordStationKey))
+                    {
+                        uint vid = MissionBinding.AssignedVid(c);
+                        if (vid != 0) Stations.Record(c.RecordStationKey, vid, MissionBinding.AssignedName(c));
+                        else if (Conditions.VesselQuery.Active != null)
+                            Stations.Record(c.RecordStationKey, Conditions.VesselQuery.Active);
+                    }
                     c.Status = MissionStatus.ReadyToClaim;
-                    // "Build station/base" contract: remember the active vessel that fulfilled it.
-                    // Only meaningful in flight; Space Center/Editor have no active vessel.
-                    if (!string.IsNullOrEmpty(c.RecordStationKey) && Conditions.VesselQuery.Active != null)
-                        Stations.Record(c.RecordStationKey, Conditions.VesselQuery.Active);
                     Log.Info($"Ready to claim: {c.Id}");
                 }
             }
@@ -180,6 +407,7 @@ namespace CustomScienceContracts.Core
             PayReward(amount);
             LastClaimId = c.Id; LastClaimAmount = amount; LastClaimRealtime = Time.realtimeSinceStartup;
             c.TotalCompletions++;
+            StoreFleetIfNetwork(c);   // keep the constellation so a follow-up network can inherit it
             Evaluators.NotifyCleared(c);
             c.Progress = new ConfigNode("PROGRESS");
 
@@ -235,5 +463,15 @@ namespace CustomScienceContracts.Core
             }
             return list;
         }
+    }
+
+    /// <summary>UI row for one assigned satellite of a network mission.</summary>
+    public class FleetMemberInfo
+    {
+        public uint Vid;
+        public string Name;
+        public bool Present;
+        public bool Qualifies;
+        public string Reason;
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace CustomScienceContracts.Core
@@ -24,8 +25,33 @@ namespace CustomScienceContracts.Core
         public void Record(string key, Vessel v)
         {
             if (string.IsNullOrEmpty(key) || v == null) return;
-            _map[key] = new Entry { Name = v.vesselName ?? key, PersistentId = v.persistentId };
+            Record(key, v.persistentId, v.vesselName);
+        }
+
+        /// <summary>Stores/updates the station for a key from a known id and name. Used to record the
+        /// assigned station vessel even when it is not the active/loaded vessel.</summary>
+        public void Record(string key, uint persistentId, string name)
+        {
+            if (string.IsNullOrEmpty(key) || persistentId == 0) return;
+            _map[key] = new Entry { Name = string.IsNullOrEmpty(name) ? key : name, PersistentId = persistentId };
             Debug.Log($"[CSC] Recorded station '{key}' = \"{_map[key].Name}\" (id {_map[key].PersistentId}).");
+        }
+
+        /// <summary>Follows recorded stations across docking merges, so the id stays valid after a
+        /// resupply ship docks (otherwise DOCK_STATION matching and station tracking would break).</summary>
+        public void Remap(IReadOnlyList<GameEventBridge.MergeEvent> merges, IReadOnlyList<Vessel> vessels)
+        {
+            if (merges == null || vessels == null) return;
+            foreach (var e in _map.Values)
+            {
+                if (e.PersistentId == 0 || vessels.Any(v => v != null && v.persistentId == e.PersistentId)) continue;
+                foreach (var m in merges)
+                {
+                    uint other = e.PersistentId == m.IdA ? m.IdB : (e.PersistentId == m.IdB ? m.IdA : 0u);
+                    if (other != 0u && vessels.Any(v => v != null && v.persistentId == other))
+                    { e.PersistentId = other; break; }
+                }
+            }
         }
 
         public void Clear() => _map.Clear();

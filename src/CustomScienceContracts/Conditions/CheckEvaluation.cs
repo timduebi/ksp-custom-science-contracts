@@ -57,7 +57,8 @@ namespace CustomScienceContracts.Conditions
                     else if (chk.IsMarker) m = EvalMarker(c, ci, j, chk, ctx);
                     else if (chk.IsReturn) m = EvalReturn(c, ci, j, chk, ctx);
                     else if (chk.IsEvent)  m = EvalEvent(chk, ctx);
-                    else if (chk.IsFleet)  m = EvalFleet(chk, ctx);
+                    else if (chk.IsFleet)  m = EvalFleet(c, chk, ctx);
+                    else if (chk.Kind == CheckKind.EVA) m = EvalEvaForMission(chk, ctx, subject);
                     else                   m = subject != null && EvalVessel(chk, subject);
                     if (hasReturn && !chk.IsReturn && m)
                         c.Progress.SetValue(latchKey, "1", true);
@@ -135,11 +136,49 @@ namespace CustomScienceContracts.Conditions
                     }
                 }
             }
+
+            // Player-set bindings follow the same docking-survivor remap: a resupply docking a bound
+            // station keeps the mission attached to the merged vessel.
+            foreach (var m in merges)
+            {
+                uint av = MissionBinding.AssignedVid(c);
+                if (av != 0 && !ctx.Vessels.Any(v => v != null && v.persistentId == av))
+                {
+                    uint other = av == m.IdA ? m.IdB : (av == m.IdB ? m.IdA : 0u);
+                    if (other != 0u && ctx.Vessels.Any(v => v != null && v.persistentId == other))
+                        MissionBinding.RemapAssigned(c, av, other);
+                }
+                foreach (var fe in MissionBinding.Fleet(c))
+                {
+                    if (ctx.Vessels.Any(v => v != null && v.persistentId == fe.Vid)) continue;
+                    uint other = fe.Vid == m.IdA ? m.IdB : (fe.Vid == m.IdB ? m.IdA : 0u);
+                    if (other != 0u && ctx.Vessels.Any(v => v != null && v.persistentId == other))
+                        MissionBinding.FleetRemap(c, fe.Vid, other);
+                }
+            }
         }
 
         private static Vessel ResolveSubject(MissionContract c, int ci, Condition cond, EvaluationContext ctx,
                                              bool hasTimer, bool hasVesselChecks, bool timerRunning)
         {
+            // Explicit single-vessel assignment overrides everything: only the bound vessel counts,
+            // loaded or unloaded. Transient missing (scene load) returns null and the caller holds t0.
+            uint assigned = MissionBinding.AssignedVid(c);
+            if (assigned != 0)
+                return ctx.Vessels.FirstOrDefault(v => v != null && v.persistentId == assigned);
+
+            // Fleet/network mission: use the first present assigned satellite as the representative
+            // subject for the shared CREW_NONE / DURATION checks instead of the active vessel.
+            if (MissionBinding.HasFleet(c))
+            {
+                foreach (var fe in MissionBinding.Fleet(c))
+                {
+                    var fv = ctx.Vessels.FirstOrDefault(v => v != null && v.persistentId == fe.Vid);
+                    if (fv != null) return fv;
+                }
+                return null;
+            }
+
             // Without a timer or single-vessel checks, evaluate the active vessel.
             if (!hasTimer || !hasVesselChecks) return VesselQuery.Active;
 
@@ -184,7 +223,7 @@ namespace CustomScienceContracts.Conditions
                 case CheckKind.CREW_NONE:  return v.GetCrewCount() == 0;
                 case CheckKind.CREW_EXACT: return VesselQuery.EffectiveCrew(v) == chk.Min;
                 case CheckKind.CREW_CAPACITY_MIN:
-                    return v.parts != null && v.parts.Sum(p => p != null ? Math.Max(0, p.CrewCapacity) : 0) >= chk.Min;
+                    return VesselQuery.CrewCapacity(v) >= chk.Min;
                 case CheckKind.ON_BODY:    return body != null && v.mainBody == body;
                 case CheckKind.SITUATION:  return VesselQuery.MatchesSituation(v, chk.Situation);
                 case CheckKind.LANDED:
@@ -257,7 +296,41 @@ namespace CustomScienceContracts.Conditions
             return false;
         }
 
-        private static bool EvalFleet(Check chk, EvaluationContext ctx)
+        /// <summary>EVA check that survives an assigned subject: the EVA kerbal is its own vessel with
+        /// a different persistentId, so the bound capsule never matches. Accept any EVA kerbal that is
+        /// the active vessel, or one within ~2500 m of the mission anchor (assigned/representative
+        /// vessel). Mirrors the proximity in <see cref="VesselQuery.EffectiveCrew"/>.</summary>
+        private static bool EvalEvaForMission(Check chk, EvaluationContext ctx, Vessel anchor)
+        {
+            CelestialBody body = string.IsNullOrEmpty(chk.Body) ? null : BodyResolver.Resolve(chk.Body);
+            Vessel active = VesselQuery.Active;
+
+            // No anchor (unassigned): the active vessel is the subject, as before. When you go EVA the
+            // active vessel becomes the kerbal, so this matches directly.
+            if (anchor == null)
+                return active != null && EvaMatches(chk, body, active);
+
+            // Assigned: the EVA kerbal must belong to the anchor vessel, i.e. same SOI and within
+            // ~2500 m, so an unrelated kerbal on another mission cannot complete this one.
+            const double nearM = 2500.0;
+            Vector3d pos = anchor.GetWorldPos3D();
+            foreach (var v in ctx.Vessels)
+            {
+                if (v == null || ReferenceEquals(v, anchor) || !EvaMatches(chk, body, v)) continue;
+                if (v.mainBody != anchor.mainBody) continue;
+                if (Vector3d.Distance(v.GetWorldPos3D(), pos) <= nearM) return true;
+            }
+            return false;
+        }
+
+        private static bool EvaMatches(Check chk, CelestialBody body, Vessel v)
+        {
+            if (v == null || !v.isEVA) return false;
+            if (body != null && v.mainBody != body) return false;
+            return VesselQuery.MatchesSituation(v, chk.Situation);
+        }
+
+        private static bool EvalFleet(MissionContract c, Check chk, EvaluationContext ctx)
         {
             CelestialBody body = BodyResolver.Resolve(chk.Body);
             if (body == null) return false;
@@ -266,7 +339,10 @@ namespace CustomScienceContracts.Conditions
                                  chk.Kind == CheckKind.RELAY_VESSEL_COUNT_INCLINATION;
             bool inclinationRequired = chk.Kind == CheckKind.VESSEL_COUNT_INCLINATION ||
                                        chk.Kind == CheckKind.RELAY_VESSEL_COUNT_INCLINATION;
+            // Networks require active assignment: only assigned satellites count, so the player must
+            // assign the constellation and foreign craft are never mistaken for the network.
             int count = VesselQuery.RealVessels(ctx.Vessels).Count(v =>
+                MissionBinding.FleetContains(c, v.persistentId) &&
                 v.mainBody == body &&
                 v.situation == Vessel.Situations.ORBITING &&
                 v.orbit != null &&
@@ -274,6 +350,29 @@ namespace CustomScienceContracts.Conditions
                 (!inclinationRequired || v.orbit.inclination >= chk.InclinationMin) &&
                 (!relayRequired || HasRelayTransmitter(v)));
             return count >= chk.Count;
+        }
+
+        /// <summary>Whether a single assigned satellite currently qualifies for a fleet check, plus a
+        /// short reason for the UI when it does not. Uses the base body/orbit/altitude/relay criteria.</summary>
+        public static bool FleetMemberQualifies(Check chk, Vessel v, out string reason)
+        {
+            reason = "";
+            if (chk == null) { reason = "no fleet check"; return false; }
+            if (v == null) { reason = "not visible"; return false; }
+            CelestialBody body = BodyResolver.Resolve(chk.Body);
+            if (body == null) { reason = "unknown body"; return false; }
+            if (v.mainBody != body) { reason = $"not at {chk.Body}"; return false; }
+            if (v.situation != Vessel.Situations.ORBITING || v.orbit == null) { reason = "not in orbit"; return false; }
+            double minM = chk.Km * 1000.0;
+            if (minM > 0.0 && v.orbit.PeA <= minM) { reason = "periapsis too low"; return false; }
+            bool inclinationRequired = chk.Kind == CheckKind.VESSEL_COUNT_INCLINATION ||
+                                       chk.Kind == CheckKind.RELAY_VESSEL_COUNT_INCLINATION;
+            if (inclinationRequired && v.orbit.inclination < chk.InclinationMin) { reason = "inclination too low"; return false; }
+            bool relayRequired = chk.Kind == CheckKind.RELAY_VESSEL_COUNT ||
+                                 chk.Kind == CheckKind.RELAY_VESSEL_COUNT_INCLINATION;
+            if (relayRequired && !HasRelayTransmitter(v)) { reason = "no relay antenna"; return false; }
+            reason = "in orbit";
+            return true;
         }
 
         /// <summary>Flyby check: a real vessel enters the body's SOI, never orbits/lands there and
@@ -289,8 +388,13 @@ namespace CustomScienceContracts.Conditions
             bool completed = false;
             double bestApproach = Huge;
 
+            // A flyby is flown by a single probe: when a vessel is assigned, only that probe (and
+            // anything docked into it) counts, so a different craft passing the body does not finish it.
+            uint assigned = MissionBinding.AssignedVid(c);
+
             foreach (var v in VesselQuery.RealVessels(ctx.Vessels))
             {
+                if (assigned != 0 && v.persistentId != assigned) continue;
                 bool atTarget = v.mainBody == body;
                 ConfigNode vn = GetVesselNode(node, v.persistentId, create: atTarget);
                 if (atTarget)
@@ -436,29 +540,45 @@ namespace CustomScienceContracts.Conditions
 
         private static bool HasRelayTransmitter(Vessel v)
         {
-            if (v == null || v.parts == null) return false;
-            foreach (var p in v.parts)
+            if (v == null) return false;
+            if (v.loaded && v.parts != null)
             {
-                if (p == null || p.Modules == null) continue;
-                foreach (PartModule module in p.Modules)
+                foreach (var p in v.parts)
                 {
-                    if (module == null) continue;
-                    string name = module.moduleName ?? module.GetType().Name ?? "";
-                    if (!string.Equals(name, "ModuleDataTransmitter", StringComparison.OrdinalIgnoreCase))
-                        continue;
-
-                    object antennaType = module.GetType().GetField("antennaType")?.GetValue(module);
-                    if (antennaType != null &&
-                        antennaType.ToString().IndexOf("RELAY", StringComparison.OrdinalIgnoreCase) >= 0)
-                        return true;
-
-                    string fieldValue = module.Fields?.GetValue("antennaType")?.ToString();
-                    if (!string.IsNullOrEmpty(fieldValue) &&
-                        fieldValue.IndexOf("RELAY", StringComparison.OrdinalIgnoreCase) >= 0)
-                        return true;
+                    if (p == null || p.Modules == null) continue;
+                    foreach (PartModule module in p.Modules)
+                        if (IsRelayModule(module)) return true;
                 }
+                return false;
             }
+            // Unloaded/on-rails: the parts list is empty, so an out-of-range relay would otherwise read
+            // as "no antenna". Read the part prefab modules from the proto snapshots instead.
+            if (v.protoVessel != null && v.protoVessel.protoPartSnapshots != null)
+                foreach (var pps in v.protoVessel.protoPartSnapshots)
+                {
+                    Part prefab = pps != null && pps.partInfo != null ? pps.partInfo.partPrefab : null;
+                    if (prefab == null || prefab.Modules == null) continue;
+                    foreach (PartModule module in prefab.Modules)
+                        if (IsRelayModule(module)) return true;
+                }
             return false;
+        }
+
+        private static bool IsRelayModule(PartModule module)
+        {
+            if (module == null) return false;
+            string name = module.moduleName ?? module.GetType().Name ?? "";
+            if (!string.Equals(name, "ModuleDataTransmitter", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            object antennaType = module.GetType().GetField("antennaType")?.GetValue(module);
+            if (antennaType != null &&
+                antennaType.ToString().IndexOf("RELAY", StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+
+            string fieldValue = module.Fields?.GetValue("antennaType")?.ToString();
+            return !string.IsNullOrEmpty(fieldValue) &&
+                   fieldValue.IndexOf("RELAY", StringComparison.OrdinalIgnoreCase) >= 0;
         }
         private static void RememberHomeVessels(ConfigNode node, EvaluationContext ctx, CelestialBody home)
         {

@@ -121,10 +121,16 @@ namespace CustomScienceContracts.UI
             var epochContracts = ContractsForMode(mgr, _mode)
                 .Where(c => EpochOf(c) == _selectedEpoch)
                 .ToList();
-            var columns = ComputeDisplayColumns(mgr, epochContracts);
+            // Columns and branch order come from a STABLE skeleton that keeps repeatable missions even
+            // after they move to the Repeatables pool. Otherwise, completing a repeatable that is a
+            // prerequisite (e.g. station resupply) drops it from the column basis and reflows the atlas.
+            var skeleton = SkeletonForMode(mgr, _mode)
+                .Where(c => EpochOf(c) == _selectedEpoch)
+                .ToList();
+            var columns = ComputeDisplayColumns(mgr, skeleton);
             float y = 12f;
 
-            foreach (var branch in BranchOrderFor(epochContracts))
+            foreach (var branch in BranchOrderFor(skeleton))
             {
                 var branchContracts = epochContracts
                     .Where(c => c.HeimatSparte == branch)
@@ -888,7 +894,16 @@ namespace CustomScienceContracts.UI
         {
             if (mode == CenterMode.Repeatable)
                 return mgr.RepeatablePool();
-            return mgr.Catalog.All.Where(c => c.HeimatSparte != Sparte.Wiederholbar && !c.IsRepeatableInPool);
+            return mgr.Catalog.All.Where(c => c.HeimatSparte != Sparte.Wiederholbar);
+        }
+
+        /// <summary>Stable layout skeleton for column/branch computation: includes repeatable missions
+        /// that have moved to the pool, so the campaign atlas does not reflow when one completes.</summary>
+        private static IEnumerable<MissionContract> SkeletonForMode(ContractManager mgr, CenterMode mode)
+        {
+            if (mode == CenterMode.Repeatable)
+                return mgr.RepeatablePool();
+            return mgr.Catalog.All.Where(c => c.HeimatSparte != Sparte.Wiederholbar);
         }
 
         private static bool CanAcceptFromCenter(ContractManager mgr, MissionContract c, HashSet<string> visible)

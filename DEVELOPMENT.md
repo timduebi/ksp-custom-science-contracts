@@ -96,6 +96,10 @@ every catalog but only wired the feature into one.
 - The Mission Control atlas is a presentation layer over real prerequisites. Do
   not use visual placement to imply campaign order; only actual prerequisites
   should produce arrows.
+- Completed repeatables must remain visible in the Campaign Atlas as well as in
+  the Repeatables pool. Station/base/depot resupply cards are prerequisites in
+  the infrastructure chain; filtering them out after claim makes the chain look
+  broken even though the catalog is valid.
 - Rounded Bezier arrows are easier to read than right-angle connectors when the
   atlas has several cross-branch dependencies.
 - Epoch assignment controls pacing and readability. Moving a mission between
@@ -108,3 +112,7 @@ every catalog but only wired the feature into one.
 - Icon keys should be unique bundled assets where possible. `icon_...` files are
   preferred over KSP tracking-station names, and legacy keys should map through
   `IconLibrary` rather than depending on `GameDatabase` lookup order.
+- Vessel identity is explicit runtime state. Single-vessel missions store an
+  assigned persistent id in mission progress, network missions store an assigned
+  fleet and completed network fleets are copied to `FLEET_RECORD` persistence so
+  follow-up networks can inherit them.

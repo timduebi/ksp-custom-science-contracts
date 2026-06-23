@@ -13,11 +13,15 @@ namespace CustomScienceContracts.Core
         public struct SituationEvent { public Vessel Vessel; public Vessel.Situations From; public Vessel.Situations To; }
         /// <summary>Two vessel ids that merged through docking, used to remap timer bindings.</summary>
         public struct MergeEvent { public uint IdA; public uint IdB; }
+        /// <summary>A vessel left the game this tick: recovered (true) or destroyed (false). Used to
+        /// tell a permanently lost assigned vessel from a transient scene-load unload.</summary>
+        public struct LifecycleEvent { public uint Id; public bool Recovered; }
 
         public readonly List<DockEvent> Dockings = new List<DockEvent>();
         public readonly List<SoiEvent> SoiChanges = new List<SoiEvent>();
         public readonly List<SituationEvent> SituationChanges = new List<SituationEvent>();
         public readonly List<MergeEvent> Merges = new List<MergeEvent>();
+        public readonly List<LifecycleEvent> Lifecycles = new List<LifecycleEvent>();
 
         private bool _subscribed;
 
@@ -27,6 +31,8 @@ namespace CustomScienceContracts.Core
             GameEvents.onPartCouple.Add(OnPartCouple);
             GameEvents.onVesselSOIChanged.Add(OnSoiChanged);
             GameEvents.onVesselSituationChange.Add(OnSituationChange);
+            GameEvents.onVesselRecovered.Add(OnVesselRecovered);
+            GameEvents.onVesselWillDestroy.Add(OnVesselWillDestroy);
             _subscribed = true;
         }
 
@@ -36,6 +42,8 @@ namespace CustomScienceContracts.Core
             GameEvents.onPartCouple.Remove(OnPartCouple);
             GameEvents.onVesselSOIChanged.Remove(OnSoiChanged);
             GameEvents.onVesselSituationChange.Remove(OnSituationChange);
+            GameEvents.onVesselRecovered.Remove(OnVesselRecovered);
+            GameEvents.onVesselWillDestroy.Remove(OnVesselWillDestroy);
             _subscribed = false;
         }
 
@@ -46,6 +54,7 @@ namespace CustomScienceContracts.Core
             SoiChanges.Clear();
             SituationChanges.Clear();
             Merges.Clear();
+            Lifecycles.Clear();
         }
 
         private void OnPartCouple(GameEvents.FromToAction<Part, Part> a)
@@ -67,6 +76,16 @@ namespace CustomScienceContracts.Core
         private void OnSituationChange(GameEvents.HostedFromToAction<Vessel, Vessel.Situations> a)
         {
             SituationChanges.Add(new SituationEvent { Vessel = a.host, From = a.from, To = a.to });
+        }
+
+        private void OnVesselRecovered(ProtoVessel pv, bool quick)
+        {
+            if (pv != null) Lifecycles.Add(new LifecycleEvent { Id = pv.persistentId, Recovered = true });
+        }
+
+        private void OnVesselWillDestroy(Vessel v)
+        {
+            if (v != null) Lifecycles.Add(new LifecycleEvent { Id = v.persistentId, Recovered = false });
         }
     }
 }
