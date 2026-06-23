@@ -168,6 +168,18 @@ EPOCH_EXACT = {
     "cr_eve_landing_return": 9,
 }
 
+EPOCH_NAMES = {
+    1: "Getting Away With It",
+    2: "Small Station, Big Ideas",
+    3: "Mun or Bust",
+    4: "Minty Fuel Dreams",
+    5: "Inner Worlds, Bad Ideas",
+    6: "Red Dust, Real Plans",
+    7: "The Deep-Space Switchboard",
+    8: "Jool, Beaches and Regrets",
+    9: "The Purple Final Exam",
+}
+
 HEADER = """// ===========================================================================
 //  {title}
 //  GENERATED from custom_science_contracts_stock_missionsdesign.md (tools/gen_catalog_stock.py).
@@ -367,7 +379,9 @@ def contract(m):
     out += f"        subcategory = {sub}\n"
     out += f"        icon = {m.get('icon') or icon_for(m)}\n"
     out += f"        reward = {m['reward']}\n"
-    out += f"        epoch = {epoch_for_id(m['id'])}\n"
+    epoch = epoch_for_id(m["id"])
+    out += f"        epoch = {epoch}\n"
+    out += f"        epochName = {EPOCH_NAMES[epoch]}\n"
     if m.get("repeatable") == "yes":
         out += "        repeatable = true\n"
     if m.get("recordStation", "-") != "-":
@@ -400,12 +414,15 @@ catalog files in `GameData/CustomScienceContracts/Contracts/`; the plugin, icons
 licenses stay from the main download.
 
 Install:
-1. Install the main mod download first.
+1. Install the main mod download from the same release first.
 2. Copy this folder's `GameData` directory into your KSP install root.
 3. Confirm overwriting the four catalog files in `GameData/CustomScienceContracts/Contracts/`.
 
 Run only one config at a time. To go back to SOL, restore the four default catalog files
 from the main download.
+
+Requires CustomScienceContracts 0.4.2 or newer. Older plugin builds ignore the Stock
+chapter names and older Stock config files did not contain epoch assignments.
 
 Campaign chapters:
 1. Getting Away With It

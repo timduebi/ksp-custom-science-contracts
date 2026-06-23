@@ -853,7 +853,18 @@ namespace CustomScienceContracts.UI
 
         private static string EpochName(ContractManager mgr, int epoch)
         {
+            string catalogName = CatalogEpochName(mgr, epoch);
+            if (!string.IsNullOrEmpty(catalogName)) return catalogName;
             return IsStockCatalog(mgr) ? StockEpochName(epoch) : SolEpochName(epoch);
+        }
+
+        private static string CatalogEpochName(ContractManager mgr, int epoch)
+        {
+            if (mgr == null || mgr.Catalog == null) return "";
+            return mgr.Catalog.All
+                .Where(c => EpochOf(c) == epoch && !string.IsNullOrEmpty(c.EpochTitle))
+                .Select(c => c.EpochTitle)
+                .FirstOrDefault() ?? "";
         }
 
         private static string SolEpochName(int epoch)
