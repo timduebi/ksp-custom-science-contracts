@@ -13,9 +13,15 @@ packs on the same release that swap the catalog to the stock KSP system or to Ge
   phase.
 
 ### Changed
-- Moved the Moon base gate behind the second 150-day, 2-Kerbal lunar station
+- Moved the Moon base gate behind the 150-day, 3-Kerbal lunar station
   operation so surface bases follow sustained orbital infrastructure, while the
   early site-survey landings stay optional.
+- Refined station progression so Earth and Moon orbital stations start at three
+  seats, build/expansion checks require an empty uncrewed station with enough
+  seats, and crew is required from resupply onward.
+- Added generated apoapsis caps and minimum 0.5-day holds for crewed orbit
+  missions.
+- Removed the crewed Phobos and Deimos orbit missions.
 - Split early asteroid-belt scouting into Red Horizon and kept Beltworks focused
   on later belt landings, industry and crewed operations.
 - Removed unnecessary crewed-orbit prerequisites from the Phobos depot and Ceres

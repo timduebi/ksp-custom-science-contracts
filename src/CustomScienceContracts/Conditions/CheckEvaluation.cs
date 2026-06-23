@@ -183,6 +183,8 @@ namespace CustomScienceContracts.Conditions
                 case CheckKind.CREW_MIN:   return VesselQuery.EffectiveCrew(v) >= chk.Min;
                 case CheckKind.CREW_NONE:  return v.GetCrewCount() == 0;
                 case CheckKind.CREW_EXACT: return VesselQuery.EffectiveCrew(v) == chk.Min;
+                case CheckKind.CREW_CAPACITY_MIN:
+                    return v.parts != null && v.parts.Sum(p => p != null ? Math.Max(0, p.CrewCapacity) : 0) >= chk.Min;
                 case CheckKind.ON_BODY:    return body != null && v.mainBody == body;
                 case CheckKind.SITUATION:  return VesselQuery.MatchesSituation(v, chk.Situation);
                 case CheckKind.LANDED:
@@ -198,6 +200,12 @@ namespace CustomScienceContracts.Conditions
                     double minPe = chk.Km > 0 ? chk.Km * 1000.0 : body.atmosphereDepth;
                     return v.orbit.PeA > minPe;
                 }
+                case CheckKind.APOAPSIS_MAX:
+                    return body != null && v.mainBody == body &&
+                           v.situation == Vessel.Situations.ORBITING &&
+                           v.orbit != null &&
+                           chk.Km > 0 &&
+                           v.orbit.ApA < chk.Km * 1000.0;
                 case CheckKind.INCLINATION_MIN:
                     return v.orbit != null && v.orbit.inclination >= chk.InclinationMin;
                 case CheckKind.ABOVE_ATMOSPHERE:

@@ -320,8 +320,11 @@ namespace CustomScienceContracts.UI
                                 hasLanded = true;
                                 break;
                             case CheckKind.ORBIT_ABOVE:
+                            case CheckKind.APOAPSIS_MAX:
                             case CheckKind.SITUATION:
-                                hasOrbit = hasOrbit || ck.Situation == "ORBITING" || ck.Kind == CheckKind.ORBIT_ABOVE;
+                                hasOrbit = hasOrbit || ck.Situation == "ORBITING" ||
+                                           ck.Kind == CheckKind.ORBIT_ABOVE ||
+                                           ck.Kind == CheckKind.APOAPSIS_MAX;
                                 break;
                             case CheckKind.DURATION:
                             case CheckKind.HOLD:
@@ -329,6 +332,7 @@ namespace CustomScienceContracts.UI
                                 break;
                             case CheckKind.CREW_MIN:
                             case CheckKind.CREW_EXACT:
+                            case CheckKind.CREW_CAPACITY_MIN:
                                 hasCrew = true;
                                 break;
                         }

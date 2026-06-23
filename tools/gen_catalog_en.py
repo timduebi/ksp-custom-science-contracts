@@ -212,6 +212,8 @@ def label_for(kind, kvl, mission):
         return "Uncrewed, no Kerbals aboard"
     if kind == "CREW_EXACT":
         return f"Exactly {plural(kv['min'], 'Kerbal')} aboard"
+    if kind == "CREW_CAPACITY_MIN":
+        return f"At least {seats(kv['min'])} available"
     if kind == "SUBORBITAL":
         return f"Suborbital spaceflight above {body}"
     if kind == "LANDED":
@@ -222,6 +224,8 @@ def label_for(kind, kvl, mission):
         return f"Wheeled rover moving on {body} at {float(kv['speed']):.0f}+ m/s"
     if kind == "ORBIT_ABOVE":
         return f"Periapsis above {kv['km']} km" if "km" in kv else f"Stable orbit above {body}'s atmosphere"
+    if kind == "APOAPSIS_MAX":
+        return f"Apoapsis below {kv['km']} km"
     if kind == "INCLINATION_MIN":
         return f"Orbital inclination at least {kv['inclinationMin']} degrees"
     if kind == "ATMO_FRACTION":
@@ -338,6 +342,9 @@ def write_file(path, title, body):
 def kerbals(n):
     return "1 Kerbal" if int(n) == 1 else f"{n} Kerbals"
 
+def seats(n):
+    return "1 seat" if int(n) == 1 else f"{n} seats"
+
 
 def make_check(kind, label, **values):
     return (kind, [(k, v) for k, v in values.items()], label)
@@ -345,30 +352,35 @@ def make_check(kind, label, **values):
 
 def orbit_chain(key, body, sub, orbitword, km, stages, prereq0, station_word, mult):
     out, prev_long = [], None
+    max_km = de.orbit_max_km(body, km)
     for i, n in enumerate(stages):
         build = i == 0
         sid = f"cr_{key}_build" if build else f"cr_{key}_expand{n}"
         sup, lng = f"cr_{key}_supply{n}", f"cr_{key}_longstay{n}"
-        checks = [
-            make_check("CREW_MIN", f"Crewed with at least {kerbals(n)} aboard", min=n),
+        empty = make_check("CREW_NONE", "Station uncrewed, no Kerbals aboard")
+        station_checks = [
+            empty,
+            make_check("CREW_CAPACITY_MIN", f"At least {seats(n)} available", min=n),
             make_check("ORBIT_ABOVE", f"Stable {orbitword}, periapsis above {km} km", body=body, km=km),
-            make_check("DURATION", f"Hold for 10 days with {kerbals(n)} aboard", days=10),
+            make_check("APOAPSIS_MAX", f"Apoapsis below {max_km} km", body=body, km=max_km),
+            make_check("DURATION", "Hold in the target orbit for 10 days", days=10),
         ]
         if build:
-            title = f"{station_word} ({kerbals(n)})"
-            desc = f"Build your first {station_word.lower()} and operate it with at least {kerbals(n)} aboard. The station name will be reused by future supply flights."
+            title = f"{station_word} ({seats(n)})"
+            desc = f"Build your first {station_word.lower()} with at least {seats(n)}. The station must be empty and uncrewed; crew is counted from resupply onward. The station name will be reused by future supply flights."
             out.append(de.contract(sid, title, desc, "Bemannt", sub, "TrackingStation_ButtonMapStation",
-                       round(220 * mult), [prereq0], checks, record=key))
+                       round(220 * mult), [prereq0], station_checks, record=key))
         else:
-            title = f"Station Expansion to {kerbals(n)}"
-            desc = f"Expand %station% to at least {kerbals(n)} and keep the new operating level stable before the next upgrade."
+            title = f"Station Expansion to {seats(n)}"
+            desc = f"Expand %station% to at least {seats(n)} and keep the station empty and uncrewed for this expansion. Crew is counted from the next resupply onward."
             out.append(de.contract(sid, title, desc, "Bemannt", sub, "TrackingStation_ButtonMapStation",
-                       round((180 + 20 * n) * mult), [prev_long], checks, ref=key))
+                       round((180 + 20 * n) * mult), [prev_long], station_checks, ref=key))
         out.append(de.contract(sup, f"Station Resupply ({kerbals(n)})",
                    f"Bring a fresh crew of at least {kerbals(n)} to %station% and dock with the station.",
                    "Bemannt", sub, "TrackingStation_ButtonMapShips", round((110 + 12 * n) * mult), [sid],
                    [make_check("CREW_MIN", f"Supply craft with at least {kerbals(n)} aboard", min=n),
                     make_check("ORBIT_ABOVE", f"Stable {orbitword}, periapsis above {km} km", body=body, km=km),
+                    make_check("APOAPSIS_MAX", f"Apoapsis below {max_km} km", body=body, km=max_km),
                     make_check("DOCK_STATION", "Docked to the station", stationKey=key)],
                    repeatable=True, ref=key))
         out.append(de.contract(lng, f"150-Day Operations ({kerbals(n)})",
@@ -376,6 +388,7 @@ def orbit_chain(key, body, sub, orbitword, km, stages, prereq0, station_word, mu
                    "Bemannt", sub, "TrackingStation_ButtonMapStation", round((260 + 30 * n) * mult), [sup],
                    [make_check("CREW_MIN", f"Crewed with at least {kerbals(n)} aboard", min=n),
                     make_check("ORBIT_ABOVE", f"Stable {orbitword}, periapsis above {km} km", body=body, km=km),
+                    make_check("APOAPSIS_MAX", f"Apoapsis below {max_km} km", body=body, km=max_km),
                     make_check("DURATION", f"Hold for 150 days with {kerbals(n)} aboard", days=150)],
                    ref=key))
         prev_long = lng
@@ -394,13 +407,13 @@ def moon_base_site_survey_landings():
         "First Moon Base Site Survey",
         "Use the experience from the Earth orbital station to test a possible site for a future Moon base. Land precisely, inspect the area and bring the crew safely home.",
         "Bemannt", "Moon", "TrackingStation_ButtonMapFlag", 176,
-        ["cr_earth_station_build"], common, epoch=3)
+        ["cr_earth_station_expand4"], common, epoch=2)
     second = de.contract(
         "cr_luna_station_precision_landing_2",
         "Second Moon Base Site Survey",
         "Test a second possible site for the later Moon base. This remains an optional comparison flight and does not block the infrastructure path.",
         "Bemannt", "Moon", "TrackingStation_ButtonMapFlag", 188,
-        ["cr_luna_station_precision_landing_1"], common, epoch=3)
+        ["cr_luna_station_precision_landing_1"], common, epoch=2)
     return first + second
 
 
@@ -446,6 +459,7 @@ def base_chain(key, body, sub, stages, prereq0, base_word, mult):
 
 def fuel_depot_chain(key, sub, stages, prereq0, mult):
     out, prev = [], None
+    max_km = de.orbit_max_km("Earth", 130)
     for i, n in enumerate(stages):
         build = i == 0
         sid = f"cr_{key}_build" if build else f"cr_{key}_expand{n}"
@@ -454,6 +468,7 @@ def fuel_depot_chain(key, sub, stages, prereq0, mult):
         checks = [
             make_check("CREW_MIN", f"Crewed with at least {kerbals(n)} aboard", min=n),
             make_check("ORBIT_ABOVE", "Stable Earth orbit, periapsis above 130 km", body="Earth", km=130),
+            make_check("APOAPSIS_MAX", f"Apoapsis below {max_km} km", body="Earth", km=max_km),
             make_check("RESOURCE_MIN", f"At least {lf} LiquidFuel in storage", resource="LiquidFuel", amount=lf),
             make_check("RESOURCE_MIN", f"At least {ox} Oxidizer in storage", resource="Oxidizer", amount=ox),
             make_check("DURATION", "Operate for 10 days", days=10),
@@ -473,6 +488,7 @@ def fuel_depot_chain(key, sub, stages, prereq0, mult):
                    "NetzwerkLogistik", sub, "TrackingStation_ButtonMapShips", round((90 + 12 * n) * mult), [sid],
                    [make_check("CREW_MIN", f"Supply craft with at least {kerbals(n)} aboard", min=n),
                     make_check("ORBIT_ABOVE", "Stable Earth orbit, periapsis above 130 km", body="Earth", km=130),
+                    make_check("APOAPSIS_MAX", f"Apoapsis below {max_km} km", body="Earth", km=max_km),
                     make_check("DOCK_STATION", "Docked to the fuel depot", stationKey=key)],
                    repeatable=True, ref=key))
         prev = sid
@@ -481,17 +497,17 @@ def fuel_depot_chain(key, sub, stages, prereq0, mult):
 
 def build_stations():
     s = ""
-    s += "    // ===== EARTH - Space station (2 -> 12 Kerbals) =====\n"
+    s += "    // ===== EARTH - Space station (3 -> 12 seats) =====\n"
     s += orbit_chain("earth_station", "Earth", "Earth", "Earth orbit", 130,
-                     [2, 3, 4, 6, 8, 10, 12], "cr_luna_landing", "Earth Orbital Station", 1.0)
+                     [3, 4, 6, 8, 10, 12], "cr_luna_landing", "Earth Orbital Station", 1.0)
     s += "\n    // ===== MOON - Space station =====\n"
     s += orbit_chain("moon_station", "Moon", "Moon", "lunar orbit", 25,
-                     [2, 3, 4, 6, 8, 10], "cr_earth_station_longstay4", "Lunar Orbital Station", 1.5)
-    s += "\n    // ===== MOON - Bonus precision landings after station expansion =====\n"
+                     [3, 4, 6, 8, 10], "cr_earth_station_longstay4", "Lunar Orbital Station", 1.5)
+    s += "\n    // ===== MOON - Base-site surveys after Earth station expansion =====\n"
     s += moon_base_site_survey_landings()
     s += "\n    // ===== MOON - Surface base =====\n"
     s += base_chain("moon_base", "Moon", "Moon", [2, 3, 4, 6, 8, 10],
-                    "cr_moon_station_longstay2", "Moon Base", 1.5)
+                    "cr_moon_station_longstay3", "Moon Base", 1.5)
     s += "\n    // ===== MARS - Space station =====\n"
     s += orbit_chain("mars_station", "Mars", "Mars", "Mars orbit", 90,
                      [2, 3, 4, 6], "cr_mars_stay_10d", "Mars Orbital Station", 2.4)

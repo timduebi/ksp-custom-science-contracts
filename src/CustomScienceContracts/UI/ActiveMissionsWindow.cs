@@ -218,6 +218,7 @@ namespace CustomScienceContracts.UI
                 case CheckKind.CREW_MIN:   return $"Crewed with at least {chk.Min} Kerbal{(chk.Min == 1 ? "" : "s")} aboard";
                 case CheckKind.CREW_NONE:  return "Uncrewed - no Kerbal aboard";
                 case CheckKind.CREW_EXACT: return $"Exactly {chk.Min} Kerbal{(chk.Min == 1 ? "" : "s")} aboard";
+                case CheckKind.CREW_CAPACITY_MIN: return $"Vessel has at least {chk.Min} crew seat{(chk.Min == 1 ? "" : "s")}";
                 case CheckKind.ON_BODY:    return $"At target body {body}";
                 case CheckKind.SITUATION:  return $"Situation: {SituationText(chk.Situation)}";
                 case CheckKind.LANDED:     return $"Landed on {body}";
@@ -226,6 +227,7 @@ namespace CustomScienceContracts.UI
                 case CheckKind.ORBIT_ABOVE: return chk.Km > 0
                     ? $"Stable orbit around {body}, periapsis above {chk.Km:0} km"
                     : $"Stable orbit around {body} above the atmosphere";
+                case CheckKind.APOAPSIS_MAX: return $"Apoapsis below {chk.Km:0} km";
                 case CheckKind.INCLINATION_MIN: return $"Orbital inclination at least {chk.InclinationMin:0} degrees";
                 case CheckKind.ABOVE_ATMOSPHERE: return "Orbit entirely above the atmosphere";
                 case CheckKind.SUBORBITAL_ABOVE_ATMO: return "Apoapsis above the atmosphere";

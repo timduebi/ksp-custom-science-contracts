@@ -12,13 +12,13 @@ Die Kampagne beginnt historisch und vorsichtig. Unbemannte Testflüge verlassen 
 
 Luna ist der erste grosse Horizont. Nach der ersten EVA im Erdorbit wird der unbemannte Luna-Vorbeiflug geöffnet, danach folgen unbemannter Luna-Orbit und unbemannte Luna-Landung. Der bemannte Luna-Vorbeiflug `cr_luna_flyby_crewed` ist der Meilenstein, ab dem gesperrte Aufträge als Vorschau erscheinen. Der erste bemannte Luna-Orbit braucht den bemannten Vorbeiflug und die erste unbemannte Landung. Die erste bemannte Luna-Landung enthält direkt die erste Oberflächen-EVA.
 
-Nach der ersten bemannten Luna-Landung beginnt die echte Erdstation. Sie ist eine neue Stationskette und hat keine technische Verbindung zum temporären Ein-Modul-Labor. Die Erdstation wächst epochenweise: in Epoche 3 bis Crew 4, in Epoche 4 bis Crew 8 und in Epoche 5 bis Crew 12. Mondstation und Mondbasis starten in Epoche 3 mit Crew 2, wachsen in Epoche 3 auf 3, in Epoche 4 auf 4 und 6 und in Epoche 5 bis 6 auf 8 und 10. Eine Mondbasis setzt bemannte Luna-Präzisionslandung und 7 Tage auf Luna voraus. Das Erdorbit-Fuel-Depot ist ein optionaler Versorgungsnetz-Zweig, öffnet später als die Erdstation und blockiert keine bemannte Marsmission.
+Nach der ersten bemannten Luna-Landung beginnt die echte Erdstation bereits in Moonrise. Sie ist eine neue Stationskette und hat keine technische Verbindung zum temporären Ein-Modul-Labor. Stationsbau und Stationsausbau prüfen zunächst nur verfügbare Plätze; Kerbals werden erst bei Versorgung und Langzeitbetrieb gezählt. Die Erdstation startet mit 3 Plätzen, wächst in Moonrise bis 4 Plätze, in Epoche 4 bis 8 und in Epoche 5 bis 6 bis 12. Nach dem Ausbau der Erdstation auf 4 Plätze werden zwei optionale Luna-Landungen als Standorttests für spätere Mondbasen geöffnet. Die Mondstation startet direkt mit 3 Plätzen. Eine Mondbasis setzt den 150-Tage-Betrieb der 3er-Mondstation voraus. Das Erdorbit-Fuel-Depot ist ein optionaler Versorgungsnetz-Zweig, öffnet später als die Erdstation und blockiert keine bemannte Marsmission.
 
 Ab Epoche 3 wird das frühe Erd-Satellitennetz aus der Pionierzeit narrativ zu alt. Im Versorgungsnetz entsteht deshalb eine neue Kommunikations-Lebensader: zuerst Erde, dann Luna, danach Mars, ein interplanetarer Sonnenorbit-Ring und schliesslich die grossen Relais um Jupiter und Saturn. Erde und Luna bekommen je eine Grundkonstellation mit drei Satelliten und danach eine polare Ausbaustufe mit drei weiteren Satelliten.
 
-Das innere Sonnensystem öffnet sich robotisch nach dem bemannten Luna-Vorbeiflug. Venus bekommt Vorbeiflug, Orbit, Atmosphärensonde und Landung, bemannt nur Vorbeiflug und Orbit. Merkur bleibt komplett robotisch. Mars wird robotisch vorbereitet und erhält bereits in Epoche 4 einen bemannten Vorbeiflug und einen bemannten 10-Tage-Orbit. Für bemannten Mars-Vorbeiflug und bemannten Mars-Orbit reicht die normale Erdstation mit Longstay-Stufe 3.
+Das innere Sonnensystem öffnet sich robotisch nach dem bemannten Luna-Vorbeiflug. Nach den ersten Flybys folgen die ersten robotischen Orbits früher: Venus und Merkur können schon in der Flyby-Epoche in einen Orbit gehen, Mars-Orbit und erste robotische Marslandung rücken eine Epoche nach vorne. Venus bekommt die Landung weiterhin erst später. Bemannt bleiben Venus-Vorbeiflug und Venus-Orbit optional. Für bemannten Mars-Vorbeiflug und bemannten Mars-Orbit reicht die normale Erdstation mit Longstay-Stufe 3.
 
-Mars ist der zweite grosse bemannte Hauptbogen. Nach bemanntem Mars-Orbit, robotischer Präzisionslandung und Langzeiterfahrung folgen bemannte Marslandung mit EVA, 10 Tage auf Mars und 30 Tage auf Mars. Phobos und Deimos werden nach bemannter Marslandung parallel als bemannter Orbit und bemannte Landung verfügbar; die Landung setzt den bemannten Orbit desselben Mondes nicht voraus. Marsstation und Marsbasis starten danach als neue Infrastruktur.
+Mars ist der zweite grosse bemannte Hauptbogen. Nach bemanntem Mars-Orbit, robotischer Präzisionslandung und Langzeiterfahrung folgen bemannte Marslandung mit EVA, 10 Tage auf Mars und 30 Tage auf Mars. Phobos und Deimos werden nach bemannter Marslandung direkt als bemannte Landungen verfügbar; eigene bemannte Orbitmissionen für diese kleinen Monde gibt es nicht mehr. Marsstation und Marsbasis starten danach als neue Infrastruktur.
 
 Asteroiden sind vollständig Bonus. Eros, Vesta, Ceres, Pallas, Psyche, Ryugu, Ida, Dactyl und Arrokoth geben Wissenschaft, Ressourcenoptionen und erzählerische Tiefe, blockieren aber keine Hauptmission zu Mars, Jupiter, Saturn, Titan, Triton, Pluto und Arrokoth. Ceres ist das einzige bemannte Asteroidenziel und bleibt ein Prestigeast.
 
@@ -30,10 +30,10 @@ Die Schluss-Epoche bleibt robotisch. Triton und Pluto erhalten jeweils Vorbeiflu
 
 # STATIONSKETTEN
 
-chain: body=Earth | key=earth_station | typ=station | prereq=cr_luna_landing | stufen=2,3,4,6,8,10,12
+chain: body=Earth | key=earth_station | typ=station | prereq=cr_luna_landing | stufen=3,4,6,8,10,12
 chain: body=Earth | key=earth_fuel_depot | typ=station | prereq=cr_earth_station_longstay4 | stufen=2,3,4,6
-chain: body=Moon | key=moon_station | typ=station | prereq=cr_earth_station_longstay4 | stufen=2,3,4,6,8,10
-chain: body=Moon | key=moon_base | typ=base | prereq=cr_luna_precision_landing, cr_luna_stay_7d | stufen=2,3,4,6,8,10
+chain: body=Moon | key=moon_station | typ=station | prereq=cr_earth_station_longstay4 | stufen=3,4,6,8,10
+chain: body=Moon | key=moon_base | typ=base | prereq=cr_moon_station_longstay3 | stufen=2,3,4,6,8,10
 chain: body=Mars | key=mars_station | typ=station | prereq=cr_mars_stay_10d | stufen=2,3,4,6
 chain: body=Mars | key=mars_base | typ=base | prereq=cr_mars_stay_30d | stufen=2,3,4,6
 
@@ -1070,21 +1070,6 @@ check: DURATION 30 | 30 Tage ununterbrochen ausharren
 check: RETURN_FROM_BODY Mars Earth | Crew sicher zur Erde zurückbringen
 
 === MISSION ===
-id: cr_phobos_orbit
-sparte: Pioniere
-body: Phobos
-prereq: cr_mars_landing, un_phobos_orbit
-reward: 255
-repeatable: no
-recordStation: -
-stationRef: -
-beschreibung: Bringe zwei Kerbals in den Orbit um Phobos. Der kleine Mond wird zum nahen bemannten Aussenposten im Marsraum.
-beschreibung_en: Put two Kerbals into orbit around Phobos. The small moon becomes a near crewed outpost in Mars space.
-check: CREW_MIN 2 | mindestens 2 Kerbals an Bord
-check: ORBIT_ABOVE Phobos 8 | Periapsis über 8 km
-check: HOLD 10 | 10 Sekunden stabil halten
-
-=== MISSION ===
 id: cr_phobos_landing
 sparte: Pioniere
 body: Phobos
@@ -1099,21 +1084,6 @@ check: CREW_MIN 2 | mindestens 2 Kerbals an Bord
 check: LANDED Phobos | auf Phobos gelandet
 check: EVA Phobos LANDED | EVA auf Phobos
 check: RETURN_FROM_BODY Phobos Earth | Crew sicher zur Erde zurückbringen
-
-=== MISSION ===
-id: cr_deimos_orbit
-sparte: Pioniere
-body: Deimos
-prereq: cr_mars_landing, un_deimos_orbit
-reward: 255
-repeatable: no
-recordStation: -
-stationRef: -
-beschreibung: Bringe zwei Kerbals in den Orbit um Deimos und erreiche damit den äusseren Rand des bemannten Marsraums.
-beschreibung_en: Put two Kerbals into orbit around Deimos and reach the outer edge of crewed Mars space.
-check: CREW_MIN 2 | mindestens 2 Kerbals an Bord
-check: ORBIT_ABOVE Deimos 8 | Periapsis über 8 km
-check: HOLD 10 | 10 Sekunden stabil halten
 
 === MISSION ===
 id: cr_deimos_landing

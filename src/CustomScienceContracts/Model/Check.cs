@@ -11,10 +11,12 @@ namespace CustomScienceContracts.Model
         CREW_MIN,            // crew >= min
         CREW_NONE,           // uncrewed, no Kerbals aboard
         CREW_EXACT,          // crew == min
+        CREW_CAPACITY_MIN,   // vessel seats >= min
         ON_BODY,             // at target body (mainBody == body)
         SITUATION,           // Situation == situation (ORBITING/LANDED/...)
         PERIAPSIS_MIN,       // orbit.PeA > km
         ORBIT_ABOVE,         // ORBITING around body + orbit.PeA > km
+        APOAPSIS_MAX,        // ORBITING around body + orbit.ApA < km
         INCLINATION_MIN,     // orbit.inclination >= inclinationMin
         ABOVE_ATMOSPHERE,    // orbit.PeA > atmosphereDepth
         SUBORBITAL_ABOVE_ATMO, // altitude > atmosphereDepth
@@ -50,7 +52,7 @@ namespace CustomScienceContracts.Model
         public string Label = "";
         public string ReturnBody = "";
         public string ReturnMode = ""; // empty/surface = land first, flyby = visit SOI first
-        public int Min = 0;          // crew threshold
+        public int Min = 0;          // crew/capacity threshold
         public int Count = 1;        // VESSEL_COUNT
         public double Km = 0.0;      // PERIAPSIS_MIN / VESSEL_COUNT / FLYBY closest approach / MARKER radius
         public double InclinationMin = 0.0; // INCLINATION_MIN / VESSEL_COUNT_INCLINATION

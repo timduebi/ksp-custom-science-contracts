@@ -36,6 +36,16 @@ SUBCAT = {"Earth": "Erde", "Moon": "Luna", "Mercury": "Merkur", "Sun": "Interpla
 REVEAL = {"Jupiter": "un_jupiter_flyby", "Saturn": "un_saturn_flyby", "Uranus": "un_uranus_flyby",
           "Neptun": "un_neptune_flyby", "Pluto": "un_pluto_flyby"}
 
+ORBIT_MAX_KM = {
+    "Earth": 500, "Moon": 100, "Mercury": 180, "Venus": 500, "Mars": 450,
+    "Phobos": 30, "Deimos": 30, "Ceres": 120, "Ganymede": 300,
+    "Jupiter": 25000, "Saturn": 25000, "Titan": 700,
+}
+
+def orbit_max_km(body, min_km=0):
+    fallback = max(100.0, float(min_km or 0) * 4.0)
+    return int(ORBIT_MAX_KM.get(body, fallback))
+
 EPOCH_EXACT = {
     # Epoch 1: Earth test flights and first orbital techniques.
     "un_earth_pad_clear": 1, "un_earth_upper_atmo": 1, "un_earth_suborbital": 1,
@@ -55,14 +65,16 @@ EPOCH_EXACT = {
     "net_earth_comm_network3": 3, "net_earth_polar_comm_network": 3,
     "net_luna_comm_network3": 3, "net_luna_polar_comm_network": 3,
     "un_venus_flyby": 3, "un_mercury_flyby": 3, "un_mars_flyby": 3,
-    "cr_luna_station_precision_landing_1": 3, "cr_luna_station_precision_landing_2": 3,
+    "un_venus_orbit": 3, "un_mercury_orbit": 3,
+    "cr_luna_station_precision_landing_1": 2, "cr_luna_station_precision_landing_2": 2,
 
     # Epoch 4: inner worlds after the first interplanetary probes.
     "cr_venus_flyby": 4, "cr_venus_orbit": 4,
+    "un_mars_orbit": 4, "un_mars_landing": 4,
 
     # Epoch 5: Mars as the second main crewed arc.
-    "un_mars_orbit": 5, "un_mars_polar_mapping": 5,
-    "un_mars_polar_landing": 5, "un_mars_landing": 5, "un_mars_rover": 5,
+    "un_mars_polar_mapping": 5,
+    "un_mars_polar_landing": 5, "un_mars_rover": 5,
     "un_mars_precision_landing": 5,
     "cr_mars_flyby": 5, "cr_mars_orbit": 5,
     "cr_mars_landing": 5, "cr_mars_precision_landing": 5, "cr_mars_stay_10d": 5,
@@ -75,8 +87,8 @@ EPOCH_EXACT = {
     # Epoch 6: asteroid belt, Mars moons and optional industry.
     "un_phobos_flyby": 6, "un_phobos_orbit": 6,
     "un_deimos_flyby": 6, "un_deimos_orbit": 6,
-    "cr_phobos_orbit": 6, "cr_phobos_landing": 6,
-    "cr_deimos_orbit": 6, "cr_deimos_landing": 6,
+    "cr_phobos_landing": 6,
+    "cr_deimos_landing": 6,
     "net_solar_comm_network": 6, "net_phobos_cache": 6,
     "un_ceres_landing": 6, "un_vesta_landing": 6,
     "un_pallas_flyby": 6, "un_pallas_orbit": 6, "un_psyche_orbit": 6,
@@ -113,7 +125,7 @@ def epoch_for_id(cid):
         key, action, raw_stage = m.groups()
         stage = _stage_from_chain_suffix(action, raw_stage or "2")
         if key == "earth_station":
-            return 3 if stage <= 4 else 4 if stage <= 8 else 6
+            return 2 if stage <= 4 else 4 if stage <= 8 else 6
         if key in ("moon_station", "moon_base"):
             return 3 if stage <= 3 else 4 if stage <= 6 else 6
         if key in ("mars_station", "mars_base"):
@@ -188,11 +200,13 @@ def parse_check(s):
     toks = head.split()
     kind = toks[0]; a = toks[1:]
     kv = []
-    if kind in ("CREW_MIN", "CREW_EXACT"): kv = [("min", a[0])]
+    if kind in ("CREW_MIN", "CREW_EXACT", "CREW_CAPACITY_MIN"): kv = [("min", a[0])]
     elif kind == "CREW_NONE": kv = []
     elif kind in ("SUBORBITAL", "LANDED", "ORE_SURFACE"): kv = [("body", a[0])]
     elif kind == "ORBIT_ABOVE":
         kv = [("body", a[0])] + ([("km", a[1])] if len(a) > 1 else [])
+    elif kind == "APOAPSIS_MAX":
+        kv = [("body", a[0]), ("km", a[1])]
     elif kind == "INCLINATION_MIN":
         kv = [("body", a[0]), ("inclinationMin", a[1])]
     elif kind == "ATMO_FRACTION":
@@ -325,7 +339,7 @@ def contract(cid, title, desc, sparte, sub, icon, reward, prereqs, checks,
     s += "        }\n    }\n"
     return s
 
-SKIP_IDS = {"net_deimos_cache"}
+SKIP_IDS = {"net_deimos_cache", "cr_phobos_orbit", "cr_deimos_orbit"}
 
 def contract_prereqs(m):
     if m["id"] == "cr_earth_docking_demo":
@@ -366,6 +380,7 @@ def mission_contract(m):
 def catalog_checks(m):
     checks = [normalize_network_check(m, c) for c in m["checks"]]
     checks = apply_curated_check_overrides(m, checks)
+    checks = ensure_crewed_orbit_requirements(m, checks)
     if m["id"].endswith("_rover"):
         checks.append(("WHEEL_MOTION", [("body", m["body"]), ("speed", "4")],
                        "Rover mit Rädern fährt am Boden mindestens 4 m/s"))
@@ -373,6 +388,43 @@ def catalog_checks(m):
     if should_add_return_check(m, checks):
         checks.append(return_check_for(m))
     return checks
+
+def ensure_crewed_orbit_requirements(m, checks):
+    if m["sparte"] != "Pioniere" or not any(kind == "ORBIT_ABOVE" for kind, _, _ in checks):
+        return checks
+
+    out = []
+    has_duration = any(kind == "DURATION" for kind, _, _ in checks)
+    for kind, kvl, label in checks:
+        if kind == "ORBIT_ABOVE":
+            out.append((kind, kvl, label))
+            values = dict(kvl)
+            body = values.get("body", m["body"])
+            max_km = orbit_max_km(body, values.get("km", 0))
+            out.append(("APOAPSIS_MAX", [("body", body), ("km", str(max_km))],
+                        f"Apoapsis unter {max_km} km"))
+            continue
+
+        if kind == "HOLD" and not has_duration:
+            out.append(("DURATION", [("days", "0.5")], "0,5 Tage im Zielorbit halten"))
+            has_duration = True
+            continue
+
+        if kind == "DURATION":
+            values = dict(kvl)
+            days = float(values.get("days", 0))
+            if days < 0.5:
+                out.append(("DURATION", [("days", "0.5")], "0,5 Tage im Zielorbit halten"))
+            else:
+                out.append((kind, kvl, label))
+            has_duration = True
+            continue
+
+        out.append((kind, kvl, label))
+
+    if not has_duration:
+        out.append(("DURATION", [("days", "0.5")], "0,5 Tage im Zielorbit halten"))
+    return out
 
 def apply_curated_check_overrides(m, checks):
     cid = m["id"]
@@ -500,47 +552,55 @@ assets come from the main download.
 
 # ---------------- Stationsketten ----------------
 def kerbals(n): return "1 Kerbal" if n == 1 else f"{n} Kerbals"
+def seats(n): return "1 Platz" if n == 1 else f"{n} Plätze"
+def seats_dative(n): return "1 verfügbarem Platz" if n == 1 else f"{n} verfügbaren Plätzen"
 
 def orbit_chain(key, body, sub, orbitword, km, stages, prereq0, station_word, mult):
     out, prev_long = [], None
     crew = lambda n: {"kind": "CREW_MIN", "min": n, "label": f"Bemannt mit mindestens {kerbals(n)} an Bord"}
+    capacity = lambda n: {"kind": "CREW_CAPACITY_MIN", "min": n, "label": f"Mindestens {seats(n)} verfügbar"}
     orbit = {"kind": "ORBIT_ABOVE", "body": body, "km": km,
              "label": f"Stabiler {orbitword}, Periapsis über {km} km"}
+    apo = {"kind": "APOAPSIS_MAX", "body": body, "km": orbit_max_km(body, km),
+           "label": f"Apoapsis unter {orbit_max_km(body, km)} km"}
     def cks(lst): return [(c["kind"], [(k, v) for k, v in c.items() if k != "kind" and k != "label"], c.get("label", "")) for c in lst]
     for i, n in enumerate(stages):
         build = (i == 0)
         sid = f"cr_{key}_build" if build else f"cr_{key}_expand{n}"
         sup, lng = f"cr_{key}_supply{n}", f"cr_{key}_longstay{n}"
+        empty = {"kind": "CREW_NONE", "label": "Station unbemannt, keine Kerbals an Bord"}
         if build:
             core = station_word[6:] if station_word.startswith("Erste ") else station_word
-            title = f"{station_word} ({kerbals(n)})"
-            desc = (f"Errichte deine erste Raumstation im {orbitword} und halte sie mit mindestens "
-                    f"{kerbals(n)} an Bord. Mit ihr beginnt für dein Programm die Ära ständiger Präsenz — "
+            title = f"{station_word} ({seats(n)})"
+            desc = (f"Errichte deine erste Raumstation im {orbitword} mit mindestens "
+                    f"{seats_dative(n)}. Die Station muss dabei leer und unbemannt sein; Besatzung "
+                    f"zählt erst ab der Versorgung. Mit ihr beginnt für dein Programm die Ära ständiger Präsenz — "
                     f"der Name, den du ihr gibst, begleitet jeden künftigen Versorgungsflug.")
             out.append(contract(sid, title, desc, "Bemannt", sub, "TrackingStation_ButtonMapStation",
                        round(220 * mult), [prereq0],
-                       cks([crew(n), orbit, {"kind": "DURATION", "days": 10, "label": f"10 Tage mit {kerbals(n)} stabil halten"}]),
+                       cks([empty, capacity(n), orbit, apo, {"kind": "DURATION", "days": 10, "label": "10 Tage im Zielorbit stabil halten"}]),
                        record=key))
         else:
-            title = f"Stationsausbau auf {kerbals(n)}"
-            desc = (f"Erweitere %station% auf mindestens {kerbals(n)} und festige den Betrieb auf der "
-                    f"neuen Stufe, ehe der nächste Ausbau ansteht.")
+            title = f"Stationsausbau auf {seats(n)}"
+            desc = (f"Erweitere %station% auf mindestens {seats(n)} und "
+                    f"halte die Station für diesen Ausbau leer und unbemannt. Besatzung "
+                    f"zählt erst ab der nächsten Versorgung.")
             out.append(contract(sid, title, desc, "Bemannt", sub, "TrackingStation_ButtonMapStation",
                        round((180 + 20 * n) * mult), [prev_long],
-                       cks([crew(n), orbit, {"kind": "DURATION", "days": 10, "label": f"10 Tage mit {kerbals(n)} stabil halten"}]),
+                       cks([empty, capacity(n), orbit, apo, {"kind": "DURATION", "days": 10, "label": "10 Tage im Zielorbit stabil halten"}]),
                        ref=key))
         out.append(contract(sup, f"Versorgung der Station ({kerbals(n)})",
                    f"Bring eine frische Ablösung von mindestens {kerbals(n)} zu %station% und docke an, um die "
                    f"müde gewordene Stammbesatzung abzulösen.", "Bemannt", sub, "TrackingStation_ButtonMapShips",
                    round((110 + 12 * n) * mult), [sid],
                    cks([{"kind": "CREW_MIN", "min": n, "label": f"Versorgungsschiff mit mindestens {kerbals(n)} an Bord"},
-                        orbit, {"kind": "DOCK_STATION", "stationKey": key, "label": "An der Station angedockt"}]),
+                        orbit, apo, {"kind": "DOCK_STATION", "stationKey": key, "label": "An der Station angedockt"}]),
                    repeatable=True, ref=key))
         out.append(contract(lng, f"Dauerbetrieb 150 Tage ({kerbals(n)})",
                    f"Halte %station% 150 Tage ununterbrochen mit mindestens {kerbals(n)} besetzt und "
                    f"beweise stabilen Langzeitbetrieb auf dieser Stufe.", "Bemannt", sub, "TrackingStation_ButtonMapStation",
                    round((260 + 30 * n) * mult), [sup],
-                   cks([crew(n), orbit, {"kind": "DURATION", "days": 150, "label": f"150 Tage mit {kerbals(n)} ausharren"}]),
+                   cks([crew(n), orbit, apo, {"kind": "DURATION", "days": 150, "label": f"150 Tage mit {kerbals(n)} ausharren"}]),
                    ref=key))
         prev_long = lng
     return "".join(out)
@@ -558,13 +618,13 @@ def moon_base_site_survey_landings():
         "Erkundung erster Mondbasis-Standort",
         "Nutze die Erfahrung aus der Erdorbitalstation, um einen möglichen Standort für eine spätere Mondbasis zu testen. Lande präzise, sammle Eindrücke vor Ort und bringe die Crew sicher zurück.",
         "Bemannt", "Luna", "TrackingStation_ButtonMapFlag", 176,
-        ["cr_earth_station_build"], cks(common), epoch=3)
+        ["cr_earth_station_expand4"], cks(common), epoch=2)
     second = contract(
         "cr_luna_station_precision_landing_2",
         "Erkundung zweiter Mondbasis-Standort",
         "Teste einen zweiten möglichen Standort für die spätere Mondbasis. Die Mission bleibt ein optionaler Vergleichsflug und blockiert keinen Ausbaupfad.",
         "Bemannt", "Luna", "TrackingStation_ButtonMapFlag", 188,
-        ["cr_luna_station_precision_landing_1"], cks(common), epoch=3)
+        ["cr_luna_station_precision_landing_1"], cks(common), epoch=2)
     return first + second
 
 def base_chain(key, body, sub, stages, prereq0, base_word, mult):
@@ -623,6 +683,8 @@ def fuel_depot_chain(key, sub, stages, prereq0, mult):
         lf, ox = 1440 * (i + 1), 1760 * (i + 1)
         crew = {"kind": "CREW_MIN", "min": n, "label": f"Bemannt mit mindestens {kerbals(n)} an Bord"}
         orbit = {"kind": "ORBIT_ABOVE", "body": "Earth", "km": 130, "label": "Stabiler Erdorbit, Periapsis über 130 km"}
+        apo = {"kind": "APOAPSIS_MAX", "body": "Earth", "km": orbit_max_km("Earth", 130),
+               "label": f"Apoapsis unter {orbit_max_km('Earth', 130)} km"}
         fuel = [{"kind": "RESOURCE_MIN", "resource": "LiquidFuel", "amount": lf, "label": f"Mindestens {lf} LiquidFuel im Tank"},
                 {"kind": "RESOURCE_MIN", "resource": "Oxidizer", "amount": ox, "label": f"Mindestens {ox} Oxidizer im Tank"}]
         if build:
@@ -632,7 +694,7 @@ def fuel_depot_chain(key, sub, stages, prereq0, mult):
                     f"sollen hier nachtanken — der Name bleibt für jeden Nachschubflug erhalten.")
             out.append(contract(sid, title, desc, "NetzwerkLogistik", sub, "TrackingStation_ButtonMapStation",
                        round(150 * mult), [prereq0],
-                       cks([crew, orbit] + fuel + [{"kind": "DURATION", "days": 10, "label": "10 Tage stabil betrieben"}]),
+                       cks([crew, orbit, apo] + fuel + [{"kind": "DURATION", "days": 10, "label": "10 Tage stabil betrieben"}]),
                        record=key))
         else:
             title = f"Tankstellen-Ausbau ({kerbals(n)})"
@@ -640,30 +702,30 @@ def fuel_depot_chain(key, sub, stages, prereq0, mult):
                     f"LiquidFuel und {ox} Oxidizer auf.")
             out.append(contract(sid, title, desc, "NetzwerkLogistik", sub, "TrackingStation_ButtonMapStation",
                        round((150 + 25 * i) * mult), [prev],
-                       cks([crew, orbit] + fuel + [{"kind": "DURATION", "days": 10, "label": "10 Tage stabil betrieben"}]),
+                       cks([crew, orbit, apo] + fuel + [{"kind": "DURATION", "days": 10, "label": "10 Tage stabil betrieben"}]),
                        ref=key))
         out.append(contract(sup, f"Nachbetankung der Tankstelle ({kerbals(n)})",
                    f"Bring frischen Treibstoff und eine Ablösung von mindestens {kerbals(n)} zu %station% und docke an.",
                    "NetzwerkLogistik", sub, "TrackingStation_ButtonMapShips", round((90 + 12 * n) * mult), [sid],
                    cks([{"kind": "CREW_MIN", "min": n, "label": f"Versorgungsschiff mit mindestens {kerbals(n)} an Bord"},
-                        orbit, {"kind": "DOCK_STATION", "stationKey": key, "label": "An der Tankstelle angedockt"}]),
+                        orbit, apo, {"kind": "DOCK_STATION", "stationKey": key, "label": "An der Tankstelle angedockt"}]),
                    repeatable=True, ref=key))
         prev = sid
     return "".join(out)
 
 def build_stations():
     s = ""
-    s += "    // ===== ERDE — Raumstation (2 -> 12 Kerbals) =====\n"
+    s += "    // ===== ERDE — Raumstation (3 -> 12 Plaetze) =====\n"
     s += orbit_chain("earth_station", "Earth", "Erde", "Erdorbit", 130,
-                     [2, 3, 4, 6, 8, 10, 12], "cr_luna_landing", "Erste Raumstation im Erdorbit", 1.0)
+                     [3, 4, 6, 8, 10, 12], "cr_luna_landing", "Erste Raumstation im Erdorbit", 1.0)
     s += "\n    // ===== LUNA — Raumstation (ab Erd-Dauerbetrieb 4) =====\n"
     s += orbit_chain("moon_station", "Moon", "Luna", "Mondorbit", 25,
-                     [2, 3, 4, 6, 8, 10], "cr_earth_station_longstay4", "Erste Mond-Raumstation im Mondorbit", 1.5)
-    s += "\n    // ===== LUNA — Bonus-Praezisionslandungen nach Stationsausbau =====\n"
+                     [3, 4, 6, 8, 10], "cr_earth_station_longstay4", "Erste Mond-Raumstation im Mondorbit", 1.5)
+    s += "\n    // ===== LUNA — Basisstandort-Erkundungen nach Erdstation 4 =====\n"
     s += moon_base_site_survey_landings()
-    s += "\n    // ===== LUNA — Oberflaechenbasis (ab 150 Tage Mondstation 2 Kerbals) =====\n"
+    s += "\n    // ===== LUNA — Oberflaechenbasis (ab 150 Tage Mondstation 3 Kerbals) =====\n"
     s += base_chain("moon_base", "Moon", "Luna", [2, 3, 4, 6, 8, 10],
-                    "cr_moon_station_longstay2", "Erste Mondbasis", 1.5)
+                    "cr_moon_station_longstay3", "Erste Mondbasis", 1.5)
     s += "\n    // ===== MARS — Raumstation (ab 10 Tage auf Mars) =====\n"
     s += orbit_chain("mars_station", "Mars", "Mars", "Marsorbit", 90,
                      [2, 3, 4, 6], "cr_mars_stay_10d", "Erste Mars-Raumstation im Marsorbit", 2.4)

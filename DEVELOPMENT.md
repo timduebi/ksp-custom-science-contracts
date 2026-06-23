@@ -29,6 +29,7 @@ the generator than in every mission block. Examples from the SOL campaign:
 - generated return checks for crewed non-base missions,
 - generated rover wheel-motion checks,
 - relay-specific network checks,
+- generated crewed-orbit apoapsis caps and minimum half-day holds,
 - generated station/base/depot chains,
 - generated support missions such as the first docking target,
 - optional generated side missions that are deliberately not prerequisites,

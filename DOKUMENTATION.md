@@ -116,7 +116,8 @@ check has its own UI line and can be shown as fulfilled or open.
 Supported check types include:
 
 - Crew checks: `CREW_MIN`, `CREW_NONE`, `CREW_EXACT`.
-- Vessel/body state: `ORBIT_ABOVE`, `LANDED`, `SUBORBITAL`, `EVA`.
+- Vessel/body state: `CREW_CAPACITY_MIN`, `ORBIT_ABOVE`, `APOAPSIS_MAX`,
+  `LANDED`, `SUBORBITAL`, `EVA`.
 - Orbit details: `INCLINATION_MIN`, `VESSEL_COUNT`,
   `VESSEL_COUNT_INCLINATION`, `RELAY_VESSEL_COUNT`,
   `RELAY_VESSEL_COUNT_INCLINATION`.
@@ -203,11 +204,15 @@ needs structured generated behavior:
 - crewed non-base missions can receive generated `RETURN_FROM_BODY` checks,
 - rover missions receive `WHEEL_MOTION`,
 - satellite networks can be normalized to relay-specific vessel-count checks,
+- crewed orbit missions can receive generated apoapsis caps and a minimum
+  half-day orbital hold,
 - the first docking maneuver uses a generated recorded docking target,
 - generated station, base and depot chains are placed into epochs by id/stage,
-- the Moon base is gated behind the second 150-day, 2-Kerbal lunar station
-  operation, while two early lunar base-site survey landings unlock during the
-  Earth station phase and remain optional side missions,
+- orbital station build/expansion checks can require an empty uncrewed station
+  with enough available seats; crew is counted from resupply onward,
+- the Moon base is gated behind the 150-day, 3-Kerbal lunar station operation,
+  while two early lunar base-site survey landings unlock after the
+  Earth station reaches four seats and remain optional side missions,
 - early asteroid-belt scouting can be placed in Red Horizon while Beltworks
   remains reserved for later belt landings, industry and crewed work,
 - Phobos depot and Ceres landing progression intentionally skip unnecessary
