@@ -12,15 +12,15 @@ Die Kampagne beginnt historisch und vorsichtig. Unbemannte Testflüge verlassen 
 
 Luna ist der erste grosse Horizont. Nach der ersten EVA im Erdorbit wird der unbemannte Luna-Vorbeiflug geöffnet, danach folgen unbemannter Luna-Orbit und unbemannte Luna-Landung. Der bemannte Luna-Vorbeiflug `cr_luna_flyby_crewed` ist der Meilenstein, ab dem gesperrte Aufträge als Vorschau erscheinen. Der erste bemannte Luna-Orbit braucht den bemannten Vorbeiflug und die erste unbemannte Landung. Die erste bemannte Luna-Landung enthält direkt die erste Oberflächen-EVA.
 
-Nach der ersten bemannten Luna-Landung beginnt die echte Erdstation bereits in Moonrise. Sie ist eine neue Stationskette und hat keine technische Verbindung zum temporären Ein-Modul-Labor. Stationsbau und Stationsausbau prüfen zunächst nur verfügbare Plätze; Kerbals werden erst bei Versorgung und Langzeitbetrieb gezählt. Die Erdstation startet mit 3 Plätzen, wächst in Moonrise bis 4 Plätze, in Epoche 4 bis 8 und in Epoche 5 bis 6 bis 12. Nach dem Ausbau der Erdstation auf 4 Plätze werden zwei optionale Luna-Landungen als Standorttests für spätere Mondbasen geöffnet. Die Mondstation startet direkt mit 3 Plätzen. Eine Mondbasis setzt den 150-Tage-Betrieb der 3er-Mondstation voraus. Das Erdorbit-Fuel-Depot ist ein optionaler Versorgungsnetz-Zweig, öffnet später als die Erdstation und blockiert keine bemannte Marsmission.
+Nach der ersten bemannten Luna-Landung beginnt die echte Erdstation bereits in Moonrise. Sie ist eine neue Stationskette und hat keine technische Verbindung zum temporären Ein-Modul-Labor. Stationsbau und Stationsausbau müssen leer und unbemannt sein; sie prüfen zunächst nur verfügbare Plätze. Kerbals werden erst bei Versorgung und Langzeitbetrieb gezählt. Die Erdstation startet mit 3 Plätzen, wächst in Moonrise bis 4 Plätze, in Inner Reach bis 8 Plätze und in Beltworks bis 12 Plätze. Nach dem Ausbau der Erdstation auf 4 Plätze werden zwei optionale Luna-Landungen als Standorttests für spätere Mondbasen geöffnet. Die Mondstation startet direkt mit 3 Plätzen. Eine Mondbasis setzt den 150-Tage-Betrieb der 3er-Mondstation voraus. Das Erdorbit-Fuel-Depot ist ein optionaler Versorgungsnetz-Zweig, öffnet später als die Erdstation und blockiert keine bemannte Marsmission.
 
 Ab Epoche 3 wird das frühe Erd-Satellitennetz aus der Pionierzeit narrativ zu alt. Im Versorgungsnetz entsteht deshalb eine neue Kommunikations-Lebensader: zuerst Erde, dann Luna, danach Mars, ein interplanetarer Sonnenorbit-Ring und schliesslich die grossen Relais um Jupiter und Saturn. Erde und Luna bekommen je eine Grundkonstellation mit drei Satelliten und danach eine polare Ausbaustufe mit drei weiteren Satelliten.
 
 Das innere Sonnensystem öffnet sich robotisch nach dem bemannten Luna-Vorbeiflug. Nach den ersten Flybys folgen die ersten robotischen Orbits früher: Venus und Merkur können schon in der Flyby-Epoche in einen Orbit gehen, Mars-Orbit und erste robotische Marslandung rücken eine Epoche nach vorne. Venus bekommt die Landung weiterhin erst später. Bemannt bleiben Venus-Vorbeiflug und Venus-Orbit optional. Für bemannten Mars-Vorbeiflug und bemannten Mars-Orbit reicht die normale Erdstation mit Longstay-Stufe 3.
 
-Mars ist der zweite grosse bemannte Hauptbogen. Nach bemanntem Mars-Orbit, robotischer Präzisionslandung und Langzeiterfahrung folgen bemannte Marslandung mit EVA, 10 Tage auf Mars und 30 Tage auf Mars. Phobos und Deimos werden nach bemannter Marslandung direkt als bemannte Landungen verfügbar; eigene bemannte Orbitmissionen für diese kleinen Monde gibt es nicht mehr. Marsstation und Marsbasis starten danach als neue Infrastruktur.
+Mars ist der zweite grosse bemannte Hauptbogen. Nach bemanntem Mars-Orbit, robotischer Präzisionslandung und Langzeiterfahrung folgen bemannte Marslandung mit EVA, 10 Tage auf Mars und 30 Tage auf Mars. Phobos und Deimos werden nach bemannter Marslandung direkt als bemannte Landungen verfügbar; eigene bemannte Orbitmissionen für diese kleinen Monde gibt es nicht mehr. Das Versorgungsdepot entsteht im Orbit um Phobos; ein eigenes Deimos-Depot gibt es nicht mehr. Marsstation und Marsbasis starten danach als neue Infrastruktur.
 
-Asteroiden sind vollständig Bonus. Eros, Vesta, Ceres, Pallas, Psyche, Ryugu, Ida, Dactyl und Arrokoth geben Wissenschaft, Ressourcenoptionen und erzählerische Tiefe, blockieren aber keine Hauptmission zu Mars, Jupiter, Saturn, Titan, Triton, Pluto und Arrokoth. Ceres ist das einzige bemannte Asteroidenziel und bleibt ein Prestigeast.
+Asteroiden sind vollständig Bonus. Eros, Vesta, Ceres, Pallas, Psyche, Ryugu, Ida, Dactyl und Arrokoth geben Wissenschaft, Ressourcenoptionen und erzählerische Tiefe, blockieren aber keine Hauptmission zu Mars, Jupiter, Saturn, Titan, Triton, Pluto und Arrokoth. Ceres ist das einzige bemannte Asteroidenziel und bleibt ein Prestigeast: Nach dem bemannten Vorbeiflug ist die Landung direkt möglich, der bemannte Ceres-Orbit bleibt optional.
 
 Jupiter wird robotisch früh sichtbar: der unbemannte Jupiter-Vorbeiflug öffnet nach unbemanntem Mars-Orbit, der unbemannte Jupiter-Orbit folgt direkt danach. Io, Europa, Ganymed und Kallisto erhalten robotische Vorbeiflüge. Kallisto erhält einen optionalen Ressourcenzweig. Ganymed ist das einzige bemannte Landungsziel im Jupitersystem.
 
@@ -36,6 +36,24 @@ chain: body=Moon | key=moon_station | typ=station | prereq=cr_earth_station_long
 chain: body=Moon | key=moon_base | typ=base | prereq=cr_moon_station_longstay3 | stufen=2,3,4,6,8,10
 chain: body=Mars | key=mars_station | typ=station | prereq=cr_mars_stay_10d | stufen=2,3,4,6
 chain: body=Mars | key=mars_base | typ=base | prereq=cr_mars_stay_30d | stufen=2,3,4,6
+
+# GENERIERTE STRUKTURREGELN
+
+Diese Regeln werden beim Erzeugen der Kataloge angewendet und gehören zum aktuellen Missionsstand.
+
+- Das Andocktraining erzeugt zuerst `cr_earth_docking_target`. `cr_earth_docking_demo` hängt an diesem Ziel und prüft ein Docking mit dem registrierten Ziel statt ein beliebiges Docking.
+- Stationsbau und Stationsausbau in Orbitketten prüfen `CREW_NONE`, `CREW_CAPACITY_MIN`, `ORBIT_ABOVE`, `APOAPSIS_MAX` und 10 Tage Stabilität. Sie müssen leer sein; Crew zählt erst bei Versorgung und Longstay.
+- Stationsversorgung prüft Crew an Bord des Versorgungsschiffs, Zielorbit, maximale Apoapsis und Docking mit der registrierten Station.
+- Stations-Longstay prüft Crew an Bord der Station, Zielorbit, maximale Apoapsis und 150 Tage Dauerbetrieb.
+- Die Erdstation läuft 3, 4, 6, 8, 10, 12 Plätze. Moonrise enthält 3 und 4 Plätze, Inner Reach enthält 6 und 8 Plätze, Beltworks enthält 10 und 12 Plätze.
+- Die Mondstation läuft 3, 4, 6, 8, 10 Plätze und startet nach `cr_earth_station_longstay4`.
+- Die Mondbasis läuft 2, 3, 4, 6, 8, 10 Kerbals und startet nach `cr_moon_station_longstay3`.
+- Nach `cr_earth_station_expand4` entstehen zwei optionale Luna-Standorttests: `cr_luna_station_precision_landing_1` und `cr_luna_station_precision_landing_2`. Sie blockieren keine spätere Mission.
+- Alle bemannten Orbitmissionen bekommen eine maximale Apoapsis. Wenn keine echte Dauerforderung vorhanden ist, wird mindestens `DURATION 0.5` gesetzt.
+- Alle bemannten Nicht-Basis-Landungen und Flybys müssen sicher zur Erde zurückkehren, wenn der Missionsblock keinen eigenen Rückkehrcheck trägt.
+- Rovermissionen prüfen Räder und mindestens 4 m/s Bodenbewegung.
+- Satellitennetzwerke prüfen Relaisantennen.
+- Wiederholbare Missionen wandern nach dem ersten Abschluss in den Repeatables-Pool.
 
 # MISSIONEN
 
@@ -204,7 +222,7 @@ check: DURATION 3 | 3 Tage ununterbrochen ausharren
 id: cr_earth_docking_demo
 sparte: Pioniere
 body: Earth
-prereq: cr_earth_duration_3d
+prereq: cr_earth_docking_target
 reward: 88
 repeatable: no
 recordStation: -
@@ -213,7 +231,7 @@ beschreibung: Führe das erste Andockmanöver zwischen zwei Fahrzeugen im Erdorb
 beschreibung_en: Perform the first docking between two vehicles in Earth orbit. This technique will later join stations, depots and interplanetary ships — today you practice it for the first time.
 check: CREW_MIN 1 | mindestens 1 Kerbal an Bord
 check: ORBIT_ABOVE Earth | stabiler Erdorbit
-check: DOCK_ANY | beliebiges Andockmanöver
+check: DOCK_STATION earth_docking_target | Am Andockziel angedockt
 
 === MISSION ===
 id: cr_earth_duration_7d
@@ -1121,31 +1139,17 @@ check: HOLD 10 | 10 Sekunden stabil halten
 id: net_phobos_cache
 sparte: Versorgungsnetz
 body: Phobos
-prereq: cr_phobos_landing
+prereq: cr_mars_landing, un_phobos_orbit
 reward: 126
 repeatable: yes
 recordStation: -
 stationRef: -
-beschreibung: Richte auf Phobos ein unbemanntes Treibstofflager ein. Der kleine Mond wird zum stillen Helfer für alle künftigen Marsoperationen.
-beschreibung_en: Set up an uncrewed fuel cache on Phobos. The small moon becomes a quiet helper for all future Mars operations.
+beschreibung: Richte ein unbemanntes Treibstoffdepot im Orbit um Phobos ein. Der kleine Mond wird zum stillen Helfer für alle künftigen Marsoperationen.
+beschreibung_en: Set up an uncrewed fuel depot in orbit around Phobos. The small moon becomes a quiet helper for all future Mars operations.
 check: CREW_NONE | unbemannt
-check: LANDED Phobos | auf Phobos gelandet
+check: ORBIT_ABOVE Phobos 8 | Stabiler Orbit um Phobos, Periapsis über 8 km
 check: FUEL_MIN 500 | Treibstoff über 500
-
-=== MISSION ===
-id: net_deimos_cache
-sparte: Versorgungsnetz
-body: Deimos
-prereq: cr_deimos_landing
-reward: 126
-repeatable: yes
-recordStation: -
-stationRef: -
-beschreibung: Richte auf Deimos ein unbemanntes Treibstofflager ein und sichere dir eine Reserve am äussersten Rand des Marsraums.
-beschreibung_en: Set up an uncrewed fuel cache on Deimos and secure a reserve at the outermost edge of Mars space.
-check: CREW_NONE | unbemannt
-check: LANDED Deimos | auf Deimos gelandet
-check: FUEL_MIN 500 | Treibstoff über 500
+check: HOLD 10 | 10 Sekunden stabil halten
 
 === MISSION ===
 id: un_vesta_orbit
@@ -1352,7 +1356,7 @@ check: DURATION 10 | 10 Tage ununterbrochen ausharren
 id: cr_ceres_landing
 sparte: Pioniere
 body: Ceres
-prereq: cr_ceres_orbit
+prereq: cr_ceres_flyby
 reward: 450
 repeatable: no
 recordStation: -

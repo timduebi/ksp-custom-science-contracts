@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Generate the Stock KSP contract catalog.
+"""Generate the optional Stock KSP contract catalog.
 
-All catalogs live on `main` and share one engine. The default GameData catalog is the SOL
-one; this generator writes the Stock catalog into OptionalConfigs/Stock, from where
-tools/make_release.sh assembles the Stock config overlay.
+The default GameData catalog remains SOL. This generator reads the separate Stock
+mission design and writes only OptionalConfigs/Stock, so Stock players can install
+it as an overlay without changing the SOL source catalogs.
 """
 import os
 import re
@@ -13,9 +13,18 @@ DOC = os.path.join(ROOT, "custom_science_contracts_stock_missionsdesign.md")
 OUT = os.path.join(ROOT, "OptionalConfigs", "Stock", "GameData", "CustomScienceContracts", "Contracts")
 
 SPARTE = {
+    "Pioniere": "Bemannt",
+    "Robotische Erkunder": "UnbemannteErkundung",
+    "Versorgungsnetz": "NetzwerkLogistik",
     "Pioneers": "Bemannt",
     "Robotic Explorers": "UnbemannteErkundung",
     "Lifelines": "NetzwerkLogistik",
+}
+
+BUCKET_FILES = {
+    "Bemannt": ("A_Pioniere.cfg", "BRANCH A - PIONEERS (crewed)"),
+    "UnbemannteErkundung": ("B_Spaeher.cfg", "BRANCH B - ROBOTIC EXPLORERS"),
+    "NetzwerkLogistik": ("C_Lebensadern.cfg", "BRANCH C - LIFELINES"),
 }
 
 SUBCAT = {
@@ -38,10 +47,125 @@ SUBCAT = {
     "Eeloo": "Eeloo",
 }
 
-BUCKET_FILES = {
-    "Pioneers": ("A_Pioniere.cfg", "BRANCH A - PIONEERS (crewed)"),
-    "Robotic Explorers": ("B_Spaeher.cfg", "BRANCH B - ROBOTIC EXPLORERS"),
-    "Lifelines": ("C_Lebensadern.cfg", "BRANCH C - LIFELINES"),
+BODY_NAMES = {
+    "kerbin": "Kerbin",
+    "mun": "Mun",
+    "minmus": "Minmus",
+    "moho": "Moho",
+    "eve": "Eve",
+    "gilly": "Gilly",
+    "duna": "Duna",
+    "ike": "Ike",
+    "dres": "Dres",
+    "jool": "Jool",
+    "laythe": "Laythe",
+    "vall": "Vall",
+    "tylo": "Tylo",
+    "bop": "Bop",
+    "pol": "Pol",
+    "eeloo": "Eeloo",
+    "sun": "Sun",
+}
+
+WORD_NAMES = {
+    "cr": "Crewed",
+    "un": "Uncrewed",
+    "net": "Relay",
+    "st": "Station",
+    "dep": "Depot",
+    "rep": "Repeatable",
+    "eva": "EVA",
+    "atmo": "Atmosphere",
+    "3d": "3-Day",
+    "10d": "10-Day",
+    "30d": "30-Day",
+    "longstay": "Long Stay",
+    "flyby": "Flyby",
+    "orbiter": "Orbiter",
+    "orbit": "Orbit",
+    "lander": "Lander",
+    "landing": "Landing",
+    "relay": "Relay",
+    "polar": "Polar",
+    "precision": "Precision",
+    "rover": "Rover",
+    "fuel": "Fuel",
+    "depot": "Depot",
+    "base": "Base",
+    "supply": "Supply",
+    "upgrade": "Upgrade",
+    "core": "Core",
+    "station": "Station",
+    "support": "Support",
+    "gateway": "Gateway",
+    "return": "Return",
+    "launch": "Launch",
+}
+
+EPOCH_EXACT = {
+    # 1 - Getting Away With It
+    "cr_kerbin_first_launch": 1,
+    "cr_kerbin_suborbital": 1,
+    "cr_kerbin_orbit": 1,
+    "cr_kerbin_eva": 1,
+    "cr_kerbin_orbit_3d": 1,
+    "un_kerbin_sounding_probe": 1,
+    "un_kerbin_first_satellite": 1,
+    "un_kerbin_polar_satellite": 1,
+
+    # 2 - Small Station, Big Ideas
+    "st_kerbin_station_core3": 2,
+    "st_kerbin_station_crew3": 2,
+    "st_kerbin_station_longstay3": 2,
+    "st_kerbin_station_upgrade4": 2,
+    "st_kerbin_station_longstay4": 2,
+    "st_kerbin_station_upgrade6": 2,
+    "st_kerbin_station_longstay6": 2,
+    "st_kerbin_station_upgrade8": 2,
+    "st_kerbin_station_longstay8": 2,
+    "st_kerbin_station_upgrade10": 2,
+    "st_kerbin_station_longstay10": 2,
+    "net_kerbin_relay3": 2,
+    "net_kerbin_relay6_polar": 2,
+    "dep_kerbin_fuel_depot_core": 2,
+    "dep_kerbin_fuel_delivery": 2,
+    "rep_kerbin_station_resupply": 2,
+
+    # 3 - Mun or Bust
+    "cr_mun_flyby": 3,
+    "cr_mun_orbit": 3,
+    "un_mun_orbiter": 3,
+    "cr_mun_landing": 3,
+    "un_mun_rover": 3,
+    "un_mun_precision_rover_landing": 3,
+    "cr_mun_precision_landing": 3,
+    "cr_mun_polar_precision_landing": 3,
+    "net_mun_relay3": 3,
+    "net_mun_relay6_polar": 3,
+    "st_mun_station_core3": 3,
+    "st_mun_station_longstay3": 3,
+    "st_mun_station_upgrade6": 3,
+    "st_mun_station_longstay6": 3,
+    "base_mun_base3": 3,
+    "base_mun_base6": 3,
+    "rep_mun_base_supply": 3,
+
+    # 4 - Minty Fuel Dreams
+    "cr_minmus_flyby": 4,
+    "cr_minmus_landing": 4,
+    "cr_minmus_precision_landing": 4,
+    "net_minmus_relay3": 4,
+    "base_minmus_fuel_base": 4,
+
+    # 7 - The Deep-Space Switchboard
+    "net_interplanetary_relay3": 7,
+    "un_eeloo_flyby": 7,
+    "un_eeloo_lander": 7,
+    "cr_eeloo_landing": 7,
+    "un_jool_atmo_probe": 7,
+
+    # 9 - The Purple Final Exam
+    "cr_eve_landing_return": 9,
 }
 
 HEADER = """// ===========================================================================
@@ -69,7 +193,7 @@ def parse_check(s):
         raise SystemExit("Empty check line")
     kind, a = toks[0], toks[1:]
     kv = []
-    if kind in ("CREW_MIN", "CREW_EXACT"):
+    if kind in ("CREW_MIN", "CREW_EXACT", "CREW_CAPACITY_MIN"):
         kv = [("min", a[0])]
     elif kind == "CREW_NONE":
         kv = []
@@ -77,6 +201,8 @@ def parse_check(s):
         kv = [("body", a[0])]
     elif kind == "ORBIT_ABOVE":
         kv = [("body", a[0])] + ([("km", a[1])] if len(a) > 1 else [])
+    elif kind == "APOAPSIS_MAX":
+        kv = [("body", a[0]), ("km", a[1])]
     elif kind == "INCLINATION_MIN":
         kv = [("body", a[0]), ("inclinationMin", a[1])]
     elif kind == "ATMO_FRACTION":
@@ -89,12 +215,18 @@ def parse_check(s):
         kv = [("body", a[0]), ("count", a[1])] + ([("km", a[2])] if len(a) > 2 else [])
     elif kind == "VESSEL_COUNT_INCLINATION":
         kv = [("body", a[0]), ("count", a[1]), ("inclinationMin", a[2])] + ([("km", a[3])] if len(a) > 3 else [])
+    elif kind == "RELAY_VESSEL_COUNT":
+        kv = [("body", a[0]), ("count", a[1])] + ([("km", a[2])] if len(a) > 2 else [])
+    elif kind == "RELAY_VESSEL_COUNT_INCLINATION":
+        kv = [("body", a[0]), ("count", a[1]), ("inclinationMin", a[2])] + ([("km", a[3])] if len(a) > 3 else [])
     elif kind == "EVA":
         kv = [("body", a[0])] + ([("situation", a[1])] if len(a) > 1 else [])
     elif kind == "FUEL_MIN":
         kv = [("amount", a[0])]
     elif kind == "RESOURCE_MIN":
         kv = [("resource", a[0]), ("amount", a[1])]
+    elif kind == "WHEEL_MOTION":
+        kv = [("body", a[0]), ("speed", a[1])]
     elif kind == "DOCK_ANY":
         kv = []
     elif kind == "DOCK_STATION":
@@ -104,7 +236,7 @@ def parse_check(s):
     elif kind == "DURATION":
         kv = [("days", a[0])]
     elif kind == "RETURN_FROM_BODY":
-        kv = [("body", a[0]), ("returnBody", a[1])]
+        kv = [("body", a[0]), ("returnBody", a[1])] + ([("returnMode", a[2])] if len(a) > 2 else [])
     else:
         raise SystemExit(f"Unknown check '{kind}' in: {s}")
     return kind, kv, label
@@ -112,7 +244,8 @@ def parse_check(s):
 
 def parse_missions(text):
     missions = []
-    keys = "id|title|sparte|body|subcategory|prereq|reward|repeatable|recordStation|stationRef|description|icon"
+    keys = ("id|title|sparte|body|subcategory|prereq|reward|repeatable|recordStation|"
+            "stationRef|description|beschreibung|beschreibung_en|icon")
     for blk in text.split("=== MISSION ===")[1:]:
         m, checks = {}, []
         for line in blk.splitlines():
@@ -133,28 +266,79 @@ def parse_missions(text):
     return missions
 
 
+def epoch_for_id(cid):
+    if cid in EPOCH_EXACT:
+        return EPOCH_EXACT[cid]
+    if cid.startswith(("un_eve_", "cr_eve_", "cr_gilly_", "un_gilly_", "un_moho_", "cr_moho_", "un_dres_", "cr_dres_", "st_eve_", "un_gilly_")):
+        return 5
+    if cid.startswith(("un_duna_", "cr_duna_", "cr_ike_", "st_duna_", "base_duna_", "net_duna_", "rep_duna_")):
+        return 6
+    if cid.startswith(("un_jool_", "net_jool_", "st_jool_", "un_laythe_", "cr_laythe_", "base_laythe_",
+                       "un_vall_", "cr_vall_", "un_tylo_", "cr_tylo_", "outpost_tylo_", "un_bop_",
+                       "cr_bop_", "un_pol_", "cr_pol_", "rep_laythe_")):
+        return 8
+    return 1
+
+
+def title_for(m):
+    if m.get("title"):
+        return m["title"]
+    cid = m["id"]
+    words = []
+    for token in cid.split("_"):
+        match = re.match(r"([a-z]+)(\d+d?|\d+)?$", token)
+        base = token
+        suffix = ""
+        if match:
+            base, suffix = match.groups()
+            suffix = suffix or ""
+        word = BODY_NAMES.get(base) or WORD_NAMES.get(base) or base.capitalize()
+        if suffix:
+            if suffix.endswith("d"):
+                word += " " + suffix[:-1] + "-Day"
+            else:
+                word += " " + suffix
+        words.append(word)
+    title = " ".join(words)
+    title = re.sub(r"^(Crewed|Uncrewed|Relay|Station|Depot|Repeatable) ", "", title)
+    title = title.replace("Landing Return", "Landing and Return")
+    return title
+
+
+def description_for(m):
+    return (m.get("description") or m.get("beschreibung_en") or m.get("beschreibung") or "").strip()
+
+
 def icon_for(m):
     kinds = [k for k, _, _ in m["checks"]]
+    if "WHEEL_MOTION" in kinds:
+        return "TrackingStation_ButtonMapRover"
     if "MARKER_LANDING" in kinds:
         return "TrackingStation_ButtonMapFlag"
-    if "ORE_SURFACE" in kinds or "FUEL_MIN" in kinds or "RESOURCE_MIN" in kinds:
+    if "RELAY_VESSEL_COUNT" in kinds or "RELAY_VESSEL_COUNT_INCLINATION" in kinds:
+        return "TrackingStation_ButtonMapCommunicationsRelay"
+    if "ORE_SURFACE" in kinds or "RESOURCE_MIN" in kinds:
         return "TrackingStation_ButtonMapBase"
+    if "FUEL_MIN" in kinds:
+        return "TrackingStation_ButtonMapBase"
+    if "CREW_CAPACITY_MIN" in kinds:
+        return "TrackingStation_ButtonMapStation"
     if "DOCK_ANY" in kinds or "DOCK_STATION" in kinds:
         return "TrackingStation_ButtonMapStation"
     if "EVA" in kinds and "LANDED" not in kinds:
         return "TrackingStation_ButtonMapEVA"
-    if "RETURN_FROM_BODY" in kinds:
-        return "TrackingStation_ButtonMapShips"
     if "LANDED" in kinds:
         return "TrackingStation_ButtonMapBase" if "DURATION" in kinds else "TrackingStation_ButtonMapLander"
     if "FLYBY" in kinds:
-        return "TrackingStation_ButtonMapProbe"
+        sparte = SPARTE.get(m["sparte"], m["sparte"])
+        return "TrackingStation_ButtonMapShips" if sparte == "Bemannt" else "TrackingStation_ButtonMapProbe"
     if "VESSEL_COUNT" in kinds or "VESSEL_COUNT_INCLINATION" in kinds:
         return "TrackingStation_ButtonMapCommunicationsRelay"
     if "ATMO_FRACTION" in kinds or "SUBORBITAL" in kinds:
         return "TrackingStation_ButtonMapAircraft"
     if "ORBIT_ABOVE" in kinds:
-        return "TrackingStation_ButtonMapShips" if m["sparte"] == "Pioneers" else "TrackingStation_ButtonMapCommunicationsRelay"
+        sparte = SPARTE.get(m["sparte"], m["sparte"])
+        return "TrackingStation_ButtonMapShips" if sparte == "Bemannt" else "TrackingStation_ButtonMapCommunicationsRelay"
     return "TrackingStation_ButtonMapProbe"
 
 
@@ -177,12 +361,13 @@ def contract(m):
     sub = m.get("subcategory") or SUBCAT[m["body"]]
     out = "    CONTRACT\n    {\n"
     out += f"        id = {m['id']}\n"
-    out += f"        title = {m.get('title', m['id'])}\n"
-    out += f"        description = {m.get('description', '')}\n"
+    out += f"        title = {title_for(m)}\n"
+    out += f"        description = {description_for(m)}\n"
     out += f"        sparte = {sparte}\n"
     out += f"        subcategory = {sub}\n"
     out += f"        icon = {m.get('icon') or icon_for(m)}\n"
     out += f"        reward = {m['reward']}\n"
+    out += f"        epoch = {epoch_for_id(m['id'])}\n"
     if m.get("repeatable") == "yes":
         out += "        repeatable = true\n"
     if m.get("recordStation", "-") != "-":
@@ -208,30 +393,35 @@ def write_file(path, title, body):
 def write_readme(counts):
     readme = os.path.join(ROOT, "OptionalConfigs", "Stock", "README.md")
     os.makedirs(os.path.dirname(readme), exist_ok=True)
-    text = """# Stock KSP config
+    text = f"""# Stock KSP config
 
-Optional config pack that rebuilds the whole campaign around the **stock** Kerbal Space Program
-system — the same mission structure, but flown to Kerbin, the Mun, Minmus, Duna, Jool, Laythe,
-Eve and the rest of the stock bodies instead of the real solar system.
-
-It replaces only the four catalog files in `GameData/CustomScienceContracts/Contracts/`; the
-plugin, icons and licenses stay from the main download.
+Optional config pack for the stock Kerbol system. It replaces only the four contract
+catalog files in `GameData/CustomScienceContracts/Contracts/`; the plugin, icons and
+licenses stay from the main download.
 
 Install:
 1. Install the main mod download first.
 2. Copy this folder's `GameData` directory into your KSP install root.
-3. Confirm overwriting `A_Pioniere.cfg`, `B_Spaeher.cfg`, `C_Lebensadern.cfg`, `D_Stationen.cfg`
-   in `GameData/CustomScienceContracts/Contracts/`.
+3. Confirm overwriting the four catalog files in `GameData/CustomScienceContracts/Contracts/`.
 
-To go back to the default catalog, re-extract those four files from the main download. Run only
-one config at a time.
+Run only one config at a time. To go back to SOL, restore the four default catalog files
+from the main download.
 
-Campaign shape:
-- Crewed-first Kerbin program, then Mun and Minmus.
-- Focused robotic support for Mun, Duna, Jool and Eeloo.
-- Communication networks for Kerbin, Mun/Minmus, Duna, Jool and Eeloo.
-- Optional grand-tour style crewed landings across the Stock system.
-- Finale: Laythe landing and return, followed by Eve landing and return.
+Campaign chapters:
+1. Getting Away With It
+2. Small Station, Big Ideas
+3. Mun or Bust
+4. Minty Fuel Dreams
+5. Inner Worlds, Bad Ideas
+6. Red Dust, Real Plans
+7. The Deep-Space Switchboard
+8. Jool, Beaches and Regrets
+9. The Purple Final Exam
+
+Generated mission counts:
+- Pioneers: {counts.get('Bemannt', 0)}
+- Robotic Explorers: {counts.get('UnbemannteErkundung', 0)}
+- Lifelines: {counts.get('NetzwerkLogistik', 0)}
 """
     with open(readme, "w", encoding="utf-8") as f:
         f.write(text)
@@ -241,10 +431,10 @@ def main():
     missions = parse_missions(open(DOC, encoding="utf-8").read())
     buckets = {name: [] for name in BUCKET_FILES}
     for m in missions:
-        buckets[m["sparte"]].append(contract(m))
+        buckets[SPARTE[m["sparte"]]].append(contract(m))
     for name, (fn, title) in BUCKET_FILES.items():
         write_file(os.path.join(OUT, fn), title, "".join(buckets[name]))
-    write_file(os.path.join(OUT, "D_Stationen.cfg"), "STATION CHAINS - not used by the Stock pack", "")
+    write_file(os.path.join(OUT, "D_Stationen.cfg"), "STATION CHAINS - explicit in Stock branches", "")
     write_readme({k: len(v) for k, v in buckets.items()})
     for name, items in buckets.items():
         print(f"{name}: {len(items)}")

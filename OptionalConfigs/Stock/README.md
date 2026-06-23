@@ -1,24 +1,29 @@
 # Stock KSP config
 
-Optional config pack that rebuilds the whole campaign around the **stock** Kerbal Space Program
-system — the same mission structure, but flown to Kerbin, the Mun, Minmus, Duna, Jool, Laythe,
-Eve and the rest of the stock bodies instead of the real solar system.
-
-It replaces only the four catalog files in `GameData/CustomScienceContracts/Contracts/`; the
-plugin, icons and licenses stay from the main download.
+Optional config pack for the stock Kerbol system. It replaces only the four contract
+catalog files in `GameData/CustomScienceContracts/Contracts/`; the plugin, icons and
+licenses stay from the main download.
 
 Install:
 1. Install the main mod download first.
 2. Copy this folder's `GameData` directory into your KSP install root.
-3. Confirm overwriting `A_Pioniere.cfg`, `B_Spaeher.cfg`, `C_Lebensadern.cfg`, `D_Stationen.cfg`
-   in `GameData/CustomScienceContracts/Contracts/`.
+3. Confirm overwriting the four catalog files in `GameData/CustomScienceContracts/Contracts/`.
 
-To go back to the default catalog, re-extract those four files from the main download. Run only
-one config at a time.
+Run only one config at a time. To go back to SOL, restore the four default catalog files
+from the main download.
 
-Campaign shape:
-- Crewed-first Kerbin program, then Mun and Minmus.
-- Focused robotic support for Mun, Duna, Jool and Eeloo.
-- Communication networks for Kerbin, Mun/Minmus, Duna, Jool and Eeloo.
-- Optional grand-tour style crewed landings across the Stock system.
-- Finale: Laythe landing and return, followed by Eve landing and return.
+Campaign chapters:
+1. Getting Away With It
+2. Small Station, Big Ideas
+3. Mun or Bust
+4. Minty Fuel Dreams
+5. Inner Worlds, Bad Ideas
+6. Red Dust, Real Plans
+7. The Deep-Space Switchboard
+8. Jool, Beaches and Regrets
+9. The Purple Final Exam
+
+Generated mission counts:
+- Pioneers: 31
+- Robotic Explorers: 30
+- Lifelines: 53

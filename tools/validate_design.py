@@ -62,12 +62,19 @@ for line in text.splitlines():
         chains.append(d)
 
 gen_ids, gen_ref_targets = set(), set()
-for ch in chains:
-    key = ch["key"]; stufen = [int(x) for x in ch["stufen"].split(",")]
-    for i, n in enumerate(stufen):
-        gen_ids.add(f"cr_{key}_build" if i == 0 else f"cr_{key}_expand{n}")
-        gen_ids.add(f"cr_{key}_supply{n}")
-        gen_ids.add(f"cr_{key}_longstay{n}")
+support_ids = set()
+if PROFILE != "stock":
+    support_ids = {
+        "cr_earth_docking_target",
+        "cr_luna_station_precision_landing_1",
+        "cr_luna_station_precision_landing_2",
+    }
+    for ch in chains:
+        key = ch["key"]; stufen = [int(x) for x in ch["stufen"].split(",")]
+        for i, n in enumerate(stufen):
+            gen_ids.add(f"cr_{key}_build" if i == 0 else f"cr_{key}_expand{n}")
+            gen_ids.add(f"cr_{key}_supply{n}")
+            gen_ids.add(f"cr_{key}_longstay{n}")
 
 # ---- Collect ids ----
 defined = set()
@@ -75,7 +82,7 @@ dups = []
 for m in missions:
     if m["id"] in defined: dups.append(m["id"])
     defined.add(m["id"])
-all_ids = defined | gen_ids
+all_ids = defined | gen_ids | support_ids
 
 # Prerequisites of all missions and chain starts.
 prereq_edges = []
@@ -103,6 +110,8 @@ for m in missions:
         if kind in CHECK_BODY and len(toks) >= 2:
             used_bodies.add(toks[1])
             if toks[1] not in BODIES: unknown_bodies.add(toks[1])
+        if kind == "WHEEL_MOTION" and len(toks) < 3:
+            unknown_checks.add(f"{kind}:missing_body_or_speed")
         if kind == "RETURN_FROM_BODY" and len(toks) >= 3:
             used_bodies.add(toks[2])
             if toks[2] not in BODIES: unknown_bodies.add(toks[2])
@@ -126,6 +135,7 @@ missing_en = sorted(m["id"] for m in missions if not m.get("beschreibung_en","")
 print("Design file:", DOC)
 print("Profile:", PROFILE)
 print(f"Missions: {len(missions)}   (station chains generate {len(gen_ids)} additional ids)")
+print("Generated support ids:", sorted(support_ids))
 print("Per branch:", by_sparte)
 print("Chains:", [c['key'] for c in chains])
 print()

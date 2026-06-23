@@ -284,9 +284,6 @@ def english_checks(m):
 
 
 def description_for_catalog(m, title, checks):
-    if m["id"] == "net_phobos_cache":
-        return ("Set up an uncrewed fuel depot in orbit around Phobos. The small moon becomes "
-                "a quiet helper for all future Mars operations.")
     desc = description_for(m, title)
     original_has_return = any(kind == "RETURN_FROM_BODY" for kind, _, _ in m["checks"])
     generated_has_return = any(kind == "RETURN_FROM_BODY" for kind, _, _ in checks)

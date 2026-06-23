@@ -339,15 +339,9 @@ def contract(cid, title, desc, sparte, sub, icon, reward, prereqs, checks,
     s += "        }\n    }\n"
     return s
 
-SKIP_IDS = {"net_deimos_cache", "cr_phobos_orbit", "cr_deimos_orbit"}
+SKIP_IDS = set()
 
 def contract_prereqs(m):
-    if m["id"] == "cr_earth_docking_demo":
-        return ["cr_earth_docking_target"]
-    if m["id"] == "net_phobos_cache":
-        return ["cr_mars_landing", "un_phobos_orbit"]
-    if m["id"] == "cr_ceres_landing":
-        return ["cr_ceres_flyby"]
     return [] if m.get("prereq", "-") in ("-", "") else [p.strip() for p in m["prereq"].split(",")]
 
 def docking_target_contract():
@@ -429,20 +423,6 @@ def ensure_crewed_orbit_requirements(m, checks):
 def apply_curated_check_overrides(m, checks):
     cid = m["id"]
 
-    if cid == "cr_earth_docking_demo":
-        return [("DOCK_STATION", [("stationKey", "earth_docking_target")], "Am Andockziel angedockt")
-                if kind == "DOCK_ANY" else (kind, kvl, label)
-                for kind, kvl, label in checks]
-
-    if cid == "net_phobos_cache":
-        return [
-            ("CREW_NONE", [], "unbemannt"),
-            ("ORBIT_ABOVE", [("body", "Phobos"), ("km", "8")],
-             "Stabiler Orbit um Phobos, Periapsis über 8 km"),
-            ("FUEL_MIN", [("amount", "500")], "Treibstoff über 500"),
-            ("HOLD", [("seconds", "10")], "10 Sekunden stabil halten"),
-        ]
-
     crew_overrides = {
         "cr_luna_flyby_crewed": 2,
         "cr_luna_orbit": 3,
@@ -506,9 +486,6 @@ def return_check_for(m):
     return "RETURN_FROM_BODY", kv, "Crew sicher zur Erde zurückbringen"
 
 def description_for_catalog(m, desc, checks):
-    if m["id"] == "net_phobos_cache":
-        return ("Richte ein unbemanntes Treibstoffdepot im Orbit um Phobos ein. Der kleine "
-                "Mond wird zum stillen Helfer für alle künftigen Marsoperationen.")
     original_has_return = any(kind == "RETURN_FROM_BODY" for kind, _, _ in m["checks"])
     generated_has_return = any(kind == "RETURN_FROM_BODY" for kind, _, _ in checks)
     if generated_has_return and not original_has_return:

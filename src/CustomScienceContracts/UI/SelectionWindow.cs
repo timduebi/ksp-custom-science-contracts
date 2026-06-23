@@ -89,7 +89,7 @@ namespace CustomScienceContracts.UI
                 int count = ContractsForMode(mgr, _mode)
                     .Count(c => EpochOf(c) == epoch && CanAcceptFromCenter(mgr, c, visible));
                 bool active = _selectedEpoch == epoch;
-                if (GUI.Button(er, $"{EpochName(epoch)} ({count})",
+                if (GUI.Button(er, $"{EpochName(mgr, epoch)} ({count})",
                         active ? Theme.EpochTabActive : Theme.EpochTabInactive))
                     _selectedEpoch = epoch;
 
@@ -346,7 +346,7 @@ namespace CustomScienceContracts.UI
             var unlocks = CrossEpochUnlocks(mgr, c);
             if (unlocks.Count == 0) return;
             int firstEpoch = unlocks.Min(EpochOf);
-            string label = "-> " + EpochName(firstEpoch);
+            string label = "-> " + EpochName(mgr, firstEpoch);
             Rect tag = new Rect(r.xMax - 88f, r.y + 31f, 76f, 16f);
             Color tagColor = unlocks.All(IsCrossEpochUnlocked) ? Theme.Ok : Theme.Accent;
             Theme.DrawRect(tag, WithAlpha(tagColor, 0.24f));
@@ -435,7 +435,7 @@ namespace CustomScienceContracts.UI
             foreach (var pre in unmet)
             {
                 string title = pre != null ? pre.Titel : "Unknown mission";
-                string epoch = pre != null ? EpochName(pre.Epoch) : "Unknown epoch";
+                string epoch = pre != null ? EpochName(mgr, pre.Epoch) : "Unknown epoch";
                 string line = "- " + title + " (" + epoch + ")";
                 float h = TextHeight(Theme.CondBad, line, w);
                 GUI.Label(new Rect(x, y, w, h), line, Theme.CondBad);
@@ -472,7 +472,7 @@ namespace CustomScienceContracts.UI
                 var pre = mgr.Catalog.Get(id);
                 if (ContractManager.IsCompleted(pre)) continue;
                 string title = pre != null ? pre.Titel : id;
-                string epoch = pre != null ? EpochName(pre.Epoch) : "Unknown epoch";
+                string epoch = pre != null ? EpochName(mgr, pre.Epoch) : "Unknown epoch";
                 lines.Add("Complete: " + title + " (" + epoch + ")");
             }
 
@@ -527,7 +527,7 @@ namespace CustomScienceContracts.UI
             int shown = 0;
             foreach (var next in unlocks.Take(3))
             {
-                string line = "- " + next.Titel + " (" + EpochName(next.Epoch) + ")";
+                string line = "- " + next.Titel + " (" + EpochName(mgr, next.Epoch) + ")";
                 bool unlocked = IsCrossEpochUnlocked(next);
                 var style = unlocked ? Theme.CondOk : Theme.Station;
                 float h = TextHeight(style, line, w - 14f);
@@ -717,7 +717,7 @@ namespace CustomScienceContracts.UI
                 foreach (var pre in unmet)
                 {
                     string title = pre != null ? pre.Titel : "Unknown mission";
-                    string epoch = pre != null ? EpochName(pre.Epoch) : "Unknown epoch";
+                    string epoch = pre != null ? EpochName(mgr, pre.Epoch) : "Unknown epoch";
                     h += TextHeight(Theme.CondBad, "- " + title + " (" + epoch + ")", CardW - 20f) + 3f;
                 }
                 h += 6f;
@@ -744,7 +744,7 @@ namespace CustomScienceContracts.UI
             foreach (var next in unlocks.Take(3))
             {
                 var style = IsCrossEpochUnlocked(next) ? Theme.CondOk : Theme.Station;
-                h += TextHeight(style, "- " + next.Titel + " (" + EpochName(next.Epoch) + ")", width - 14f) + 10f;
+                h += TextHeight(style, "- " + next.Titel + " (" + EpochName(mgr, next.Epoch) + ")", width - 14f) + 10f;
                 shown++;
             }
             if (unlocks.Count > shown) h += 20f;
@@ -851,7 +851,12 @@ namespace CustomScienceContracts.UI
 
         private static int EpochOf(MissionContract c) => Mathf.Max(1, c.Epoch);
 
-        private static string EpochName(int epoch)
+        private static string EpochName(ContractManager mgr, int epoch)
+        {
+            return IsStockCatalog(mgr) ? StockEpochName(epoch) : SolEpochName(epoch);
+        }
+
+        private static string SolEpochName(int epoch)
         {
             switch (epoch)
             {
@@ -865,6 +870,55 @@ namespace CustomScienceContracts.UI
                 case 8: return "Ringed Worlds";
                 case 9: return "Far Frontier";
                 default: return "Campaign";
+            }
+        }
+
+        private static string StockEpochName(int epoch)
+        {
+            switch (epoch)
+            {
+                case 1: return "Getting Away With It";
+                case 2: return "Small Station, Big Ideas";
+                case 3: return "Mun or Bust";
+                case 4: return "Minty Fuel Dreams";
+                case 5: return "Inner Worlds, Bad Ideas";
+                case 6: return "Red Dust, Real Plans";
+                case 7: return "The Deep-Space Switchboard";
+                case 8: return "Jool, Beaches and Regrets";
+                case 9: return "The Purple Final Exam";
+                default: return "Campaign";
+            }
+        }
+
+        private static bool IsStockCatalog(ContractManager mgr)
+        {
+            return mgr != null && mgr.Catalog != null && mgr.Catalog.All.Any(UsesStockBody);
+        }
+
+        private static bool UsesStockBody(MissionContract c)
+        {
+            string body = PrimaryBody(c);
+            switch (body)
+            {
+                case "Kerbin":
+                case "Mun":
+                case "Minmus":
+                case "Moho":
+                case "Eve":
+                case "Gilly":
+                case "Duna":
+                case "Ike":
+                case "Dres":
+                case "Jool":
+                case "Laythe":
+                case "Vall":
+                case "Tylo":
+                case "Bop":
+                case "Pol":
+                case "Eeloo":
+                    return true;
+                default:
+                    return false;
             }
         }
 
@@ -883,14 +937,23 @@ namespace CustomScienceContracts.UI
         {
             switch (BodyVisual.DisplayName(body))
             {
+                case "Kerbin": return 5;
+                case "Mun": return 15;
+                case "Minmus": return 18;
                 case "Earth": return 10;
                 case "Moon": return 20;
+                case "Eve": return 28;
+                case "Gilly": return 29;
                 case "Venus": return 30;
+                case "Moho": return 33;
                 case "Mercury": return 35;
                 case "Sun": return 40;
+                case "Duna": return 45;
+                case "Ike": return 46;
                 case "Mars": return 50;
                 case "Phobos": return 52;
                 case "Deimos": return 54;
+                case "Dres": return 58;
                 case "Eros": return 60;
                 case "Vesta": return 62;
                 case "Ceres": return 64;
@@ -899,11 +962,17 @@ namespace CustomScienceContracts.UI
                 case "Ryugu": return 70;
                 case "Ida": return 72;
                 case "Dactyl": return 74;
+                case "Jool": return 78;
                 case "Jupiter": return 80;
+                case "Laythe": return 81;
                 case "Io": return 82;
+                case "Vall": return 83;
                 case "Europa": return 84;
+                case "Tylo": return 85;
                 case "Ganymede": return 86;
+                case "Bop": return 87;
                 case "Callisto": return 88;
+                case "Pol": return 89;
                 case "Saturn": return 100;
                 case "Titan": return 102;
                 case "Enceladus": return 104;
@@ -927,6 +996,7 @@ namespace CustomScienceContracts.UI
                 case "Proteus": return 156;
                 case "Pluto": return 170;
                 case "Charon": return 172;
+                case "Eeloo": return 176;
                 case "Arrokoth": return 180;
                 default: return 1000;
             }
