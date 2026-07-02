@@ -216,15 +216,18 @@ namespace CustomScienceContracts.UI
             }
         }
 
-        public static Visual ForSubcategory(string label)
+        /// <summary>Primary target body of a mission: first body named by a condition or check,
+        /// falling back to the subcategory. Shared by the atlas and the active-missions window.</summary>
+        public static string PrimaryBody(MissionContract c)
         {
-            if (_subToBody.TryGetValue(label, out string body)) return ForBody(body);
-            // Special categories without one exact body.
-            if (label == "Interplanetar" || label == "Interplanetary")
-                return new Visual { Icon = IconLibrary.UI("TrackingStation_ButtonMapShips"), Color = RGB(224,184,77) };
-            if (label == "Logistik" || label == "Logistics")
-                return new Visual { Icon = IconLibrary.UI("TrackingStation_ButtonMapBase"), Color = RGB(102,187,106) };
-            return new Visual { Icon = null, Color = RGB(150,150,150) };
+            if (c == null) return "";
+            foreach (var b in c.Bedingungen)
+            {
+                if (!string.IsNullOrEmpty(b.Body)) return b.Body;
+                foreach (var ck in b.Checks)
+                    if (!string.IsNullOrEmpty(ck.Body)) return ck.Body;
+            }
+            return SubcatBodyName(c.Unterkategorie) ?? c.Unterkategorie;
         }
 
         // Branches: color + tab icon.
@@ -399,30 +402,6 @@ namespace CustomScienceContracts.UI
                     ? "TrackingStation_ButtonMapStation"
                     : hasCrew ? "TrackingStation_ButtonMapShips" : "TrackingStation_ButtonMapCommunicationsRelay");
             return IconLibrary.UI("TrackingStation_ButtonMapProbe");
-        }
-
-        // Legacy fallback for a single condition type.
-        public static Texture2D ForCondition(ConditionType t)
-        {
-            switch (t)
-            {
-                case ConditionType.FLYBY:                return IconLibrary.UI("TrackingStation_ButtonMapProbe");
-                case ConditionType.ORBIT:
-                case ConditionType.ORBIT_HIGH:
-                case ConditionType.FUEL_ORBIT:
-                case ConditionType.RENDEZVOUS:           return IconLibrary.UI("TrackingStation_ButtonMapShips");
-                case ConditionType.LANDED:               return IconLibrary.UI("TrackingStation_ButtonMapLander");
-                case ConditionType.MARKER_LANDING:       return IconLibrary.UI("TrackingStation_ButtonMapFlag");
-                case ConditionType.CREW_DURATION:
-                case ConditionType.DOCK:                 return IconLibrary.UI("TrackingStation_ButtonMapStation");
-                case ConditionType.EVA:                  return IconLibrary.UI("TrackingStation_ButtonMapEVA");
-                case ConditionType.ORE_SURFACE:          return IconLibrary.UI("TrackingStation_ButtonMapBase");
-                case ConditionType.VESSEL_COUNT_ORBIT:   return IconLibrary.UI("TrackingStation_ButtonMapCommunicationsRelay");
-                case ConditionType.ALT_FRACTION_ATMO:
-                case ConditionType.ABOVE_ATMO_SUBORBITAL:
-                case ConditionType.ATMO_ENTRY:           return IconLibrary.UI("TrackingStation_ButtonMapAircraft");
-                default:                                  return IconLibrary.UI("TrackingStation_ButtonMapProbe");
-            }
         }
     }
 }

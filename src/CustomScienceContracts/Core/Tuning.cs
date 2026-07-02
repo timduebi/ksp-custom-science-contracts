@@ -27,23 +27,12 @@ namespace CustomScienceContracts.Core
 
         // --- Markers (default; individual contracts may override through radiusKm) ---
         public static double MarkerRadiusKmDefault = 15.0;
-        public static double MarkerRadiusKmResupply = 5.0;  // reference value; contracts set radiusKm directly
 
         // --- Check loop ---
         public static float CheckIntervalSeconds = 1.0f;
 
-        // --- Active missions button (custom top button, not in the stock AppLauncher) ---
-        public static float ActiveButtonX = -1f;     // -1 => automatic near the stock top-right controls
-        public static float ActiveButtonY = 2f;      // top spacing in px
-        public static float ActiveButtonSize = 32f;  // button size in px
-
         // --- Mission Control window ---
         public static float MissionCenterScale = 0.96f; // fraction of the screen used when opened
-
-        // --- Locked mission preview ---
-        /// <summary>Once this contract is complete, the next locked mission per body is shown as a
-        /// greyed preview with a red prerequisite line.</summary>
-        public static string LockedPreviewTrigger = "cr_luna_flyby_crewed";
 
         // --- Diagnostics ---
         public static bool VerboseLogging = false;
@@ -75,13 +64,8 @@ namespace CustomScienceContracts.Core
                 ActiveNetzwerk        = GetI(n, "activeNetzwerk", ActiveNetzwerk);
                 RepeatableCooldown    = GetI(n, "repeatableCooldown", RepeatableCooldown);
                 MarkerRadiusKmDefault = GetD(n, "markerRadiusKmDefault", MarkerRadiusKmDefault);
-                MarkerRadiusKmResupply= GetD(n, "markerRadiusKmResupply", MarkerRadiusKmResupply);
                 CheckIntervalSeconds  = GetF(n, "checkIntervalSeconds", CheckIntervalSeconds);
-                ActiveButtonX         = GetF(n, "activeButtonX", ActiveButtonX);
-                ActiveButtonY         = GetF(n, "activeButtonY", ActiveButtonY);
-                ActiveButtonSize      = GetF(n, "activeButtonSize", ActiveButtonSize);
                 MissionCenterScale    = Mathf.Clamp(GetF(n, "missionCenterScale", MissionCenterScale), 0.55f, 1.0f);
-                LockedPreviewTrigger  = n.GetValue("lockedPreviewTrigger") ?? LockedPreviewTrigger;
                 VerboseLogging        = GetB(n, "verboseLogging", VerboseLogging);
                 UnlockAll             = GetB(n, "unlockAll", UnlockAll);
             }

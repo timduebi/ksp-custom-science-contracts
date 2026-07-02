@@ -16,6 +16,7 @@ namespace CustomScienceContracts.Persistence
         GameScenes.SPACECENTER, GameScenes.EDITOR, GameScenes.FLIGHT, GameScenes.TRACKSTATION)]
     public class ContractsScenario : ScenarioModule
     {
+        private static readonly List<Vessel> _noVessels = new List<Vessel>();
         private ContractManager _manager;
         private CscUI _ui;
         private bool _initialized;
@@ -86,13 +87,17 @@ namespace CustomScienceContracts.Persistence
                     var ctx = new EvaluationContext
                     {
                         UniversalTime = Planetarium.GetUniversalTime(),
-                        Vessels = FlightGlobals.Vessels,
+                        // Never null: evaluators iterate this without guards.
+                        Vessels = (IReadOnlyList<Vessel>)FlightGlobals.Vessels ?? _noVessels,
                         Events = _manager.Events,
                         Stations = _manager.Stations
                     };
-                    int active = 0;
-                    foreach (var c in _manager.ActiveContracts()) active++;
-                    Log.V($"Tick: active={active} scene={HighLogic.LoadedScene}");
+                    if (Tuning.VerboseLogging)
+                    {
+                        int active = 0;
+                        foreach (var c in _manager.ActiveContracts()) active++;
+                        Log.V($"Tick: active={active} scene={HighLogic.LoadedScene}");
+                    }
                     _manager.Tick(ctx);
                 }
                 catch (System.Exception e) { Log.Ex("CheckLoop", e); }

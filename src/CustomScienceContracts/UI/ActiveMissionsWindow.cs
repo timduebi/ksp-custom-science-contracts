@@ -101,7 +101,7 @@ namespace CustomScienceContracts.UI
             Rect r = GUILayoutUtility.GetLastRect();
             // Left bar: body-colored, green when claimable, with mission icon.
             if (Event.current.type == EventType.Repaint)
-                Theme.DrawLeftAccent(r, ready ? Theme.ClaimGreen : BodyVisual.ForBody(PrimaryBody(c)).Color,
+                Theme.DrawLeftAccent(r, ready ? Theme.ClaimGreen : BodyVisual.ForBody(BodyVisual.PrimaryBody(c)).Color,
                     BodyVisual.MissionIcon(c), 6f, 22f);
 
             if (ready)
@@ -385,17 +385,6 @@ namespace CustomScienceContracts.UI
         private static double VesselQueryDays() => Conditions.VesselQuery.SecondsPerDay();
         private static bool TryD(ConfigNode n, string k, out double v) =>
             double.TryParse(n.GetValue(k), NumberStyles.Float, CultureInfo.InvariantCulture, out v);
-
-        private static string PrimaryBody(MissionContract c)
-        {
-            foreach (var b in c.Bedingungen)
-            {
-                if (!string.IsNullOrEmpty(b.Body)) return b.Body;
-                foreach (var ck in b.Checks)
-                    if (!string.IsNullOrEmpty(ck.Body)) return ck.Body;
-            }
-            return null;
-        }
 
         private static string SituationText(string sit)
         {

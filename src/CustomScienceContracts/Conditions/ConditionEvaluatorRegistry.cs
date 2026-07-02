@@ -23,15 +23,6 @@ namespace CustomScienceContracts.Conditions
         public IConditionEvaluator Get(ConditionType t) =>
             _map.TryGetValue(t, out var e) ? e : _map[ConditionType.ORBIT];
 
-        /// <summary>Whether all conditions of a contract are fulfilled.</summary>
-        public bool AllSatisfied(MissionContract c, EvaluationContext ctx)
-        {
-            foreach (var cond in c.Bedingungen)
-                if (!Get(cond.Type).Evaluate(c, cond, ctx))
-                    return false;
-            return c.Bedingungen.Count > 0;
-        }
-
         public void NotifyAccepted(MissionContract c)
         {
             foreach (var cond in c.Bedingungen) Get(cond.Type).OnAccepted(c, cond);

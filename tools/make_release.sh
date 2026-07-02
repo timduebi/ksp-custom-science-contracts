@@ -17,7 +17,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REPO="timduebi/ksp-custom-science-contracts"
 KSP="${KSP:-$HOME/Library/Application Support/Steam/steamapps/common/Kerbal Space Program}"
 MANAGED="${KSPManaged:-$KSP/KSP.app/Contents/Resources/Data/Managed}"
-DOTNET="${DOTNET:-/usr/local/share/dotnet/dotnet}"
+# Prefer dotnet/python3 from PATH; DOTNET/PYTHON env vars override.
+DOTNET="${DOTNET:-$(command -v dotnet || echo /usr/local/share/dotnet/dotnet)}"
+PYTHON="${PYTHON:-python3}"
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
 
 # --- Version (single source of truth) -------------------------------------------------
@@ -30,11 +32,11 @@ echo "==> CustomScienceContracts v$VERSION (single release + config overlays)"
 
 # --- Validate every catalog that will ship -------------------------------------------
 echo "==> Validate"
-python3 "$ROOT/tools/validate_design.py" >/dev/null
-python3 "$ROOT/tools/validate_design.py" "$ROOT/custom_science_contracts_stock_missionsdesign.md" >/dev/null
-python3 "$ROOT/tools/validate_catalog.py" "$ROOT/GameData/CustomScienceContracts/Contracts" sol >/dev/null
-python3 "$ROOT/tools/validate_catalog.py" "$ROOT/OptionalConfigs/Stock/GameData/CustomScienceContracts/Contracts" stock >/dev/null
-python3 "$ROOT/tools/validate_catalog.py" "$ROOT/OptionalConfigs/SOL-German/GameData/CustomScienceContracts/Contracts" sol >/dev/null
+"$PYTHON" "$ROOT/tools/validate_design.py" >/dev/null
+"$PYTHON" "$ROOT/tools/validate_design.py" "$ROOT/custom_science_contracts_stock_missionsdesign.md" >/dev/null
+"$PYTHON" "$ROOT/tools/validate_catalog.py" "$ROOT/GameData/CustomScienceContracts/Contracts" sol >/dev/null
+"$PYTHON" "$ROOT/tools/validate_catalog.py" "$ROOT/OptionalConfigs/Stock/GameData/CustomScienceContracts/Contracts" stock >/dev/null
+"$PYTHON" "$ROOT/tools/validate_catalog.py" "$ROOT/OptionalConfigs/SOL-German/GameData/CustomScienceContracts/Contracts" sol >/dev/null
 echo "    validators OK"
 
 # --- Build the shared engine DLL once -------------------------------------------------
@@ -43,7 +45,25 @@ echo "==> Build (Release) against: $MANAGED"
 DLL="$ROOT/GameData/CustomScienceContracts/Plugins/CustomScienceContracts.dll"
 [ -f "$DLL" ] || { echo "DLL missing after build"; exit 1; }
 
-zipdir() { ( cd "$1" && rm -f "$2" && zip -rq "$2" . -x '*.DS_Store' ); }
+# zip if available (macOS/Linux), otherwise Python's zipfile (Windows Git Bash has no zip).
+zipdir() {
+  if command -v zip >/dev/null 2>&1; then
+    ( cd "$1" && rm -f "$2" && zip -rq "$2" . -x '*.DS_Store' )
+  else
+    rm -f "$2"
+    "$PYTHON" - "$1" "$2" <<'PYZIP'
+import os, sys, zipfile
+src, dst = sys.argv[1], sys.argv[2]
+with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as z:
+    for root, _, files in os.walk(src):
+        for f in files:
+            if f == ".DS_Store":
+                continue
+            p = os.path.join(root, f)
+            z.write(p, os.path.relpath(p, src))
+PYZIP
+  fi
+}
 
 # --- 1. Main download: full mod, default SOL catalog ----------------------------------
 MAIN="$OUTDIR/main"; rm -rf "$MAIN"; mkdir -p "$MAIN"
@@ -78,26 +98,27 @@ API="https://api.github.com/repos/$REPO"
 TAG="v$VERSION"; RELNAME="KSP Custom Science Contracts v$VERSION"; SHA="$(git rev-parse HEAD)"
 BODY="$(cat "$ROOT/tools/release_notes.md" 2>/dev/null || echo "CustomScienceContracts $VERSION")"
 
-echo "==> Publish single release $TAG"
+echo "==> Publish single release $TAG (stable)"
 RID="$(curl -s -H "Authorization: token $TOKEN" "$API/releases/tags/$TAG" \
-  | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('id',''))")"
-PAYLOAD="$(python3 -c "import json,sys;print(json.dumps({'tag_name':sys.argv[1],'target_commitish':sys.argv[2],'name':sys.argv[3] + ' (alpha)','body':sys.stdin.read(),'make_latest':'true','draft':False,'prerelease':True}))" \
+  | "$PYTHON" -c "import sys,json;d=json.load(sys.stdin);print(d.get('id',''))")"
+# Stable release: plain name, not marked as prerelease.
+PAYLOAD="$("$PYTHON" -c "import json,sys;print(json.dumps({'tag_name':sys.argv[1],'target_commitish':sys.argv[2],'name':sys.argv[3],'body':sys.stdin.read(),'make_latest':'true','draft':False,'prerelease':False}))" \
   "$TAG" "$SHA" "$RELNAME" <<<"$BODY")"
 if [ -n "$RID" ]; then
   curl -s -X PATCH -H "Authorization: token $TOKEN" -H "Content-Type: application/json" --data "$PAYLOAD" "$API/releases/$RID" >/dev/null
 else
-  RID="$(curl -s -X POST -H "Authorization: token $TOKEN" -H "Content-Type: application/json" --data "$PAYLOAD" "$API/releases" | python3 -c "import sys,json;print(json.load(sys.stdin)['id'])")"
+  RID="$(curl -s -X POST -H "Authorization: token $TOKEN" -H "Content-Type: application/json" --data "$PAYLOAD" "$API/releases" | "$PYTHON" -c "import sys,json;print(json.load(sys.stdin)['id'])")"
 fi
 for stale in "CustomScienceContracts-v${VERSION}_German-Config.zip"; do
-  old="$(curl -s -H "Authorization: token $TOKEN" "$API/releases/$RID/assets" | python3 -c "import sys,json;[print(x['id']) for x in json.load(sys.stdin) if x['name']==sys.argv[1]]" "$stale")"
+  old="$(curl -s -H "Authorization: token $TOKEN" "$API/releases/$RID/assets" | "$PYTHON" -c "import sys,json;[print(x['id']) for x in json.load(sys.stdin) if x['name']==sys.argv[1]]" "$stale")"
   [ -n "$old" ] && curl -s -X DELETE -H "Authorization: token $TOKEN" "$API/releases/assets/$old" >/dev/null
 done
 for a in "${ASSETS[@]}"; do
   name="$(basename "$a")"
-  old="$(curl -s -H "Authorization: token $TOKEN" "$API/releases/$RID/assets" | python3 -c "import sys,json;[print(x['id']) for x in json.load(sys.stdin) if x['name']==sys.argv[1]]" "$name")"
+  old="$(curl -s -H "Authorization: token $TOKEN" "$API/releases/$RID/assets" | "$PYTHON" -c "import sys,json;[print(x['id']) for x in json.load(sys.stdin) if x['name']==sys.argv[1]]" "$name")"
   [ -n "$old" ] && curl -s -X DELETE -H "Authorization: token $TOKEN" "$API/releases/assets/$old" >/dev/null
   curl -s -X POST -H "Authorization: token $TOKEN" -H "Content-Type: application/zip" --data-binary @"$a" \
     "https://uploads.github.com/repos/$REPO/releases/$RID/assets?name=$name" \
-    | python3 -c "import sys,json;d=json.load(sys.stdin);print('    uploaded',d['name'],d['state'])"
+    | "$PYTHON" -c "import sys,json;d=json.load(sys.stdin);print('    uploaded',d['name'],d['state'])"
 done
 echo "==> Published: https://github.com/$REPO/releases/tag/$TAG"

@@ -6,9 +6,6 @@
 
 <p align="center"><b>Custom Science Contracts</b> finally gives KSP's Science Mode a clear thread to follow.</p>
 
-> ⚠️ **Work in progress — first alpha.** This is an early release. Expect rough edges, and bugs may
-> show up. Bug reports and suggestions are very welcome — see [Feedback & bug reports](#feedback--bug-reports).
-
 ---
 
 Science Mode is great — but after the first few flights it can start to feel aimless. You collect science, unlock parts, and then you're left to invent the whole progression yourself.
@@ -22,6 +19,20 @@ It keeps the freedom of Science Mode and adds a structured campaign on top: firs
 Everything runs through the mod's own in-game menu. Right inside KSP you can browse available missions, track the ones you're flying, review what you've completed and watch your overall campaign progress.
 
 Custom Science Contracts is made for players who love Science Mode but want their save to feel like a real space program: less aimless grinding, fewer throwaway tasks, and more meaningful milestones.
+
+## Mission Control
+
+Everything is managed from the in-game **Mission Control** window:
+
+- **Campaign Atlas** — the campaign timeline. One epoch per page with branch rows (Pioneers,
+  Robotic Explorers, Lifelines), mission cards grouped by celestial body and arrows for real
+  prerequisites. Completed missions stay visible in green — including repeatable missions after
+  their first completion, so the atlas is a full history of everything you have achieved.
+- **Repeatables** — one page with every unlocked repeatable mission (marked ↻), grouped by target
+  body. Each card always shows whether it is ready or how many more missions you need to complete
+  before it refreshes ("Available after 2 more missions"), with a progress bar.
+- **Active Missions** — a separate window tracking accepted missions with live objective status,
+  vessel assignment and claim/abort actions.
 
 ## Features
 
@@ -81,11 +92,13 @@ To go back to the default, re-extract the four `Contracts/*.cfg` from the main d
 - Altitude requirements are minimums (e.g. "periapsis above 2000 km" means greater than 2000 km).
 - Polar missions require at least 75° inclination.
 - Communication networks count real vessels in orbit — debris, flags, asteroids and deployed science objects do not count.
+- Repeatable missions (↻) go on a short cooldown after each claim: complete two other missions and
+  they become available again in the Repeatables tab. The card always shows the remaining count.
 - Progress is stored per save at `saves/<Name>/CustomScienceContracts/contracts_state.cfg`.
 
 ## Feedback & bug reports
 
-This is an early alpha and very much a work in progress, so things can break. **Bug reports and suggestions are very welcome** — please open an issue on the [GitHub issue tracker](https://github.com/timduebi/ksp-custom-science-contracts/issues). Helpful details: KSP version, which config you run (Sol / Stock / German), the mission, and a `KSP.log` if you have it.
+**Bug reports and suggestions are very welcome** — please open an issue on the [GitHub issue tracker](https://github.com/timduebi/ksp-custom-science-contracts/issues). Helpful details: KSP version, which config you run (Sol / Stock / German), the mission, and a `KSP.log` if you have it.
 
 ## Development
 

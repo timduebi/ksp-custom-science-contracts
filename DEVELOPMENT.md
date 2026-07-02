@@ -91,6 +91,19 @@ feature lands in both editions, and **propose concrete mission placements for SO
 A change that touches `src/` but only one design doc is incomplete — it has shipped the engine to
 every catalog but only wired the feature into one.
 
+## UI learnings from 0.5
+
+- The Campaign Atlas doubles as the campaign timeline: pool repeatables render
+  as completed (green) there and are re-accepted only from the Repeatables
+  view. Campaign counts exclude them.
+- The Repeatables view is epoch-free: one page, body sections in atlas order,
+  and an always-visible cooldown strip per card. Blocked cards must say why
+  ("Available after N more missions", "Waiting for a free … slot").
+- Epoch tabs wrap to a second row on narrow windows; never let fixed-width tabs
+  run off a resizable window.
+- Since 0.5 releases are published as **stable** (no `(alpha)` suffix, not a
+  prerelease) — `tools/make_release.sh` sets this.
+
 ## UI and catalog learnings from 0.4
 
 - The Mission Control atlas is a presentation layer over real prerequisites. Do

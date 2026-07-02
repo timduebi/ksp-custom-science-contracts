@@ -24,13 +24,13 @@ namespace CustomScienceContracts.UI
 
         private static bool _built;
         private static Texture2D _barTex, _ringTex;
-        public static GUIStyle Window, Title, TabActive, TabInactive, GroupHeader, GroupHeaderPlain, MoonHeader,
+        public static GUIStyle Window, Title, TabActive, TabInactive, GroupHeaderPlain,
                                ItemBox, ItemBoxReady, ItemTitle, ItemSub, ItemDesc, Pill, Locked,
                                AcceptBtn, ClaimBtn, CloseBtn, SettingsBtn, TopIconButton, Border, CondOk, CondBad, CondNeutral,
                                ClaimInfo, Station, Bar, Warn, Reward, RewardIcon, EpochPanel, DetailBox,
                                CardLocked, CardAvailable, CardActive, CardReady, CardCompleted,
-                               EpochTitle, BodyRowLabel, CardTitle, CardMeta, StatusText, FoldoutBtn,
-                               LockBadge, UnlockHeader, UnlockTag, ConnectionArrow,
+                               BodyRowLabel, CardTitle, CardMeta, FoldoutBtn,
+                               LockBadge, UnlockHeader, UnlockTag, RepeatBadge, SectionCount,
                                EpochTabActive, EpochTabInactive;
 
         public static void EnsureBuilt()
@@ -84,12 +84,9 @@ namespace CustomScienceContracts.UI
             TabActive   = Btn(tabOnCol,  TextBright, 7); TabActive.fontSize = 14; TabActive.fontStyle = FontStyle.Bold; TabActive.padding = new RectOffset(28, 6, 7, 7);
             TabInactive = Btn(tabOffCol, TextGrey,   7); TabInactive.fontSize = 14; TabInactive.padding = new RectOffset(28, 6, 7, 7);
 
-            GroupHeader = Btn(headCol, TextBright, 7); GroupHeader.fontSize = 15; GroupHeader.fontStyle = FontStyle.Bold;
-            GroupHeader.alignment = TextAnchor.MiddleLeft; GroupHeader.padding = new RectOffset(38, 8, 7, 7);
-            // Like GroupHeader but without icon indentation.
-            GroupHeaderPlain = new GUIStyle(GroupHeader) { padding = new RectOffset(16, 8, 7, 7) };
-            MoonHeader = new GUIStyle(GroupHeader) { fontStyle = FontStyle.Normal, fontSize = 14 };
-            MoonHeader.padding = new RectOffset(54, 8, 6, 6);
+            GroupHeaderPlain = Btn(headCol, TextBright, 7);
+            GroupHeaderPlain.fontSize = 15; GroupHeaderPlain.fontStyle = FontStyle.Bold;
+            GroupHeaderPlain.alignment = TextAnchor.MiddleLeft; GroupHeaderPlain.padding = new RectOffset(16, 8, 7, 7);
 
             ItemBox = new GUIStyle(GUI.skin.box); Bg(ItemBox, fieldTex, 9); ItemBox.padding = new RectOffset(40, 44, 8, 8);
             ItemBoxReady = new GUIStyle(ItemBox); Bg(ItemBoxReady, readyTex, 9);
@@ -113,27 +110,22 @@ namespace CustomScienceContracts.UI
             TopIconButton = Btn(new Color(0.10f, 0.13f, 0.20f, 0.94f), TextBright, 6); TopIconButton.padding = new RectOffset(3, 3, 3, 3); TopIconButton.alignment = TextAnchor.MiddleCenter;
 
             Warn = Label(14, FontStyle.Bold, AbortRed, TextAnchor.UpperLeft); Warn.wordWrap = true;
-            EpochTitle = Label(20, FontStyle.Bold, TextBright, TextAnchor.MiddleLeft);
             BodyRowLabel = Label(13, FontStyle.Bold, TextGrey, TextAnchor.MiddleLeft); BodyRowLabel.wordWrap = true;
             CardTitle = Label(14, FontStyle.Bold, TextBright, TextAnchor.UpperLeft); CardTitle.wordWrap = true;
             CardMeta = Label(12, FontStyle.Normal, TextDim, TextAnchor.MiddleLeft); CardMeta.wordWrap = true;
-            StatusText = Label(12, FontStyle.Bold, Accent, TextAnchor.MiddleRight);
             LockBadge = Label(10, FontStyle.Bold, Bad, TextAnchor.MiddleRight);
             UnlockHeader = Label(13, FontStyle.Bold, Bad, TextAnchor.MiddleLeft);
             UnlockTag = Label(10, FontStyle.Bold, Accent, TextAnchor.MiddleCenter);
-            ConnectionArrow = Label(14, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter);
-            EpochTabActive = new GUIStyle(GUI.skin.button)
-            {
-                fontSize = 22,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleLeft,
-                padding = new RectOffset(10, 10, 4, 4)
-            };
-            EpochTabActive.normal.background = EpochTabActive.hover.background = EpochTabActive.active.background = null;
-            EpochTabActive.normal.textColor = EpochTabActive.hover.textColor = EpochTabActive.active.textColor = TextBright;
-            EpochTabInactive = new GUIStyle(EpochTabActive) { fontStyle = FontStyle.Normal };
-            EpochTabInactive.normal.textColor = EpochTabInactive.hover.textColor =
-                EpochTabInactive.active.textColor = new Color(0.60f, 0.63f, 0.68f);
+            RepeatBadge = Label(13, FontStyle.Bold, new Color(0.73f, 0.41f, 0.78f), TextAnchor.MiddleCenter);
+            SectionCount = Label(13, FontStyle.Normal, TextDim, TextAnchor.MiddleRight);
+            // Epoch tabs: compact buttons that work in one or two rows; the selection is
+            // reinforced by the per-epoch progress bar drawn underneath.
+            EpochTabActive = Btn(new Color(0.17f, 0.30f, 0.40f), TextBright, 6);
+            EpochTabActive.fontSize = 14; EpochTabActive.fontStyle = FontStyle.Bold;
+            EpochTabActive.alignment = TextAnchor.MiddleCenter; EpochTabActive.padding = new RectOffset(8, 8, 4, 7);
+            EpochTabInactive = Btn(new Color(0.11f, 0.13f, 0.18f), new Color(0.66f, 0.70f, 0.76f), 6);
+            EpochTabInactive.fontSize = 14;
+            EpochTabInactive.alignment = TextAnchor.MiddleCenter; EpochTabInactive.padding = new RectOffset(8, 8, 4, 7);
             FoldoutBtn = Btn(new Color(0.15f, 0.18f, 0.24f), TextBright, 6);
             FoldoutBtn.fontSize = 13; FoldoutBtn.fontStyle = FontStyle.Bold;
             FoldoutBtn.alignment = TextAnchor.MiddleLeft; FoldoutBtn.padding = new RectOffset(10, 10, 5, 5);

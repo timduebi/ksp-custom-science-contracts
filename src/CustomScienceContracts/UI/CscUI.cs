@@ -128,6 +128,8 @@ namespace CustomScienceContracts.UI
             _selRect = MissionCenterRect();
             _selRectInitialized = true;
             _appliedMissionCenterScale = Tuning.MissionCenterScale;
+            // Land on the epoch the campaign is currently at instead of always on epoch 1.
+            if (_mgr != null) _selection.FocusRelevantEpoch(_mgr);
         }
 
         private void CloseAvail() { _availOpen = false; _resizingSelection = false; _btnAvail?.SetFalse(false); }

@@ -21,12 +21,5 @@ namespace CustomScienceContracts.Core
         public static int ActiveCount(IEnumerable<MissionContract> all, Sparte heimat) =>
             all.Count(c => (c.Status == MissionStatus.Active || c.Status == MissionStatus.ReadyToClaim)
                            && c.HeimatSparte == heimat);
-
-        /// <summary>Whether an Available contract can be accepted without exceeding the limit.</summary>
-        public static bool CanAccept(IReadOnlyList<MissionContract> all, MissionContract candidate)
-        {
-            if (candidate.Status != MissionStatus.Available) return false;
-            return ActiveCount(all, candidate.HeimatSparte) < LimitFor(candidate.HeimatSparte);
-        }
     }
 }

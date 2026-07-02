@@ -1,12 +1,17 @@
 using System.Collections.Generic;
 using System.Linq;
 using CustomScienceContracts.Core;
+using CustomScienceContracts.Data;
 using CustomScienceContracts.Model;
 using UnityEngine;
 
 namespace CustomScienceContracts.UI
 {
-    /// <summary>Mission center: Campaign Atlas / Repeatables -> epoch page -> branch rows.</summary>
+    /// <summary>Mission center with two views. The Campaign Atlas shows one epoch at a time as
+    /// branch/body rows with prerequisite arrows and doubles as the campaign timeline: repeatable
+    /// missions stay visible there permanently once completed, marked green. The Repeatables view
+    /// drops the epoch split entirely and lists the whole pool grouped by target body, with the
+    /// cooldown progress always visible on each card.</summary>
     public class SelectionWindow
     {
         private enum CenterMode { Campaign, Repeatable }
@@ -16,58 +21,108 @@ namespace CustomScienceContracts.UI
 
         private const float CardW = 280f;
         private const float CardBaseH = 104f;
+        private const float CooldownStripH = 26f;   // extra card face height in the Repeatables view
         private const float CardGap = 64f;
+        private const float RepCardGap = 20f;
         private const float BodyLabelW = 132f;
         private const float BranchHeaderH = 30f;
+        private const float SectionHeaderH = 34f;
         private const float RowGap = 22f;
         private const float LaneGap = 14f;
         private const float SectionGap = 34f;
+        private const float EpochTabH = 40f;
+        private const float EpochTabGap = 6f;
+
+        private static readonly Color ActiveOrange = new Color(0.95f, 0.65f, 0.20f);
 
         private CenterMode _mode = CenterMode.Campaign;
         private int _selectedEpoch = 1;
         private Vector2 _scroll;
         private readonly HashSet<string> _expandedCards = new HashSet<string>();
-        private readonly HashSet<string> _expandedObjectives = new HashSet<string>();
         private readonly Dictionary<string, Rect> _cardRects = new Dictionary<string, Rect>();
+
+        // Per-catalog display cache (epoch names, epoch count, stock detection). The catalog is
+        // immutable after load, so this is computed once instead of every OnGUI pass.
+        private ContractCatalog _cachedCatalog;
+        private string[] _epochNames;
+        private int _maxEpoch = 1;
 
         /// <summary>Set by the gear button; CscUI reads it and toggles the settings window.</summary>
         public bool SettingsToggleRequested;
 
         public void Draw(ContractManager mgr, float width, float height, System.Action onClose)
         {
-            if (GUI.Button(new Rect(width - 30f, 4f, 22f, 22f), "X", Theme.CloseBtn))
+            if (GUI.Button(new Rect(width - 30f, 4f, 22f, 22f), "✕", Theme.CloseBtn))
             {
                 onClose();
                 return;
             }
             DrawGear(new Rect(width - 58f, 5f, 22f, 22f));
 
+            EnsureCatalogCache(mgr);
             HashSet<string> visible = VisibilityRules.ComputeVisible(mgr.Catalog);
 
             DrawModeTabs(mgr, visible, new Rect(14f, 30f, width - 86f, 32f));
-            DrawEpochTabs(mgr, visible, new Rect(14f, 70f, width - 28f, 46f));
 
-            Rect viewport = new Rect(14f, 124f, width - 28f, height - 140f);
-            var layout = BuildLayout(mgr, visible, viewport.width);
-            DrawMap(mgr, visible, viewport, layout);
+            float mapTop = 70f;
+            MapLayout layout;
+            if (_mode == CenterMode.Campaign)
+            {
+                mapTop += DrawEpochTabs(mgr, visible, new Rect(14f, 70f, width - 28f, 0f)) + 8f;
+                Rect viewport = new Rect(14f, mapTop, width - 28f, height - mapTop - 16f);
+                layout = BuildCampaignLayout(mgr, visible, viewport.width);
+                DrawMap(mgr, visible, viewport, layout);
+            }
+            else
+            {
+                Rect viewport = new Rect(14f, mapTop, width - 28f, height - mapTop - 16f);
+                layout = BuildRepeatableLayout(mgr, visible, viewport.width);
+                DrawMap(mgr, visible, viewport, layout);
+            }
+
+            GUI.DragWindow(new Rect(0f, 0f, width - 64f, 26f));
         }
+
+        /// <summary>Selects the first epoch that has work (claimable, active or acceptable
+        /// missions). Called when the window opens, so the player lands where the campaign is.</summary>
+        public void FocusRelevantEpoch(ContractManager mgr)
+        {
+            EnsureCatalogCache(mgr);
+            HashSet<string> visible = VisibilityRules.ComputeVisible(mgr.Catalog);
+            for (int epoch = 1; epoch <= _maxEpoch; epoch++)
+            {
+                foreach (var c in mgr.Catalog.All)
+                {
+                    if (EpochOf(c) != epoch) continue;
+                    if (c.Status == MissionStatus.Active || c.Status == MissionStatus.ReadyToClaim ||
+                        CampaignAcceptable(mgr, c, visible))
+                    {
+                        _selectedEpoch = epoch;
+                        return;
+                    }
+                }
+            }
+        }
+
+        // --- Header ---
 
         private void DrawModeTabs(ContractManager mgr, HashSet<string> visible, Rect r)
         {
             float gap = 8f;
             float w = (r.width - gap) * 0.5f;
-            DrawModeTab(mgr, visible, CenterMode.Campaign, "Campaign Atlas", new Rect(r.x, r.y, w, r.height));
-            DrawModeTab(mgr, visible, CenterMode.Repeatable, "Repeatables", new Rect(r.x + w + gap, r.y, w, r.height));
+            int campaignCount = mgr.Catalog.All.Count(c => CampaignAcceptable(mgr, c, visible));
+            int repeatableCount = mgr.Catalog.All.Count(c => RepeatableAcceptable(mgr, c));
+            DrawModeTab(CenterMode.Campaign, $"Campaign Atlas ({campaignCount})", new Rect(r.x, r.y, w, r.height));
+            DrawModeTab(CenterMode.Repeatable, $"Repeatables ({repeatableCount})", new Rect(r.x + w + gap, r.y, w, r.height));
         }
 
-        private void DrawModeTab(ContractManager mgr, HashSet<string> visible, CenterMode mode, string title, Rect r)
+        private void DrawModeTab(CenterMode mode, string title, Rect r)
         {
-            int count = ContractsForMode(mgr, mode).Count(c => CanAcceptFromCenter(mgr, c, visible));
             bool active = _mode == mode;
-            if (GUI.Button(r, $"{title} ({count})", active ? Theme.TabActive : Theme.TabInactive))
+            if (GUI.Button(r, title, active ? Theme.TabActive : Theme.TabInactive) && _mode != mode)
             {
                 _mode = mode;
-                if (_selectedEpoch < 1 || _selectedEpoch > 9) _selectedEpoch = 1;
+                _scroll = Vector2.zero;
             }
 
             if (Event.current.type == EventType.Repaint)
@@ -79,22 +134,62 @@ namespace CustomScienceContracts.UI
             }
         }
 
-        private void DrawEpochTabs(ContractManager mgr, HashSet<string> visible, Rect r)
+        /// <summary>Epoch tabs sized to the window: they wrap into extra rows instead of running
+        /// off-screen, so every epoch stays reachable. Each tab shows the epoch name, the number of
+        /// currently acceptable missions and a completion progress bar. Returns the height used.</summary>
+        private float DrawEpochTabs(ContractManager mgr, HashSet<string> visible, Rect r)
         {
-            float tabW = Mathf.Max(148f, r.width / 9f);
-            for (int epoch = 1; epoch <= 9; epoch++)
+            ComputeEpochStats(mgr, visible, out int[] acceptable, out int[] done, out int[] total);
+
+            const float minTabW = 128f;
+            int perRow = Mathf.Clamp(Mathf.FloorToInt((r.width + EpochTabGap) / (minTabW + EpochTabGap)), 1, _maxEpoch);
+            int rows = Mathf.CeilToInt(_maxEpoch / (float)perRow);
+            float tabW = (r.width - (perRow - 1) * EpochTabGap) / perRow;
+
+            for (int epoch = 1; epoch <= _maxEpoch; epoch++)
             {
-                Rect er = new Rect(r.x + (epoch - 1) * tabW, r.y, tabW - 6f, r.height);
-                if (er.x > r.xMax) break;
-                int count = ContractsForMode(mgr, _mode)
-                    .Count(c => EpochOf(c) == epoch && CanAcceptFromCenter(mgr, c, visible));
-                bool active = _selectedEpoch == epoch;
-                if (GUI.Button(er, $"{EpochName(mgr, epoch)} ({count})",
-                        active ? Theme.EpochTabActive : Theme.EpochTabInactive))
+                int idx = epoch - 1;
+                Rect er = new Rect(
+                    r.x + (idx % perRow) * (tabW + EpochTabGap),
+                    r.y + (idx / perRow) * (EpochTabH + 4f),
+                    tabW, EpochTabH);
+
+                bool epochDone = total[epoch] > 0 && done[epoch] == total[epoch];
+                string label = (epochDone ? "✓ " : "") + EpochName(epoch)
+                             + (acceptable[epoch] > 0 ? $" ({acceptable[epoch]})" : "");
+                if (GUI.Button(er, label, _selectedEpoch == epoch ? Theme.EpochTabActive : Theme.EpochTabInactive))
                     _selectedEpoch = epoch;
 
-                if (active && Event.current.type == EventType.Repaint)
-                    Theme.DrawRect(new Rect(er.x + 10f, er.yMax - 4f, er.width - 20f, 3f), Theme.TextBright);
+                if (Event.current.type == EventType.Repaint)
+                {
+                    // Completion progress along the bottom edge; accent-colored while in progress,
+                    // green once the epoch is fully completed.
+                    float frac = total[epoch] > 0 ? done[epoch] / (float)total[epoch] : 0f;
+                    Rect bar = new Rect(er.x + 8f, er.yMax - 5f, er.width - 16f, 3f);
+                    Theme.DrawRect(bar, new Color(1f, 1f, 1f, 0.08f));
+                    if (frac > 0f)
+                        Theme.DrawRect(new Rect(bar.x, bar.y, bar.width * frac, bar.height),
+                            epochDone ? Theme.Ok : Theme.Accent);
+                    if (_selectedEpoch == epoch)
+                        Theme.DrawRect(new Rect(er.x + 8f, er.y + 2f, er.width - 16f, 2f), Theme.TextBright);
+                }
+            }
+            return rows * EpochTabH + (rows - 1) * 4f;
+        }
+
+        private void ComputeEpochStats(ContractManager mgr, HashSet<string> visible,
+            out int[] acceptable, out int[] done, out int[] total)
+        {
+            acceptable = new int[_maxEpoch + 1];
+            done = new int[_maxEpoch + 1];
+            total = new int[_maxEpoch + 1];
+            foreach (var c in mgr.Catalog.All)
+            {
+                int epoch = EpochOf(c);
+                if (epoch > _maxEpoch) continue;
+                total[epoch]++;
+                if (ContractManager.IsCompleted(c)) done[epoch]++;
+                if (CampaignAcceptable(mgr, c, visible)) acceptable[epoch]++;
             }
         }
 
@@ -114,29 +209,43 @@ namespace CustomScienceContracts.UI
             else if (GUI.Button(r, "S", Theme.SettingsBtn)) SettingsToggleRequested = true;
         }
 
-        private MapLayout BuildLayout(ContractManager mgr, HashSet<string> visible, float viewportWidth)
+        // --- Acceptance rules per view ---
+
+        /// <summary>Acceptable from the Campaign Atlas: pool repeatables are excluded — the atlas
+        /// shows them as completed history and they are re-accepted from the Repeatables view.</summary>
+        private static bool CampaignAcceptable(ContractManager mgr, MissionContract c, HashSet<string> visible)
+        {
+            if (c.IsRepeatableInPool) return false;
+            return mgr.CanAccept(c) && (Tuning.UnlockAll || visible.Contains(c.Id));
+        }
+
+        /// <summary>Acceptable from the Repeatables view: pool membership plus manager rules
+        /// (cooldown over, branch slot free).</summary>
+        private static bool RepeatableAcceptable(ContractManager mgr, MissionContract c) =>
+            c.IsRepeatableInPool && mgr.CanAccept(c);
+
+        private bool CanAcceptHere(ContractManager mgr, MissionContract c, HashSet<string> visible) =>
+            _mode == CenterMode.Campaign ? CampaignAcceptable(mgr, c, visible) : RepeatableAcceptable(mgr, c);
+
+        // --- Layout: Campaign Atlas ---
+
+        private MapLayout BuildCampaignLayout(ContractManager mgr, HashSet<string> visible, float viewportWidth)
         {
             _cardRects.Clear();
             var layout = new MapLayout { ContentWidth = Mathf.Max(viewportWidth - 16f, 900f), ContentHeight = 80f };
-            var epochContracts = ContractsForMode(mgr, _mode)
+            var epochContracts = mgr.Catalog.All
                 .Where(c => EpochOf(c) == _selectedEpoch)
                 .ToList();
-            // Columns and branch order come from a STABLE skeleton that keeps repeatable missions even
-            // after they move to the Repeatables pool. Otherwise, completing a repeatable that is a
-            // prerequisite (e.g. station resupply) drops it from the column basis and reflows the atlas.
-            var skeleton = SkeletonForMode(mgr, _mode)
-                .Where(c => EpochOf(c) == _selectedEpoch)
-                .ToList();
-            var columns = ComputeDisplayColumns(mgr, skeleton);
+            var columns = ComputeDependencyColumns(epochContracts);
             float y = 12f;
 
-            foreach (var branch in BranchOrderFor(skeleton))
+            foreach (var branch in BranchOrderFor(epochContracts))
             {
                 var branchContracts = epochContracts
                     .Where(c => c.HeimatSparte == branch)
-                    .OrderBy(c => BodyRank(PrimaryBody(c)))
+                    .OrderBy(c => BodyRank(BodyVisual.PrimaryBody(c)))
                     .ThenBy(c => ColumnOf(c, columns))
-                    .ThenBy(c => CatalogIndex(mgr, c))
+                    .ThenBy(c => mgr.Catalog.IndexOf(c))
                     .ToList();
                 if (branchContracts.Count == 0) continue;
 
@@ -144,13 +253,15 @@ namespace CustomScienceContracts.UI
                 layout.BranchHeaders.Add(new BranchHeader(branch, header, branchContracts));
                 y += BranchHeaderH + 8f;
 
-                foreach (var group in branchContracts.GroupBy(c => PrimaryBody(c)).OrderBy(g => BodyRank(g.Key)))
+                foreach (var group in branchContracts.GroupBy(c => BodyVisual.PrimaryBody(c)).OrderBy(g => BodyRank(g.Key)))
                 {
                     var rowContracts = group
                         .OrderBy(c => ColumnOf(c, columns))
-                        .ThenBy(c => CatalogIndex(mgr, c))
+                        .ThenBy(c => mgr.Catalog.IndexOf(c))
                         .ToList();
 
+                    // Cards that share a dependency column stack into vertical lanes, so optional
+                    // parallel missions do not look like a sequential chain.
                     var laneColumns = new List<HashSet<int>>();
                     var pending = new List<PendingCard>();
                     foreach (var c in rowContracts)
@@ -195,9 +306,7 @@ namespace CustomScienceContracts.UI
             }
 
             if (layout.Cards.Count == 0)
-                layout.EmptyText = _mode == CenterMode.Repeatable
-                    ? "No repeatable missions in this epoch yet."
-                    : "No campaign missions in this epoch.";
+                layout.EmptyText = "No campaign missions in this epoch.";
 
             layout.ContentHeight = Mathf.Max(y + 20f, 220f);
             foreach (var i in Enumerable.Range(0, layout.BranchHeaders.Count))
@@ -209,76 +318,64 @@ namespace CustomScienceContracts.UI
             return layout;
         }
 
-        private static Dictionary<string, int> ComputeDisplayColumns(ContractManager mgr, List<MissionContract> contracts)
-        {
-            return ComputeDependencyColumns(contracts);
-        }
+        // --- Layout: Repeatables grouped by body ---
 
-        private static IEnumerable<Sparte> BranchOrderFor(List<MissionContract> contracts)
+        /// <summary>One flat page for the whole repeatable pool: a section per target body in
+        /// atlas order, cards flowing left-to-right inside each section. No epochs, no arrows.</summary>
+        private MapLayout BuildRepeatableLayout(ContractManager mgr, HashSet<string> visible, float viewportWidth)
         {
-            var byId = contracts.ToDictionary(c => c.Id);
-            var score = Branches.ToDictionary(b => b, b => 0);
-            var seen = new HashSet<string>();
+            _cardRects.Clear();
+            var layout = new MapLayout { ContentWidth = Mathf.Max(viewportWidth - 16f, 620f) };
 
-            foreach (var c in contracts)
+            var pool = mgr.RepeatablePool()
+                .OrderBy(c => BodyRank(BodyVisual.PrimaryBody(c)))
+                .ThenBy(c => mgr.Catalog.IndexOf(c))
+                .ToList();
+
+            if (pool.Count == 0)
             {
-                foreach (string preId in c.Voraussetzungen)
-                {
-                    if (!byId.TryGetValue(preId, out var pre) || pre.HeimatSparte == c.HeimatSparte)
-                        continue;
-
-                    string key = ((int)pre.HeimatSparte) + ">" + ((int)c.HeimatSparte);
-                    if (!seen.Add(key)) continue;
-                    score[pre.HeimatSparte] += 2;
-                    score[c.HeimatSparte] -= 2;
-                }
+                layout.EmptyText = "No repeatable missions unlocked yet.\n"
+                                 + "Complete a repeatable mission (marked ↻ in the Campaign Atlas) once to add it to this pool.";
+                layout.ContentHeight = 220f;
+                return layout;
             }
 
-            return Branches
-                .OrderByDescending(b => score[b])
-                .ThenBy(BranchDefaultIndex)
-                .ToList();
+            float cw = layout.ContentWidth;
+            int cols = Mathf.Max(1, Mathf.FloorToInt((cw - 32f + RepCardGap) / (CardW + RepCardGap)));
+            float y = 12f;
+
+            foreach (var group in pool.GroupBy(c => BodyVisual.PrimaryBody(c)))
+            {
+                var cards = group.ToList();
+                int ready = cards.Count(c => RepeatableAcceptable(mgr, c));
+                layout.BodySections.Add(new BodySection(group.Key, new Rect(12f, y, cw - 24f, SectionHeaderH), ready, cards.Count));
+                y += SectionHeaderH + 10f;
+
+                int col = 0;
+                float rowMaxH = 0f;
+                foreach (var c in cards)
+                {
+                    float h = CardHeight(mgr, c, visible);
+                    if (col == cols)
+                    {
+                        col = 0;
+                        y += rowMaxH + 14f;
+                        rowMaxH = 0f;
+                    }
+                    Rect card = new Rect(16f + col * (CardW + RepCardGap), y, CardW, h);
+                    layout.Cards.Add(new CardEntry(c, card));
+                    _cardRects[c.Id] = card;
+                    rowMaxH = Mathf.Max(rowMaxH, h);
+                    col++;
+                }
+                y += rowMaxH + SectionGap;
+            }
+
+            layout.ContentHeight = Mathf.Max(y + 20f, 220f);
+            return layout;
         }
 
-        private static int BranchDefaultIndex(Sparte branch)
-        {
-            for (int i = 0; i < Branches.Length; i++)
-                if (Branches[i] == branch) return i;
-            return int.MaxValue;
-        }
-
-        private static string LayoutRowKey(MissionContract c) =>
-            ((int)c.HeimatSparte).ToString() + "|" + PrimaryBody(c);
-
-        private static Dictionary<string, int> ComputeDependencyColumns(List<MissionContract> contracts)
-        {
-            var byId = contracts.ToDictionary(c => c.Id);
-            var memo = new Dictionary<string, int>();
-            var visiting = new HashSet<string>();
-            foreach (var c in contracts)
-                ResolveColumn(c, byId, memo, visiting);
-            return memo;
-        }
-
-        private static int ResolveColumn(MissionContract c, Dictionary<string, MissionContract> byId,
-            Dictionary<string, int> memo, HashSet<string> visiting)
-        {
-            if (c == null) return 0;
-            if (memo.TryGetValue(c.Id, out int cached)) return cached;
-            if (!visiting.Add(c.Id)) return 0;
-
-            int column = 0;
-            foreach (string preId in c.Voraussetzungen)
-                if (byId.TryGetValue(preId, out var pre))
-                    column = Mathf.Max(column, ResolveColumn(pre, byId, memo, visiting) + 1);
-
-            visiting.Remove(c.Id);
-            memo[c.Id] = column;
-            return column;
-        }
-
-        private static int ColumnOf(MissionContract c, Dictionary<string, int> columns) =>
-            c != null && columns.TryGetValue(c.Id, out int column) ? column : 0;
+        // --- Shared drawing ---
 
         private void DrawMap(ContractManager mgr, HashSet<string> visible, Rect viewport, MapLayout layout)
         {
@@ -287,14 +384,16 @@ namespace CustomScienceContracts.UI
 
             if (!string.IsNullOrEmpty(layout.EmptyText))
             {
-                GUI.Label(new Rect(18f, 16f, 420f, 28f), layout.EmptyText, Theme.Locked);
+                GUI.Label(new Rect(18f, 16f, 560f, 48f), layout.EmptyText, Theme.Locked);
                 GUI.EndScrollView();
                 return;
             }
 
             DrawBranchHeaders(mgr, visible, layout);
             DrawBodyRows(layout);
-            DrawConnections(mgr, layout.Cards);
+            DrawBodySections(layout);
+            if (_mode == CenterMode.Campaign)
+                DrawConnections(mgr, layout.Cards);
             foreach (var entry in layout.Cards)
                 DrawMissionCard(mgr, visible, entry.Contract, entry.Rect);
 
@@ -310,7 +409,7 @@ namespace CustomScienceContracts.UI
                 if (Event.current.type == EventType.Repaint)
                     Theme.DrawLeftAccent(h.Rect, sv.Color, sv.Icon, 5f, 19f);
 
-                int ready = h.Contracts.Count(c => CanAcceptFromCenter(mgr, c, visible));
+                int ready = h.Contracts.Count(c => CampaignAcceptable(mgr, c, visible));
                 GUI.Label(new Rect(h.Rect.x + 36f, h.Rect.y + 5f, 360f, 22f),
                     $"{SparteDisplay.Name(h.Branch)} ({ready})", Theme.ItemTitle);
                 GUI.Label(new Rect(h.Rect.xMax - 120f, h.Rect.y + 7f, 100f, 20f),
@@ -336,11 +435,41 @@ namespace CustomScienceContracts.UI
             }
         }
 
+        /// <summary>Body section headers of the Repeatables view: icon, name and how many of the
+        /// section's missions can be accepted right now.</summary>
+        private void DrawBodySections(MapLayout layout)
+        {
+            foreach (var s in layout.BodySections)
+            {
+                GUI.Box(s.Rect, GUIContent.none, Theme.EpochPanel);
+                var bv = BodyVisual.ForBody(s.Body);
+                if (Event.current.type == EventType.Repaint)
+                {
+                    Theme.DrawLeftAccent(s.Rect, bv.Color, null, 5f);
+                    if (bv.Icon != null)
+                    {
+                        var prev = GUI.color;
+                        GUI.color = Color.white;
+                        GUI.DrawTexture(new Rect(s.Rect.x + 14f, s.Rect.y + 6f, 22f, 22f), bv.Icon, ScaleMode.ScaleToFit, true);
+                        GUI.color = prev;
+                    }
+                }
+                GUI.Label(new Rect(s.Rect.x + 42f, s.Rect.y + 6f, 320f, 22f),
+                    BodyVisual.DisplayName(s.Body), Theme.ItemTitle);
+                GUI.Label(new Rect(s.Rect.xMax - 190f, s.Rect.y + 8f, 176f, 20f),
+                    $"{s.Ready} of {s.Total} ready", Theme.SectionCount);
+            }
+        }
+
+        private float FaceHeight() =>
+            _mode == CenterMode.Repeatable ? CardBaseH + CooldownStripH : CardBaseH;
+
         private void DrawMissionCard(ContractManager mgr, HashSet<string> visible, MissionContract c, Rect r)
         {
-            bool canAccept = CanAcceptFromCenter(mgr, c, visible);
+            bool canAccept = CanAcceptHere(mgr, c, visible);
             bool lockedForDetails = IsLockedForDetails(c, canAccept);
             bool expanded = _expandedCards.Contains(c.Id);
+            float faceH = FaceHeight();
 
             GUI.Box(r, GUIContent.none, CardStyle(c, canAccept));
             if (Event.current.type == EventType.Repaint)
@@ -358,12 +487,18 @@ namespace CustomScienceContracts.UI
                 {
                     GUI.Label(new Rect(r.xMax - 58f, r.y + 8f, 48f, 16f), "LOCKED", Theme.LockBadge);
                 }
-                else if (missionIcon != null)
+                else
                 {
-                    var prev = GUI.color;
-                    GUI.color = Color.Lerp(StatusColor(c, canAccept), Color.white, 0.35f);
-                    GUI.DrawTexture(new Rect(r.xMax - 28f, r.y + 8f, 18f, 18f), missionIcon, ScaleMode.ScaleToFit, true);
-                    GUI.color = prev;
+                    if (missionIcon != null)
+                    {
+                        var prev = GUI.color;
+                        GUI.color = Color.Lerp(StatusColor(c, canAccept), Color.white, 0.35f);
+                        GUI.DrawTexture(new Rect(r.xMax - 28f, r.y + 8f, 18f, 18f), missionIcon, ScaleMode.ScaleToFit, true);
+                        GUI.color = prev;
+                    }
+                    // Repeat glyph so repeatable missions are recognizable at a glance.
+                    if (c.Repeatable)
+                        GUI.Label(new Rect(r.xMax - 48f, r.y + 7f, 18f, 18f), "↻", Theme.RepeatBadge);
                 }
                 DrawCrossEpochTag(mgr, c, r);
             }
@@ -376,16 +511,66 @@ namespace CustomScienceContracts.UI
             GUI.Label(new Rect(r.x + 36f, r.y + 8f, r.width - 118f, 58f), c.Titel, Theme.CardTitle);
 
             DrawPlanetLine(r, c, mgr);
+            if (_mode == CenterMode.Repeatable)
+                DrawCooldownStrip(mgr, c, r, canAccept);
             if (expanded)
-                DrawMissionDetails(mgr, visible, c, r, canAccept);
+                DrawMissionDetails(mgr, visible, c, r, canAccept, faceH);
+        }
+
+        /// <summary>Always-visible cooldown/status strip on repeatable cards: shows why a mission
+        /// is not available yet and how far the refresh has progressed.</summary>
+        private void DrawCooldownStrip(ContractManager mgr, MissionContract c, Rect r, bool canAccept)
+        {
+            float x = r.x + 12f;
+            float w = r.width - 24f;
+            int cooldown = Mathf.Max(1, Tuning.RepeatableCooldown);
+            int cd = mgr.RemainingCooldown(c);
+
+            string text;
+            GUIStyle style;
+            Color barColor;
+            float frac;
+            if (c.Status == MissionStatus.ReadyToClaim)
+            {
+                text = "Ready to claim"; style = Theme.CondOk; barColor = Theme.ClaimGreen; frac = 1f;
+            }
+            else if (c.Status == MissionStatus.Active)
+            {
+                text = "Active — tracked in Active Missions"; style = Theme.CardMeta; barColor = ActiveOrange; frac = 1f;
+            }
+            else if (cd > 0)
+            {
+                int doneCount = cooldown - cd;
+                text = $"Available after {cd} more mission{(cd == 1 ? "" : "s")}  ({doneCount}/{cooldown})";
+                style = Theme.CardMeta; barColor = Theme.Accent; frac = doneCount / (float)cooldown;
+            }
+            else if (canAccept)
+            {
+                text = "Ready — can be accepted again"; style = Theme.CondOk; barColor = Theme.Ok; frac = 1f;
+            }
+            else
+            {
+                text = $"Waiting for a free {SparteDisplay.Name(c.HeimatSparte)} slot";
+                style = Theme.CardMeta; barColor = new Color(0.55f, 0.58f, 0.64f); frac = 1f;
+            }
+
+            GUI.Label(new Rect(x, r.y + CardBaseH - 3f, w, 18f), text, style);
+            if (Event.current.type == EventType.Repaint)
+            {
+                Rect bar = new Rect(x, r.y + CardBaseH + 17f, w, 4f);
+                Theme.DrawRect(bar, new Color(1f, 1f, 1f, 0.10f));
+                if (frac > 0f)
+                    Theme.DrawRect(new Rect(bar.x, bar.y, bar.width * frac, bar.height), barColor);
+            }
         }
 
         private void DrawCrossEpochTag(ContractManager mgr, MissionContract c, Rect r)
         {
+            if (_mode != CenterMode.Campaign) return;
             var unlocks = CrossEpochUnlocks(mgr, c);
             if (unlocks.Count == 0) return;
             int firstEpoch = unlocks.Min(EpochOf);
-            string label = "-> " + EpochName(mgr, firstEpoch);
+            string label = "-> " + EpochName(firstEpoch);
             Rect tag = new Rect(r.xMax - 88f, r.y + 31f, 76f, 16f);
             Color tagColor = unlocks.All(IsCrossEpochUnlocked) ? Theme.Ok : Theme.Accent;
             Theme.DrawRect(tag, WithAlpha(tagColor, 0.24f));
@@ -397,7 +582,7 @@ namespace CustomScienceContracts.UI
 
         private void DrawPlanetLine(Rect r, MissionContract c, ContractManager mgr)
         {
-            string body = PrimaryBody(c);
+            string body = BodyVisual.PrimaryBody(c);
             var bv = BodyVisual.ForBody(body);
             Rect icon = new Rect(r.x + 12f, r.y + 76f, 18f, 18f);
             if (bv.Icon != null)
@@ -419,10 +604,11 @@ namespace CustomScienceContracts.UI
             GUI.color = prevColor;
         }
 
-        private void DrawMissionDetails(ContractManager mgr, HashSet<string> visible, MissionContract c, Rect card, bool canAccept)
+        private void DrawMissionDetails(ContractManager mgr, HashSet<string> visible, MissionContract c,
+            Rect card, bool canAccept, float faceH)
         {
             float x = card.x + 10f;
-            float y = card.y + CardBaseH + 8f;
+            float y = card.y + faceH + 8f;
             float w = card.width - 20f;
 
             GUI.Label(new Rect(x, y, w, 18f), StatusText(mgr, visible, c, canAccept), Theme.CardMeta);
@@ -453,13 +639,9 @@ namespace CustomScienceContracts.UI
             y = DrawAction(mgr, c, x, y, w, canAccept);
             y = DrawCrossEpochUnlocks(mgr, c, x, y, w);
 
-            bool objectivesOpen = _expandedObjectives.Contains(c.Id);
-            if (GUI.Button(new Rect(x, y, w, 25f), (objectivesOpen ? "v " : "> ") + "Objectives", Theme.FoldoutBtn))
-                Toggle(_expandedObjectives, c.Id);
-            y += 29f;
-
-            if (objectivesOpen)
-                DrawObjectives(mgr, c, x, y, w);
+            GUI.Label(new Rect(x, y, w, 18f), "Objectives:", Theme.Station);
+            y += 20f;
+            DrawObjectives(mgr, c, x, y, w);
         }
 
         private float DrawMissingRequirements(ContractManager mgr, MissionContract c, float x, float y, float w)
@@ -474,7 +656,7 @@ namespace CustomScienceContracts.UI
             foreach (var pre in unmet)
             {
                 string title = pre != null ? pre.Titel : "Unknown mission";
-                string epoch = pre != null ? EpochName(mgr, pre.Epoch) : "Unknown epoch";
+                string epoch = pre != null ? EpochName(pre.Epoch) : "Unknown epoch";
                 string line = "- " + title + " (" + epoch + ")";
                 float h = TextHeight(Theme.CondBad, line, w);
                 GUI.Label(new Rect(x, y, w, h), line, Theme.CondBad);
@@ -511,7 +693,7 @@ namespace CustomScienceContracts.UI
                 var pre = mgr.Catalog.Get(id);
                 if (ContractManager.IsCompleted(pre)) continue;
                 string title = pre != null ? pre.Titel : id;
-                string epoch = pre != null ? EpochName(mgr, pre.Epoch) : "Unknown epoch";
+                string epoch = pre != null ? EpochName(pre.Epoch) : "Unknown epoch";
                 lines.Add("Complete: " + title + " (" + epoch + ")");
             }
 
@@ -521,7 +703,7 @@ namespace CustomScienceContracts.UI
             {
                 int cooldown = mgr.RemainingCooldown(c);
                 if (cooldown > 0)
-                    lines.Add($"Complete {cooldown} other mission(s) to refresh this repeatable.");
+                    lines.Add($"Complete {cooldown} more mission{(cooldown == 1 ? "" : "s")} to refresh this repeatable.");
             }
             else if (c.Status == MissionStatus.Available && !visible.Contains(c.Id))
             {
@@ -557,6 +739,7 @@ namespace CustomScienceContracts.UI
 
         private float DrawCrossEpochUnlocks(ContractManager mgr, MissionContract c, float x, float y, float w)
         {
+            if (_mode != CenterMode.Campaign) return y;
             var unlocks = CrossEpochUnlocks(mgr, c);
             if (unlocks.Count == 0) return y;
 
@@ -566,7 +749,7 @@ namespace CustomScienceContracts.UI
             int shown = 0;
             foreach (var next in unlocks.Take(3))
             {
-                string line = "- " + next.Titel + " (" + EpochName(mgr, next.Epoch) + ")";
+                string line = "- " + next.Titel + " (" + EpochName(next.Epoch) + ")";
                 bool unlocked = IsCrossEpochUnlocked(next);
                 var style = unlocked ? Theme.CondOk : Theme.Station;
                 float h = TextHeight(style, line, w - 14f);
@@ -605,7 +788,7 @@ namespace CustomScienceContracts.UI
             return mgr.Catalog.All
                 .Where(next => next.Voraussetzungen.Contains(c.Id) && EpochOf(next) != EpochOf(c))
                 .OrderBy(EpochOf)
-                .ThenBy(next => CatalogIndex(mgr, next))
+                .ThenBy(next => mgr.Catalog.IndexOf(next))
                 .ToList();
         }
 
@@ -651,6 +834,8 @@ namespace CustomScienceContracts.UI
             GUI.Label(new Rect(x + 8f, y + 4f, w - 16f, h), text, style);
             y += h + 12f;
         }
+
+        // --- Dependency arrows (Campaign Atlas only) ---
 
         private void DrawConnections(ContractManager mgr, List<CardEntry> cards)
         {
@@ -789,12 +974,15 @@ namespace CustomScienceContracts.UI
             DrawSegment(tip, tip + back * 10f - side * 5f, color, 2.2f);
         }
 
+        // --- Card sizing (must stay in sync with the drawing code above) ---
+
         private float CardHeight(ContractManager mgr, MissionContract c, HashSet<string> visible)
         {
-            if (!_expandedCards.Contains(c.Id)) return CardBaseH;
+            float faceH = FaceHeight();
+            if (!_expandedCards.Contains(c.Id)) return faceH;
 
-            bool canAccept = CanAcceptFromCenter(mgr, c, visible);
-            float h = CardBaseH + 34f;
+            bool canAccept = CanAcceptHere(mgr, c, visible);
+            float h = faceH + 8f + 20f;   // details top padding + status line
             if (IsLockedForDetails(c, canAccept))
                 return h + UnlockRequirementsHeight(mgr, visible, c, canAccept, CardW - 20f) + 8f;
 
@@ -814,7 +1002,7 @@ namespace CustomScienceContracts.UI
                 foreach (var pre in unmet)
                 {
                     string title = pre != null ? pre.Titel : "Unknown mission";
-                    string epoch = pre != null ? EpochName(mgr, pre.Epoch) : "Unknown epoch";
+                    string epoch = pre != null ? EpochName(pre.Epoch) : "Unknown epoch";
                     h += TextHeight(Theme.CondBad, "- " + title + " (" + epoch + ")", CardW - 20f) + 3f;
                 }
                 h += 6f;
@@ -825,14 +1013,14 @@ namespace CustomScienceContracts.UI
 
             h += CrossEpochUnlocksHeight(mgr, c, CardW - 20f);
 
-            h += 29f;
-            if (_expandedObjectives.Contains(c.Id))
-                h += ObjectiveHeight(mgr, c, CardW - 20f);
+            h += 20f;   // "Objectives:" header
+            h += ObjectiveHeight(mgr, c, CardW - 20f);
             return h + 8f;
         }
 
         private float CrossEpochUnlocksHeight(ContractManager mgr, MissionContract c, float width)
         {
+            if (_mode != CenterMode.Campaign) return 0f;
             var unlocks = CrossEpochUnlocks(mgr, c);
             if (unlocks.Count == 0) return 0f;
 
@@ -841,7 +1029,7 @@ namespace CustomScienceContracts.UI
             foreach (var next in unlocks.Take(3))
             {
                 var style = IsCrossEpochUnlocked(next) ? Theme.CondOk : Theme.Station;
-                h += TextHeight(style, "- " + next.Titel + " (" + EpochName(mgr, next.Epoch) + ")", width - 14f) + 10f;
+                h += TextHeight(style, "- " + next.Titel + " (" + EpochName(next.Epoch) + ")", width - 14f) + 10f;
                 shown++;
             }
             if (unlocks.Count > shown) h += 20f;
@@ -890,42 +1078,25 @@ namespace CustomScienceContracts.UI
             return Mathf.Max(18f, style.CalcHeight(new GUIContent(text), width));
         }
 
-        private static IEnumerable<MissionContract> ContractsForMode(ContractManager mgr, CenterMode mode)
-        {
-            if (mode == CenterMode.Repeatable)
-                return mgr.RepeatablePool();
-            return mgr.Catalog.All.Where(c => c.HeimatSparte != Sparte.Wiederholbar);
-        }
+        // --- Card state presentation ---
 
-        /// <summary>Stable layout skeleton for column/branch computation: includes repeatable missions
-        /// that have moved to the pool, so the campaign atlas does not reflow when one completes.</summary>
-        private static IEnumerable<MissionContract> SkeletonForMode(ContractManager mgr, CenterMode mode)
-        {
-            if (mode == CenterMode.Repeatable)
-                return mgr.RepeatablePool();
-            return mgr.Catalog.All.Where(c => c.HeimatSparte != Sparte.Wiederholbar);
-        }
-
-        private static bool CanAcceptFromCenter(ContractManager mgr, MissionContract c, HashSet<string> visible)
-        {
-            if (!mgr.CanAccept(c)) return false;
-            if (c.IsRepeatableInPool) return true;
-            return Tuning.UnlockAll || visible.Contains(c.Id);
-        }
-
-        private static GUIStyle CardStyle(MissionContract c, bool canAccept)
+        private GUIStyle CardStyle(MissionContract c, bool canAccept)
         {
             if (c.Status == MissionStatus.ReadyToClaim) return Theme.CardReady;
+            // Timeline history: completed repeatables stay green in the Campaign Atlas even while
+            // they cycle through the Repeatables pool again.
+            if (_mode == CenterMode.Campaign && c.IsRepeatableInPool) return Theme.CardCompleted;
             if (c.Status == MissionStatus.Active) return Theme.CardActive;
             if (canAccept) return Theme.CardAvailable;
             if (ContractManager.IsCompleted(c)) return Theme.CardCompleted;
             return Theme.CardLocked;
         }
 
-        private static Color StatusColor(MissionContract c, bool canAccept)
+        private Color StatusColor(MissionContract c, bool canAccept)
         {
             if (c.Status == MissionStatus.ReadyToClaim) return Theme.ClaimGreen;
-            if (c.Status == MissionStatus.Active) return new Color(0.95f, 0.65f, 0.20f);
+            if (_mode == CenterMode.Campaign && c.IsRepeatableInPool) return Theme.Ok;
+            if (c.Status == MissionStatus.Active) return ActiveOrange;
             if (canAccept) return Theme.Accent;
             if (ContractManager.IsCompleted(c)) return Theme.Ok;
             return new Color(0.48f, 0.50f, 0.56f);
@@ -939,39 +1110,132 @@ namespace CustomScienceContracts.UI
             return !canAccept;
         }
 
-        private static string StatusText(ContractManager mgr, HashSet<string> visible, MissionContract c, bool canAccept)
+        private string StatusText(ContractManager mgr, HashSet<string> visible, MissionContract c, bool canAccept)
         {
             if (c.Status == MissionStatus.ReadyToClaim) return "Ready to claim";
-            if (c.Status == MissionStatus.Active) return "Active";
-            if (ContractManager.IsCompleted(c) && c.IsRepeatableInPool)
+
+            if (c.IsRepeatableInPool)
             {
-                int cd = mgr.RemainingCooldown(c);
-                return cd > 0 ? $"Repeatable cooldown: {cd} mission(s) left" : "Repeatable mission ready";
+                if (_mode == CenterMode.Campaign)
+                {
+                    if (c.Status == MissionStatus.Active) return "Active (repeatable)";
+                    int cd = mgr.RemainingCooldown(c);
+                    return cd > 0
+                        ? $"Completed — repeatable again after {cd} more mission{(cd == 1 ? "" : "s")}"
+                        : "Completed — accept again from the Repeatables tab";
+                }
+                if (c.Status == MissionStatus.Active) return "Active";
+                int cooldown = mgr.RemainingCooldown(c);
+                if (cooldown > 0) return $"On cooldown — available after {cooldown} more mission{(cooldown == 1 ? "" : "s")}";
+                return canAccept
+                    ? "Ready — can be accepted again"
+                    : $"Waiting for a free {SparteDisplay.Name(c.HeimatSparte)} slot";
             }
+
+            if (c.Status == MissionStatus.Active) return "Active";
             if (ContractManager.IsCompleted(c)) return "Completed";
             if (canAccept) return "Available";
-            if (c.Status == MissionStatus.Available && !c.IsRepeatableInPool && !visible.Contains(c.Id))
+            if (c.Status == MissionStatus.Available && !visible.Contains(c.Id))
                 return "Prerequisites met, waiting behind the branch visibility limit";
             return "Locked";
         }
 
+        // --- Ordering helpers ---
+
+        private static IEnumerable<Sparte> BranchOrderFor(List<MissionContract> contracts)
+        {
+            var byId = contracts.ToDictionary(c => c.Id);
+            var score = Branches.ToDictionary(b => b, b => 0);
+            var seen = new HashSet<string>();
+
+            foreach (var c in contracts)
+            {
+                foreach (string preId in c.Voraussetzungen)
+                {
+                    if (!byId.TryGetValue(preId, out var pre) || pre.HeimatSparte == c.HeimatSparte)
+                        continue;
+
+                    string key = ((int)pre.HeimatSparte) + ">" + ((int)c.HeimatSparte);
+                    if (!seen.Add(key)) continue;
+                    score[pre.HeimatSparte] += 2;
+                    score[c.HeimatSparte] -= 2;
+                }
+            }
+
+            return Branches
+                .OrderByDescending(b => score[b])
+                .ThenBy(BranchDefaultIndex)
+                .ToList();
+        }
+
+        private static int BranchDefaultIndex(Sparte branch)
+        {
+            for (int i = 0; i < Branches.Length; i++)
+                if (Branches[i] == branch) return i;
+            return int.MaxValue;
+        }
+
+        private static Dictionary<string, int> ComputeDependencyColumns(List<MissionContract> contracts)
+        {
+            var byId = contracts.ToDictionary(c => c.Id);
+            var memo = new Dictionary<string, int>();
+            var visiting = new HashSet<string>();
+            foreach (var c in contracts)
+                ResolveColumn(c, byId, memo, visiting);
+            return memo;
+        }
+
+        private static int ResolveColumn(MissionContract c, Dictionary<string, MissionContract> byId,
+            Dictionary<string, int> memo, HashSet<string> visiting)
+        {
+            if (c == null) return 0;
+            if (memo.TryGetValue(c.Id, out int cached)) return cached;
+            if (!visiting.Add(c.Id)) return 0;
+
+            int column = 0;
+            foreach (string preId in c.Voraussetzungen)
+                if (byId.TryGetValue(preId, out var pre))
+                    column = Mathf.Max(column, ResolveColumn(pre, byId, memo, visiting) + 1);
+
+            visiting.Remove(c.Id);
+            memo[c.Id] = column;
+            return column;
+        }
+
+        private static int ColumnOf(MissionContract c, Dictionary<string, int> columns) =>
+            c != null && columns.TryGetValue(c.Id, out int column) ? column : 0;
+
+        // --- Epoch metadata (cached per catalog) ---
+
+        private void EnsureCatalogCache(ContractManager mgr)
+        {
+            if (ReferenceEquals(_cachedCatalog, mgr.Catalog) && _epochNames != null) return;
+            _cachedCatalog = mgr.Catalog;
+
+            _maxEpoch = 1;
+            foreach (var c in mgr.Catalog.All)
+                _maxEpoch = Mathf.Max(_maxEpoch, EpochOf(c));
+
+            bool stock = mgr.Catalog.All.Any(UsesStockBody);
+            _epochNames = new string[_maxEpoch + 1];
+            for (int epoch = 1; epoch <= _maxEpoch; epoch++)
+            {
+                string catalogName = mgr.Catalog.All
+                    .Where(c => EpochOf(c) == epoch && !string.IsNullOrEmpty(c.EpochTitle))
+                    .Select(c => c.EpochTitle)
+                    .FirstOrDefault();
+                _epochNames[epoch] = !string.IsNullOrEmpty(catalogName)
+                    ? catalogName
+                    : (stock ? StockEpochName(epoch) : SolEpochName(epoch));
+            }
+
+            _selectedEpoch = Mathf.Clamp(_selectedEpoch, 1, _maxEpoch);
+        }
+
+        private string EpochName(int epoch) =>
+            _epochNames != null && epoch >= 1 && epoch < _epochNames.Length ? _epochNames[epoch] : "Campaign";
+
         private static int EpochOf(MissionContract c) => Mathf.Max(1, c.Epoch);
-
-        private static string EpochName(ContractManager mgr, int epoch)
-        {
-            string catalogName = CatalogEpochName(mgr, epoch);
-            if (!string.IsNullOrEmpty(catalogName)) return catalogName;
-            return IsStockCatalog(mgr) ? StockEpochName(epoch) : SolEpochName(epoch);
-        }
-
-        private static string CatalogEpochName(ContractManager mgr, int epoch)
-        {
-            if (mgr == null || mgr.Catalog == null) return "";
-            return mgr.Catalog.All
-                .Where(c => EpochOf(c) == epoch && !string.IsNullOrEmpty(c.EpochTitle))
-                .Select(c => c.EpochTitle)
-                .FirstOrDefault() ?? "";
-        }
 
         private static string SolEpochName(int epoch)
         {
@@ -1007,15 +1271,9 @@ namespace CustomScienceContracts.UI
             }
         }
 
-        private static bool IsStockCatalog(ContractManager mgr)
-        {
-            return mgr != null && mgr.Catalog != null && mgr.Catalog.All.Any(UsesStockBody);
-        }
-
         private static bool UsesStockBody(MissionContract c)
         {
-            string body = PrimaryBody(c);
-            switch (body)
+            switch (BodyVisual.PrimaryBody(c))
             {
                 case "Kerbin":
                 case "Mun":
@@ -1037,17 +1295,6 @@ namespace CustomScienceContracts.UI
                 default:
                     return false;
             }
-        }
-
-        private static string PrimaryBody(MissionContract c)
-        {
-            foreach (var b in c.Bedingungen)
-            {
-                if (!string.IsNullOrEmpty(b.Body)) return b.Body;
-                foreach (var ck in b.Checks)
-                    if (!string.IsNullOrEmpty(ck.Body)) return ck.Body;
-            }
-            return BodyVisual.SubcatBodyName(c.Unterkategorie) ?? c.Unterkategorie;
         }
 
         private static int BodyRank(string body)
@@ -1119,17 +1366,12 @@ namespace CustomScienceContracts.UI
             }
         }
 
-        private static int CatalogIndex(ContractManager mgr, MissionContract c)
-        {
-            for (int i = 0; i < mgr.Catalog.All.Count; i++)
-                if (ReferenceEquals(mgr.Catalog.All[i], c)) return i;
-            return int.MaxValue;
-        }
-
         private static void Toggle(HashSet<string> set, string key)
         {
             if (!set.Remove(key)) set.Add(key);
         }
+
+        // --- Layout data ---
 
         private struct BranchHeader
         {
@@ -1154,6 +1396,23 @@ namespace CustomScienceContracts.UI
             {
                 Body = body;
                 Rect = rect;
+            }
+        }
+
+        /// <summary>Full-width body group header of the Repeatables view.</summary>
+        private struct BodySection
+        {
+            public string Body;
+            public Rect Rect;
+            public int Ready;
+            public int Total;
+
+            public BodySection(string body, Rect rect, int ready, int total)
+            {
+                Body = body;
+                Rect = rect;
+                Ready = ready;
+                Total = total;
             }
         }
 
@@ -1189,6 +1448,7 @@ namespace CustomScienceContracts.UI
         {
             public readonly List<BranchHeader> BranchHeaders = new List<BranchHeader>();
             public readonly List<BodyRow> BodyRows = new List<BodyRow>();
+            public readonly List<BodySection> BodySections = new List<BodySection>();
             public readonly List<CardEntry> Cards = new List<CardEntry>();
             public float ContentWidth;
             public float ContentHeight;

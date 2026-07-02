@@ -44,17 +44,19 @@ Each mission moves through these states:
 
 Repeatable missions stay in their home branch after first completion so
 completed supply steps remain visible in their station/base chain. They also
-appear in the repeatable branch and require two other mission completions before
+appear in the Repeatables view and require two other mission completions before
 they can be accepted again.
 
 ## Branches
 
-Mission Control has two top-level pools:
+Mission Control has two top-level views:
 
-- Campaign Atlas: the normal campaign flow, including completed repeatable
-  cards in their original home branch for context.
-- Repeatables: a shortcut pool for missions that have completed once and are
-  now in their cooldown pool.
+- Campaign Atlas: the campaign flow and timeline. Repeatable missions stay here
+  permanently after their first completion, rendered as completed (green), so
+  the atlas is a complete history of every mission that was finished at least
+  once. They cannot be re-accepted from this view.
+- Repeatables: the interactive pool for missions that have completed once.
+  Re-accepting a repeatable happens exclusively here.
 
 Within an epoch page, the campaign atlas displays three branch rows:
 
@@ -69,13 +71,16 @@ not be renamed without migration.
 ## Mission Control Atlas
 
 `SelectionWindow` renders Mission Control as a resizable atlas. The window opens
-near fullscreen by default (`missionCenterScale` in `settings.cfg`) and can be
-resized from the lower-right corner.
+near fullscreen by default (`missionCenterScale` in `settings.cfg`), can be
+resized from the lower-right corner and dragged by its title bar. On open it
+selects the first epoch with claimable, active or acceptable missions.
 
-The layout is:
+The campaign layout is:
 
-1. Campaign/Repeatable mode tabs.
-2. Epoch tabs with counts for currently acceptable missions.
+1. Campaign/Repeatable mode tabs with acceptable-mission counts.
+2. Epoch tabs with acceptable counts, a completion progress bar and a checkmark
+   for fully completed epochs. The tabs size themselves to the window and wrap
+   into a second row instead of overflowing, so every epoch stays reachable.
 3. One epoch page at a time.
 4. Branch rows for Pioneers, Robotic Explorers and Lifelines.
 5. Body rows inside each branch.
@@ -88,13 +93,34 @@ Repeatable cards remain part of the campaign layout after completion. This keeps
 station resupply, base supply and depot supply steps visible between their
 build/expansion and long-stay follow-ups instead of leaving holes in the atlas.
 
-Mission cards show only the compact summary by default: title, body and science
-reward. Expanding a card shows description, action, requirements, cross-epoch
-unlocks and optionally objectives. Locked cards show unlock requirements instead
-of the mission description. Cross-epoch unlock hints use blue while the target is
+Mission cards show only the compact summary by default: title, body, science
+reward and a ↻ badge on repeatables. Expanding a card shows the status,
+description, action, requirements, cross-epoch unlocks and the full objective
+list (no extra foldout click). Locked cards show unlock requirements instead of
+the mission description. Cross-epoch unlock hints use blue while the target is
 still locked and green once the target has unlocked. Dependency arrows use
 rounded curve connectors with arrowheads so crossings remain readable in dense
 epochs.
+
+## Repeatables View
+
+The Repeatables view has no epoch split. It renders the whole pool
+(`ContractManager.RepeatablePool()`, i.e. repeatable missions with at least one
+completion) as one scrollable page, grouped into body sections ordered by the
+same body ranking the atlas uses. Each section header shows the body icon, name
+and how many of its missions are currently acceptable.
+
+Every repeatable card carries an always-visible cooldown strip under the body
+line:
+
+- "Ready — can be accepted again" once the cooldown is over,
+- "Available after N more missions (done/total)" with a progress bar while
+  cooling down (`Tuning.RepeatableCooldown`, default 2),
+- "Active — tracked in Active Missions" / "Ready to claim" while running,
+- "Waiting for a free … slot" when only the branch active-limit blocks it.
+
+Cooldowns advance on every completion — claimed or skipped — of any other
+mission (`ContractManager.AdvanceRepeatableCooldowns`).
 
 ## Visibility Rules
 
@@ -315,11 +341,17 @@ The catalog validator checks:
 
 ## Build
 
-On this machine, use the explicit dotnet path:
+Point `KSPManaged` at the Managed folder of a KSP 1.12.x install:
 
 ```bash
-/usr/local/share/dotnet/dotnet build -c Release \
+# macOS
+dotnet build -c Release \
   -p:KSPManaged="$HOME/Library/Application Support/Steam/steamapps/common/Kerbal Space Program/KSP.app/Contents/Resources/Data/Managed" \
+  CustomScienceContracts.sln
+
+# Windows
+dotnet build -c Release \
+  -p:KSPManaged="C:\...\Kerbal Space Program\KSP_x64_Data\Managed" \
   CustomScienceContracts.sln
 ```
 
@@ -373,6 +405,21 @@ README.md
 
 The optional German zip is installed after the main mod and replaces only the
 contract catalog files.
+
+## 0.5 Learnings
+
+- The Campaign Atlas is a timeline, not a to-do list. Completed repeatables are
+  rendered green there permanently; all repeat interaction lives in the
+  Repeatables view. Mixing "history" and "accept again" in one card confused
+  both roles.
+- Blocked states must name their reason on the card itself. The cooldown strip
+  ("Available after N more missions") removed the most common "why can't I
+  accept this?" question.
+- Fixed-width tab strips break on resizable windows; tabs must wrap or shrink.
+- A skip is a completion: every code path that counts a completion must go
+  through the same cooldown bookkeeping (`AdvanceRepeatableCooldowns`).
+- Settings keys without a reader rot silently. Remove dead tuning values
+  together with the code that stopped using them.
 
 ## 0.4 Learnings
 

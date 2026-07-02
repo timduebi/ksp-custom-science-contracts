@@ -112,6 +112,7 @@ namespace CustomScienceContracts.Core
             Evaluators.NotifyCleared(c);
             c.Progress = new ConfigNode("PROGRESS");
             c.TotalCompletions++;
+            AdvanceRepeatableCooldowns(c);   // a skip is still a completion for cooldown purposes
             if (c.Repeatable) { c.CompletionsSinceLastClaim = 0; c.Status = MissionStatus.Available; }
             else c.Status = MissionStatus.CompletedOnce;
             Log.Info($"Skipped without reward: {c.Id}");
@@ -410,11 +411,7 @@ namespace CustomScienceContracts.Core
             StoreFleetIfNetwork(c);   // keep the constellation so a follow-up network can inherit it
             Evaluators.NotifyCleared(c);
             c.Progress = new ConfigNode("PROGRESS");
-
-            // Cooldown bookkeeping: every other pool repeatable gets +1.
-            foreach (var other in Catalog.All)
-                if (!ReferenceEquals(other, c) && other.IsRepeatableInPool)
-                    other.CompletionsSinceLastClaim++;
+            AdvanceRepeatableCooldowns(c);
 
             if (c.Repeatable)
             {
@@ -426,6 +423,15 @@ namespace CustomScienceContracts.Core
             Log.Info($"Claimed: {c.Id} (+{c.ScienceReward} science)");
             RecomputeAvailability();
             return true;
+        }
+
+        /// <summary>Cooldown bookkeeping: every pool repeatable except the completed one gets +1.
+        /// Runs on every completion (claim or skip), so cooldowns advance consistently.</summary>
+        private void AdvanceRepeatableCooldowns(MissionContract completed)
+        {
+            foreach (var other in Catalog.All)
+                if (!ReferenceEquals(other, completed) && other.IsRepeatableInPool)
+                    other.CompletionsSinceLastClaim++;
         }
 
         private static void PayReward(float amount)
@@ -447,10 +453,6 @@ namespace CustomScienceContracts.Core
 
         public int RemainingCooldown(MissionContract c) =>
             Mathf.Max(0, Tuning.RepeatableCooldown - c.CompletionsSinceLastClaim);
-
-        /// <summary>Whether locked mission previews are active because the trigger contract is completed.</summary>
-        public bool LockedPreviewActive =>
-            IsCompleted(Catalog.Get(Tuning.LockedPreviewTrigger));
 
         /// <summary>Titles of unmet prerequisites for the red UI line.</summary>
         public List<string> UnmetPrerequisiteTitles(MissionContract c)

@@ -10,6 +10,7 @@ namespace CustomScienceContracts.Data
     {
         private readonly List<MissionContract> _all = new List<MissionContract>();
         private readonly Dictionary<string, MissionContract> _byId = new Dictionary<string, MissionContract>();
+        private readonly Dictionary<string, int> _indexById = new Dictionary<string, int>();
 
         public IReadOnlyList<MissionContract> All => _all;
 
@@ -17,8 +18,10 @@ namespace CustomScienceContracts.Data
         {
             _all.Clear();
             _byId.Clear();
+            _indexById.Clear();
             foreach (var c in contracts)
             {
+                _indexById[c.Id] = _all.Count;
                 _all.Add(c);
                 _byId[c.Id] = c;
             }
@@ -30,7 +33,9 @@ namespace CustomScienceContracts.Data
             return c;
         }
 
-        public bool Exists(string id) => _byId.ContainsKey(id);
+        /// <summary>Stable catalog position, used as the UI tie-break sort key.</summary>
+        public int IndexOf(MissionContract c) =>
+            c != null && _indexById.TryGetValue(c.Id, out int i) ? i : int.MaxValue;
 
         public IEnumerable<MissionContract> InSparte(Sparte s) => _all.Where(c => c.HeimatSparte == s);
 

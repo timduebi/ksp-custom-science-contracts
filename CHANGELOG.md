@@ -6,6 +6,47 @@ This project uses simple `MAJOR.MINOR.PATCH` versioning.
 The mod ships as one download with the SOL (real solar system) campaign, plus optional config
 packs on the same release that swap the catalog to the stock KSP system or to German.
 
+## [0.5.0] - 2026-07-02
+
+First stable release — the alpha label is gone.
+
+### Added
+- Repeatable cards now always show their cooldown state directly on the card in
+  the Repeatables view: "Available after N more missions" with a progress bar,
+  plus clear active/ready/slot-limit states.
+- Repeatable missions carry a ↻ badge everywhere so they are recognizable at a
+  glance.
+- Epoch tabs show a per-epoch completion progress bar, a checkmark once an
+  epoch is fully completed, and the count of currently acceptable missions.
+- Mission Control now opens on the epoch where the campaign currently is
+  (first epoch with claimable, active or acceptable missions).
+- Mission Control can be dragged by its title bar (in addition to resizing).
+
+### Changed
+- The Campaign Atlas now doubles as a campaign timeline: repeatable missions
+  stay permanently visible there after their first completion and are shown as
+  completed (green), including while they cycle through the repeatable pool.
+  Accepting them again happens exclusively from the Repeatables view.
+- The Repeatables view dropped the epoch split entirely: one page lists the
+  whole pool grouped by target body in atlas order, so every repeatable is
+  findable without paging through epochs.
+- Expanded mission cards show their objectives directly instead of behind a
+  second "Objectives" foldout click.
+- Epoch tabs wrap into a second row on narrow windows instead of running off
+  the edge, so later epochs stay reachable at every window size.
+- Campaign counts (mode tab, epoch tabs, branch headers) no longer include
+  pool repeatables; those are counted in the Repeatables tab.
+- Skipping a mission from the settings window now advances repeatable
+  cooldowns exactly like claiming it, since a skip also counts as a completion.
+- Unified close-button glyphs and cooldown wording across all windows.
+
+### Fixed
+- The check loop no longer risks a NullReferenceException when the vessel list
+  is unavailable in a scene.
+- Removed dead settings (`activeButtonX/Y/Size`, `lockedPreviewTrigger`,
+  `markerRadiusKmResupply`) and unused code paths; per-frame UI work was
+  reduced by caching catalog indexes and epoch names.
+
 ## [0.4.4] - 2026-06-23
 
 ### Added
