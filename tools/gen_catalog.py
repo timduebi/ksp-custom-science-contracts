@@ -125,7 +125,9 @@ def epoch_for_id(cid):
         key, action, raw_stage = m.groups()
         stage = _stage_from_chain_suffix(action, raw_stage or "2")
         if key == "earth_station":
-            return 2 if stage <= 4 else 4 if stage <= 8 else 6
+            # The whole Earth orbital station chain (3-seat build through 12-seat
+            # operations) lives in Orbital Roots, the permanent-infrastructure epoch.
+            return 3
         if key in ("moon_station", "moon_base"):
             return 3 if stage <= 3 else 4 if stage <= 6 else 6
         if key in ("mars_station", "mars_base"):

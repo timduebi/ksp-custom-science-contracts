@@ -550,7 +550,8 @@ namespace CustomScienceContracts.UI
             }
             else
             {
-                text = $"Waiting for a free {SparteDisplay.Name(c.HeimatSparte)} slot";
+                // Short form; the expanded status line names the exact branch.
+                text = "Waiting for a free mission slot";
                 style = Theme.CardMeta; barColor = new Color(0.55f, 0.58f, 0.64f); frac = 1f;
             }
 
@@ -592,7 +593,7 @@ namespace CustomScienceContracts.UI
                 GUI.DrawTexture(icon, bv.Icon, ScaleMode.ScaleToFit, true);
                 GUI.color = prev;
             }
-            GUI.Label(new Rect(r.x + 34f, r.y + 75f, 116f, 20f), BodyVisual.DisplayName(body), Theme.CardMeta);
+            GUI.Label(new Rect(r.x + 34f, r.y + 75f, r.width - 100f, 20f), BodyVisual.DisplayName(body), Theme.CardMeta);
 
             var sci = IconLibrary.UI("science symbol");
             var prevColor = GUI.color;
@@ -611,8 +612,11 @@ namespace CustomScienceContracts.UI
             float y = card.y + faceH + 8f;
             float w = card.width - 20f;
 
-            GUI.Label(new Rect(x, y, w, 18f), StatusText(mgr, visible, c, canAccept), Theme.CardMeta);
-            y += 20f;
+            // Status lines can wrap (e.g. cooldown texts), so their height is measured too.
+            string status = StatusText(mgr, visible, c, canAccept);
+            float statusH = TextHeight(Theme.CardMeta, status, w);
+            GUI.Label(new Rect(x, y, w, statusH), status, Theme.CardMeta);
+            y += statusH + 4f;
 
             if (IsLockedForDetails(c, canAccept))
             {
@@ -982,7 +986,8 @@ namespace CustomScienceContracts.UI
             if (!_expandedCards.Contains(c.Id)) return faceH;
 
             bool canAccept = CanAcceptHere(mgr, c, visible);
-            float h = faceH + 8f + 20f;   // details top padding + status line
+            float h = faceH + 8f;   // details top padding
+            h += TextHeight(Theme.CardMeta, StatusText(mgr, visible, c, canAccept), CardW - 20f) + 4f;
             if (IsLockedForDetails(c, canAccept))
                 return h + UnlockRequirementsHeight(mgr, visible, c, canAccept, CardW - 20f) + 8f;
 
@@ -1075,7 +1080,10 @@ namespace CustomScienceContracts.UI
 
         private static float TextHeight(GUIStyle style, string text, float width)
         {
-            return Mathf.Max(18f, style.CalcHeight(new GUIContent(text), width));
+            // Measure slightly narrower than the render rect. IMGUI's CalcHeight can pick a later
+            // wrap point than the actual render pass, which cut off the last line of longer
+            // mission descriptions; measuring narrow guarantees the reserved rect is tall enough.
+            return Mathf.Max(18f, style.CalcHeight(new GUIContent(text), width - 8f));
         }
 
         // --- Card state presentation ---
@@ -1088,6 +1096,10 @@ namespace CustomScienceContracts.UI
             if (_mode == CenterMode.Campaign && c.IsRepeatableInPool) return Theme.CardCompleted;
             if (c.Status == MissionStatus.Active) return Theme.CardActive;
             if (canAccept) return Theme.CardAvailable;
+            // Repeatables view: a pool mission that cannot be accepted is cooling down or blocked
+            // by the branch slot limit — render it dimmed, not green, so "waiting" and "ready"
+            // are distinguishable at a glance.
+            if (_mode == CenterMode.Repeatable && c.IsRepeatableInPool) return Theme.CardLocked;
             if (ContractManager.IsCompleted(c)) return Theme.CardCompleted;
             return Theme.CardLocked;
         }
@@ -1098,6 +1110,8 @@ namespace CustomScienceContracts.UI
             if (_mode == CenterMode.Campaign && c.IsRepeatableInPool) return Theme.Ok;
             if (c.Status == MissionStatus.Active) return ActiveOrange;
             if (canAccept) return Theme.Accent;
+            if (_mode == CenterMode.Repeatable && c.IsRepeatableInPool)
+                return new Color(0.48f, 0.50f, 0.56f);
             if (ContractManager.IsCompleted(c)) return Theme.Ok;
             return new Color(0.48f, 0.50f, 0.56f);
         }

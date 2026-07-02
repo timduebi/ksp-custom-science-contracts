@@ -6,6 +6,22 @@ This project uses simple `MAJOR.MINOR.PATCH` versioning.
 The mod ships as one download with the SOL (real solar system) campaign, plus optional config
 packs on the same release that swap the catalog to the stock KSP system or to German.
 
+## [Unreleased]
+
+### Changed
+- SOL: the entire Earth orbital station chain (3-seat build through the 12-seat
+  operations, including supplies and long stays) now lives in the Orbital Roots
+  epoch instead of being spread across Moonrise, Inner Reach and Beltworks.
+
+### Fixed
+- Repeatables view: missions waiting for their cooldown (or a free branch slot)
+  are now rendered dimmed instead of green, so "waiting" and "ready" are
+  distinguishable at a glance. The Campaign Atlas keeps them green as completed
+  history.
+- Mission card texts are no longer cut off: wrapped text heights get a safety
+  margin against IMGUI's wrap measurement, status lines size themselves to
+  their content, and the body label no longer truncates long names.
+
 ## [0.5.0] - 2026-07-02
 
 First stable release — the alpha label is gone.
