@@ -21,12 +21,17 @@ At game load, `ContractsScenario` initializes the mod:
 
 1. Load tuning values from `GameData/CustomScienceContracts/settings.cfg`.
 2. Load all `CUSTOM_CONTRACT_CATALOG` nodes through KSP `GameDatabase`.
-3. Build the in-memory `ContractCatalog`.
+3. Build the in-memory `ContractCatalog`, including optional `EPOCH` metadata
+   nodes (number/name/description) used for the atlas story intros.
 4. Load save-specific state from
    `saves/<SaveName>/CustomScienceContracts/contracts_state.cfg`.
 5. Register condition evaluators.
 6. Create the UI.
 7. Start the 1-second check loop.
+
+The manager posts on-screen messages (`ScreenMessages`) when a mission becomes
+claimable, when a claim pays out (including which follow-up missions it
+unlocked) and when the first completion of a mission finishes its whole epoch.
 
 The check loop evaluates active missions in Flight, Tracking Station, Space
 Center and Editor scenes. In-game universal time remains authoritative, so
@@ -81,10 +86,17 @@ The campaign layout is:
 2. Epoch tabs with acceptable counts, a completion progress bar and a checkmark
    for fully completed epochs. The tabs size themselves to the window and wrap
    into a second row instead of overflowing, so every epoch stays reachable.
-3. One epoch page at a time.
-4. Branch rows for Pioneers, Robotic Explorers and Lifelines.
-5. Body rows inside each branch.
-6. Mission cards connected by prerequisite arrows.
+3. An epoch intro panel with the chapter name, its narrative text (from the
+   catalog's `EPOCH` nodes) and the epoch completion count. Catalogs without
+   `EPOCH` nodes simply skip the panel.
+4. One epoch page at a time.
+5. Branch rows for Pioneers, Robotic Explorers and Lifelines.
+6. Body rows inside each branch.
+7. Mission cards connected by prerequisite arrows.
+
+Completed missions show the in-game date of their first completion
+(`FirstCompletedUT`, stamped on claim/skip), so the atlas doubles as a mission
+chronicle. Repeatable cards additionally show their total completion count.
 
 Columns are based only on real prerequisites. Cards that share a body row but do
 not depend on each other are placed in vertical lanes instead of being pushed
@@ -209,6 +221,7 @@ It contains:
 
 - mission status,
 - total completions,
+- the in-game time of each mission's first completion (`firstCompletedUT`),
 - repeatable cooldown counters,
 - active mission progress,
 - assigned vessel ids/names/lost flags,
@@ -240,20 +253,22 @@ Default output, shipped in the main download:
 
 ```text
 GameData/CustomScienceContracts/Contracts/
-├── A_Pioniere.cfg
+├── A_Pioniere.cfg      (also carries the EPOCH story nodes)
 ├── B_Spaeher.cfg
 ├── C_Lebensadern.cfg
 └── D_Stationen.cfg
 ```
 
-The optional German SOL config is generated from the same mission source:
+Each catalog's `A_Pioniere.cfg` starts with nine `EPOCH` nodes
+(`number`/`name`/`description`) that feed the atlas intro panel. The story
+texts live in the generators (`EPOCH_TEXTS`), not in the design sources.
 
-```text
-OptionalConfigs/SOL-German/GameData/CustomScienceContracts/Contracts/
-```
-
-Both catalogs use the same ids, prerequisites, rewards and checks. They change
-only player-facing titles, descriptions, subcategory labels and checklist labels.
+The German SOL catalog is generated from the same mission source into
+`OptionalConfigs/SOL-German/.../Contracts/`. It stays maintained and validated
+in the repo but is **not shipped as a release asset since 0.6** — it returns
+once the plugin UI is translatable as well. Both SOL catalogs use the same
+ids, prerequisites, rewards and checks; they change only player-facing titles,
+descriptions, subcategory labels and checklist labels.
 
 The Stock KSP campaign ships as an optional config pack (`OptionalConfigs/Stock/`)
 on the same release, replacing only the four catalog files above.
@@ -371,14 +386,16 @@ tools/make_release.sh --publish
 ```
 
 The script reads the version from `src/CustomScienceContracts/Core/ModInfo.cs`,
-validates catalogs, builds the shared DLL, packages the three ZIPs and, with
-`--publish`, creates or updates the GitHub release. Keep `ModInfo.Version` and
-`CustomScienceContracts.csproj` in sync.
+verifies the AVC `.version` file matches, validates catalogs, builds the shared
+DLL, packages the two ZIPs (main + Stock overlay) and, with `--publish`,
+creates or updates the GitHub release. Keep `ModInfo.Version`,
+`CustomScienceContracts.csproj` and
+`GameData/CustomScienceContracts/CustomScienceContracts.version` in sync.
 
 The main release zip should contain:
 
 ```text
-GameData/
+GameData/            (includes the AVC CustomScienceContracts.version file)
 README.md
 LICENSE
 THIRD_PARTY_NOTICES.md
@@ -396,15 +413,26 @@ GameData/CustomScienceContracts/Contracts/
 README.md
 ```
 
-The optional German SOL config zip should contain:
+It is installed after the main mod and replaces only the contract catalog
+files. The German SOL catalog is not packaged since 0.6 (kept in-repo only).
 
-```text
-GameData/CustomScienceContracts/Contracts/
-README.md
-```
+## 0.6 Learnings
 
-The optional German zip is installed after the main mod and replaces only the
-contract catalog files.
+- Story texts must live where players see them. The chapter narratives existed
+  in the design docs for months; moving them into `EPOCH` catalog nodes plus a
+  small intro panel made the campaign feel authored at zero gameplay cost.
+- Every infrastructure chain now lives in exactly one epoch (SOL: Earth+Moon
+  stations in Orbital Roots, Moon base + depot in Inner Reach, Mars station in
+  Red Horizon, Mars base in Beltworks). Chains that straddle epochs read as
+  holes, not as pacing.
+- Explicit `epoch=` parameters in generator helpers override `EPOCH_EXACT` —
+  when moving missions, grep for both or the move silently does nothing.
+- Branch meaning must match across editions: stations/bases/resupplies are
+  Pioneers, uncrewed depots and relays are Lifelines, in SOL and Stock alike.
+  `activeBemannt` went 3 → 4 so station chains keep a free crewed slot.
+- On-screen toasts (ready to claim, unlocked follow-ups, epoch complete) close
+  the feedback loop that windows alone cannot: the player learns things without
+  opening Mission Control.
 
 ## 0.5 Learnings
 

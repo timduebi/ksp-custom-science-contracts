@@ -6,14 +6,52 @@ This project uses simple `MAJOR.MINOR.PATCH` versioning.
 The mod ships as one download with the SOL (real solar system) campaign, plus optional config
 packs on the same release that swap the catalog to the stock KSP system or to German.
 
-## [Unreleased]
+## [0.6.0] - 2026-07-02
+
+The story release: the campaign now tells its chapters in-game, the atlas
+became a chronicle, and both campaigns were rebalanced epoch by epoch.
+
+### Added
+- Epoch story intros: every epoch opens with a narrative panel (name, chapter
+  text, completion count), fed by new `EPOCH` metadata nodes in the catalogs.
+- The atlas is now a chronicle: completed missions show the in-game date of
+  their first completion; repeatables show how often they were flown.
+- On-screen messages for the campaign flow: "Mission ready to claim", claim
+  payouts with the follow-up missions they unlocked, and "Epoch complete".
+- New SOL missions: **Far Frontier Crown** (crewed Neptune flyby and return as
+  the campaign finale) and a **Venus relay network**.
+- KSP-AVC support: the mod ships a `CustomScienceContracts.version` file, so
+  AVC/MiniAVC can announce updates.
 
 ### Changed
-- SOL: the entire Earth orbital station chain (3-seat build through the 12-seat
-  operations, including supplies and long stays) now lives in the Orbital Roots
-  epoch instead of being spread across Moonrise, Inner Reach and Beltworks.
+- SOL epochs rebalanced — every infrastructure chain now lives in exactly one
+  epoch: Earth and Moon stations in Orbital Roots, Moon base and Earth fuel
+  depot in Inner Reach, Mars station in Red Horizon, Mars base in Beltworks.
+  Beltworks shrank from 51 to 37 missions; no epoch has backwards
+  prerequisites anymore.
+- SOL: the uncrewed Eros flyby no longer requires a crewed lunar milestone
+  (probe-first consistency); the Moon base-site surveys moved next to the
+  station work that gates them.
+- Stock epochs rebalanced: Minty Operations and Deep-Space Lifeline grew from
+  5/4 missions to 8/8 (Mun late expansion, Duna deep operations), and The
+  Purple Finale grew from 2 to 6 missions — the Gilly fuel path and the Eve
+  support station now belong to the finale chapter.
+- Branch alignment across editions: Stock station/base/resupply chains moved
+  from Lifelines to Pioneers (like SOL); uncrewed depots and relays stay
+  Lifelines. The crewed active-mission limit went from 3 to 4 so station
+  chains keep a free slot.
+- Skipping a mission from the settings window now asks for an inline
+  confirmation ("Really skip? No reward").
+- Science rewards and abort penalties book as science transmissions instead of
+  appearing as "Cheating" in the R&D transaction log.
+- The German SOL config is no longer shipped as a release asset. It stays
+  maintained and validated in the repository and returns once the plugin UI is
+  translatable as well.
 
 ### Fixed
+- Precision-landing markers can no longer land in the ocean: on bodies with
+  water, the target point is deterministically redrawn until it is on land
+  (relevant for Stock's Kerbin/Laythe/Eve markers).
 - Repeatables view: missions waiting for their cooldown (or a free branch slot)
   are now rendered dimmed instead of green, so "waiting" and "ready" are
   distinguishable at a glance. The Campaign Atlas keeps them green as completed

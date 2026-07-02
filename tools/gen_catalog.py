@@ -62,15 +62,16 @@ EPOCH_EXACT = {
     "cr_luna_stay_2d": 2, "cr_luna_precision_landing": 2, "cr_luna_stay_7d": 2,
 
     # Epoch 3: permanent Earth orbit, lunar infrastructure and first lifelines.
+    # (The whole comm chain hangs off the Earth station, so Lifelines starts here.)
     "net_earth_comm_network3": 3, "net_earth_polar_comm_network": 3,
     "net_luna_comm_network3": 3, "net_luna_polar_comm_network": 3,
     "un_venus_flyby": 3, "un_mercury_flyby": 3, "un_mars_flyby": 3,
-    "un_venus_orbit": 3, "un_mercury_orbit": 3,
-    "cr_luna_station_precision_landing_1": 2, "cr_luna_station_precision_landing_2": 2,
+    "un_venus_orbit": 3, "un_mercury_orbit": 3, "un_mars_orbit": 3,
+    "cr_luna_station_precision_landing_1": 3, "cr_luna_station_precision_landing_2": 3,
 
     # Epoch 4: inner worlds after the first interplanetary probes.
     "cr_venus_flyby": 4, "cr_venus_orbit": 4,
-    "un_mars_orbit": 4, "un_mars_landing": 4,
+    "un_mars_landing": 4, "net_venus_comm_network": 4,
 
     # Epoch 5: Mars as the second main crewed arc.
     "un_mars_polar_mapping": 5,
@@ -107,8 +108,9 @@ EPOCH_EXACT = {
     "cr_saturn_flyby": 8, "cr_saturn_orbit": 8, "cr_titan_orbit": 8,
     "cr_titan_landing": 8, "cr_titan_stay_7d": 8,
 
-    # Epoch 9: far probes and Titan base finale.
+    # Epoch 9: far probes, Titan base finale and the crowning crewed flyby.
     "cr_titan_base4": 9, "cr_titan_base6": 9, "cr_titan_base8": 9,
+    "cr_neptune_flyby": 9,
 }
 
 def _stage_from_chain_suffix(action, stage):
@@ -124,16 +126,16 @@ def epoch_for_id(cid):
     if m:
         key, action, raw_stage = m.groups()
         stage = _stage_from_chain_suffix(action, raw_stage or "2")
-        if key == "earth_station":
-            # The whole Earth orbital station chain (3-seat build through 12-seat
-            # operations) lives in Orbital Roots, the permanent-infrastructure epoch.
-            return 3
-        if key in ("moon_station", "moon_base"):
-            return 3 if stage <= 3 else 4 if stage <= 6 else 6
-        if key in ("mars_station", "mars_base"):
-            return 5 if stage <= 3 else 6
-        if key == "earth_fuel_depot":
-            return 4 if stage <= 4 else 6
+        # Since 0.6 every infrastructure chain lives in exactly one epoch, so a chain is
+        # playable as one chapter instead of being spread across the campaign.
+        if key in ("earth_station", "moon_station"):
+            return 3   # Orbital Roots: both orbital stations
+        if key in ("moon_base", "earth_fuel_depot"):
+            return 4   # Inner Reach: lunar surface permanence + Earth depot
+        if key == "mars_station":
+            return 5   # Red Horizon
+        if key == "mars_base":
+            return 6   # Beltworks: Mars consolidation during the belt era
 
     if cid.startswith(("un_venus_", "un_mercury_", "un_sun_", "un_mars_", "un_phobos_", "un_deimos_")):
         return 4
@@ -155,8 +157,59 @@ def epoch_for_id(cid):
 
     return 1
 
+# ---------------- Epochen-Story ----------------
+# Kapiteltexte, die der Atlas als Intro-Panel anzeigt (EPOCH-Nodes im A-Katalog).
+EPOCH_TEXTS = {
+    1: ("Ignition",
+        "Die ersten Raketen verlassen die Startrampe: Testflüge, die obere Atmosphäre, der Sprung "
+        "in den Orbit. Alles, was später folgt, beginnt in diesen Wochen über der Erde."),
+    2: ("Moonrise",
+        "Luna ist der erste grosse Horizont. Sonden kartieren und landen, dann folgen die ersten "
+        "Kerbals — Vorbeiflug, Orbit, Landung und die ersten Tage auf einer fremden Welt."),
+    3: ("Orbital Roots",
+        "Das Programm schlägt Wurzeln im Orbit: Die Erdstation wächst von 3 auf 12 Plätze, die "
+        "erste Mondstation entsteht, Kommunikationsnetze spannen sich um Erde und Mond — und die "
+        "ersten Sonden brechen zu Venus, Merkur und Mars auf."),
+    4: ("Inner Reach",
+        "Der Griff ins innere System: eine Mondbasis, ein Treibstoffdepot im Erdorbit und ein "
+        "Relais-Netz um die Venus. Die erste Crew fliegt an der Venus vorbei, während Sonden auf "
+        "dem Mars landen."),
+    5: ("Red Horizon",
+        "Mars wird zum zweiten Zuhause des Programms: Kartierung, Rover, Präzisionslandungen — "
+        "dann Crews im Orbit, auf der Oberfläche und schliesslich eine Station über dem roten "
+        "Planeten. Erste Scouts erreichen den Asteroidengürtel."),
+    6: ("Beltworks",
+        "Zwischen Mars und Jupiter beginnt die Industrie: Phobos und Deimos, Ceres, Vesta und die "
+        "stillen Brocken des Gürtels. Erz, Depots und Versorgungsrouten — und eine Basis auf dem "
+        "Mars, die bleibt."),
+    7: ("Jovian Gate",
+        "Jupiter öffnet das äussere System. Sonden trotzen dem Strahlungsgürtel, Crews folgen bis "
+        "Ganymed — die erste Landung auf einem Eismond."),
+    8: ("Ringed Worlds",
+        "Saturn und seine Monde: Titan unter dichter Atmosphäre, Enceladus mit seinen Geysiren. "
+        "Crews fliegen weiter hinaus als je zuvor, und Titan wird zum Aussenposten."),
+    9: ("Far Frontier",
+        "Die letzte Grenze: Uranus, Neptun, Pluto und die Welten dahinter. Sonden vermessen den "
+        "Rand des Systems, die Titan-Basis wächst zum dauerhaften Aussenposten — und eine letzte "
+        "Crew fliegt weiter als alle zuvor."),
+}
+
+def epoch_nodes(texts):
+    """EPOCH metadata nodes (number/name/description) shown as the atlas intro panel.
+    Emitted once per catalog, at the top of the A file."""
+    s = ""
+    for number in sorted(texts):
+        name, desc = texts[number]
+        s += "    EPOCH\n    {\n"
+        s += f"        number = {number}\n"
+        s += f"        name = {name}\n"
+        s += f"        description = {desc}\n"
+        s += "    }\n"
+    return s + "\n"
+
 # Kuratierte Titel (wo die Formel unschoen waere)
 TITLE = {
+ "cr_neptune_flyby": "Krönung der Fernen Grenze",
  "un_earth_pad_clear": "Erster Testflug", "un_earth_upper_atmo": "Obere Erdatmosphäre",
  "un_earth_suborbital": "Unbemannter Suborbitalflug", "cr_earth_suborbital": "Erster bemannter Suborbitalflug",
  "un_earth_orbit": "Erster Erdorbit (unbemannt)", "un_earth_science_satellite": "Erster Forschungssatellit",
@@ -517,6 +570,10 @@ def write_optional_readme():
 Optional config pack that puts the whole SOL (real solar system) campaign into German — the
 same missions, prerequisites and rewards, just with German titles, descriptions and labels.
 
+> **Not shipped as a release asset since 0.6.** The catalog stays maintained and validated in
+> the repository and returns as a download once the plugin UI is translatable as well. Until
+> then it can be used directly from the repo at your own risk.
+
 It replaces only the four catalog files in `GameData/CustomScienceContracts/Contracts/`; the
 plugin, icons and licenses stay from the main download.
 
@@ -597,13 +654,13 @@ def moon_base_site_survey_landings():
         "Erkundung erster Mondbasis-Standort",
         "Nutze die Erfahrung aus der Erdorbitalstation, um einen möglichen Standort für eine spätere Mondbasis zu testen. Lande präzise, sammle Eindrücke vor Ort und bringe die Crew sicher zurück.",
         "Bemannt", "Luna", "TrackingStation_ButtonMapFlag", 176,
-        ["cr_earth_station_expand4"], cks(common), epoch=2)
+        ["cr_earth_station_expand4"], cks(common), epoch=3)
     second = contract(
         "cr_luna_station_precision_landing_2",
         "Erkundung zweiter Mondbasis-Standort",
         "Teste einen zweiten möglichen Standort für die spätere Mondbasis. Die Mission bleibt ein optionaler Vergleichsflug und blockiert keinen Ausbaupfad.",
         "Bemannt", "Luna", "TrackingStation_ButtonMapFlag", 188,
-        ["cr_luna_station_precision_landing_1"], cks(common), epoch=2)
+        ["cr_luna_station_precision_landing_1"], cks(common), epoch=3)
     return first + second
 
 def base_chain(key, body, sub, stages, prereq0, base_word, mult):
@@ -725,7 +782,8 @@ def main():
         if m["id"] == "cr_earth_docking_demo":
             buckets["Pioniere"].append(docking_target_contract())
         buckets[m["sparte"]].append(mission_contract(m))
-    write_file(os.path.join(OUT, "A_Pioniere.cfg"), "SPARTE A — PIONIERE (bemannt)", "".join(buckets["Pioniere"]))
+    write_file(os.path.join(OUT, "A_Pioniere.cfg"), "SPARTE A — PIONIERE (bemannt)",
+               epoch_nodes(EPOCH_TEXTS) + "".join(buckets["Pioniere"]))
     write_file(os.path.join(OUT, "B_Spaeher.cfg"), "SPARTE B — ROBOTISCHE ERKUNDER (unbemannt)", "".join(buckets["Robotische Erkunder"]))
     write_file(os.path.join(OUT, "C_Lebensadern.cfg"), "SPARTE C — VERSORGUNGSNETZ (Logistik)", "".join(buckets["Versorgungsnetz"]))
     write_file(os.path.join(OUT, "D_Stationen.cfg"), "STATIONEN, BASEN & DEPOTS (generierte Ketten)", build_stations())

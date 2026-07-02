@@ -510,6 +510,21 @@ check: VESSEL_COUNT_INCLINATION Moon 3 75 2000 | 3 Satelliten im Mondorbit mit I
 check: DURATION 1 | 1 Tag ununterbrochen ausharren
 
 === MISSION ===
+id: net_venus_comm_network
+sparte: Versorgungsnetz
+body: Venus
+prereq: net_luna_polar_comm_network, un_venus_orbit
+reward: 195
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Spanne das Kommunikationsnetz zur Venus. Drei Relais im Venusorbit sichern die Verbindung für alle künftigen Sonden im inneren System.
+beschreibung_en: Stretch the communications web to Venus. Three relays in Venus orbit secure the link for every future probe in the inner system.
+check: CREW_NONE | aktives Fahrzeug unbemannt
+check: VESSEL_COUNT Venus 3 2000 | 3 Satelliten gleichzeitig im Venusorbit, Periapsis über 2000 km
+check: DURATION 1 | 1 Tag ununterbrochen ausharren
+
+=== MISSION ===
 id: un_venus_flyby
 sparte: Robotische Erkunder
 body: Venus
@@ -972,7 +987,7 @@ check: DURATION 1 | 1 Tag ununterbrochen ausharren
 id: un_eros_flyby
 sparte: Robotische Erkunder
 body: Eros
-prereq: cr_luna_flyby_crewed
+prereq: un_mars_flyby
 reward: 72
 repeatable: no
 recordStation: -
@@ -2003,6 +2018,20 @@ check: CREW_MIN 3 | mindestens 3 Kerbals an Bord
 check: LANDED Titan | auf Titan gelandet
 check: DURATION 7 | 7 Tage ununterbrochen ausharren
 check: RETURN_FROM_BODY Titan Earth | Crew sicher zur Erde zurückbringen
+
+=== MISSION ===
+id: cr_neptune_flyby
+sparte: Pioniere
+body: Neptune
+prereq: un_neptune_flyby, cr_titan_stay_7d
+reward: 1650
+repeatable: no
+recordStation: -
+stationRef: -
+beschreibung: Das letzte grosse Kapitel: Schicke drei Kerbals an den Rand des Systems und durch den Neptunraum. Niemand ist je weiter geflogen — und niemand wird so bald folgen.
+beschreibung_en: The final great chapter: send three Kerbals to the edge of the system and through Neptune space. No one has ever flown farther — and no one will follow soon.
+check: CREW_MIN 3 | mindestens 3 Kerbals an Bord
+check: FLYBY Neptune 200000 | Vorbeiflug unter 200000 km
 
 === MISSION ===
 id: net_titan_supply_test

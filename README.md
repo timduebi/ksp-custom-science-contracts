@@ -24,15 +24,19 @@ Custom Science Contracts is made for players who love Science Mode but want thei
 
 Everything is managed from the in-game **Mission Control** window:
 
-- **Campaign Atlas** — the campaign timeline. One epoch per page with branch rows (Pioneers,
-  Robotic Explorers, Lifelines), mission cards grouped by celestial body and arrows for real
-  prerequisites. Completed missions stay visible in green — including repeatable missions after
-  their first completion, so the atlas is a full history of everything you have achieved.
+- **Campaign Atlas** — the campaign timeline. Each epoch opens with a short story intro and a
+  completion count, followed by branch rows (Pioneers, Robotic Explorers, Lifelines), mission
+  cards grouped by celestial body and arrows for real prerequisites. Completed missions stay
+  visible in green with the in-game date of their first completion — including repeatable
+  missions, so the atlas is a full chronicle of everything you have achieved.
 - **Repeatables** — one page with every unlocked repeatable mission (marked ↻), grouped by target
   body. Each card always shows whether it is ready or how many more missions you need to complete
-  before it refreshes ("Available after 2 more missions"), with a progress bar.
+  before it refreshes ("Available after 2 more missions"), with a progress bar and how often you
+  have flown it.
 - **Active Missions** — a separate window tracking accepted missions with live objective status,
   vessel assignment and claim/abort actions.
+- **On-screen updates** — short messages announce when a mission becomes claimable, what a claim
+  paid out and unlocked, and when you finish a whole epoch.
 
 ## Features
 
@@ -75,17 +79,20 @@ Kerbal Space Program/
         ├── Icons/
         ├── Plugins/
         │   └── CustomScienceContracts.dll
+        ├── CustomScienceContracts.version
         └── settings.cfg
 ```
 
-### Optional config swaps
+### Optional config swap
 
-The main download ships with the Sol campaign. Two optional config packs on the same release change **which missions you fly**. Each one replaces only the four catalog files in `GameData/CustomScienceContracts/Contracts/`. Install the main download first, then unzip one pack from the **same release** over it and confirm overwriting — run only **one** config at a time.
+The main download ships with the Sol campaign. One optional config pack on the same release changes **which missions you fly**. It replaces only the four catalog files in `GameData/CustomScienceContracts/Contracts/`. Install the main download first, then unzip the pack from the **same release** over it and confirm overwriting.
 
 - **`CustomScienceContracts-vX.Y.Z_Stock-Config.zip`** — rebuilds the whole campaign for the **stock Kerbol system** (Kerbin, the Mun, Minmus, Duna, Jool, Laythe, Eve …). For a stock, non-rescaled game.
-- **`CustomScienceContracts-vX.Y.Z_Sol-German-Config.zip`** — the Sol campaign with all contract text in **German**. Same missions, only the language changes.
 
 To go back to the default, re-extract the four `Contracts/*.cfg` from the main download.
+
+A German version of the Sol campaign is maintained in the repository but is currently not
+shipped as a release asset — it returns once the plugin UI is translatable as well.
 
 ## Gameplay notes
 
@@ -98,7 +105,7 @@ To go back to the default, re-extract the four `Contracts/*.cfg` from the main d
 
 ## Feedback & bug reports
 
-**Bug reports and suggestions are very welcome** — please open an issue on the [GitHub issue tracker](https://github.com/timduebi/ksp-custom-science-contracts/issues). Helpful details: KSP version, which config you run (Sol / Stock / German), the mission, and a `KSP.log` if you have it.
+**Bug reports and suggestions are very welcome** — please open an issue on the [GitHub issue tracker](https://github.com/timduebi/ksp-custom-science-contracts/issues). Helpful details: KSP version, which config you run (Sol / Stock), the mission, and a `KSP.log` if you have it.
 
 ## Development
 

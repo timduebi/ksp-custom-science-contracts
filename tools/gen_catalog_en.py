@@ -44,7 +44,42 @@ DISPLAY = {
     "Callisto": "Callisto",
 }
 
+# Epoch story texts shown by the atlas intro panel (EPOCH nodes in the A catalog file).
+EPOCH_TEXTS = {
+    1: ("Ignition",
+        "The first rockets leave the pad: test flights, the upper atmosphere, the leap to orbit. "
+        "Everything that follows begins in these weeks above Earth."),
+    2: ("Moonrise",
+        "The Moon is the first great horizon. Probes map and land, then the first Kerbals follow "
+        "— flyby, orbit, landing and the first days on another world."),
+    3: ("Orbital Roots",
+        "The program puts down roots in orbit: the Earth station grows from 3 to 12 seats, the "
+        "first lunar station rises, comm networks span Earth and Moon — and the first probes "
+        "depart for Venus, Mercury and Mars."),
+    4: ("Inner Reach",
+        "Reaching into the inner system: a Moon base, a fuel depot in Earth orbit and a relay "
+        "net around Venus. The first crew swings past Venus while probes touch down on Mars."),
+    5: ("Red Horizon",
+        "Mars becomes the program's second home: mapping, rovers, precision landings — then "
+        "crews in orbit, on the surface and finally a station above the red planet. First scouts "
+        "reach the asteroid belt."),
+    6: ("Beltworks",
+        "Between Mars and Jupiter, industry begins: Phobos and Deimos, Ceres, Vesta and the "
+        "quiet rocks of the belt. Ore, depots and supply routes — and a Mars base built to stay."),
+    7: ("Jovian Gate",
+        "Jupiter opens the outer system. Probes brave the radiation belts, crews follow as far "
+        "as Ganymede — the first landing on an icy moon."),
+    8: ("Ringed Worlds",
+        "Saturn and its moons: Titan under its dense haze, Enceladus and its geysers. Crews fly "
+        "farther out than ever before, and Titan becomes an outpost."),
+    9: ("Far Frontier",
+        "The last frontier: Uranus, Neptune, Pluto and the worlds beyond. Probes chart the edge "
+        "of the system, the Titan base grows into a permanent outpost — and one final crew "
+        "flies farther than anyone before."),
+}
+
 TITLE = {
+    "cr_neptune_flyby": "Far Frontier Crown",
     "un_earth_pad_clear": "First Test Flight",
     "un_earth_upper_atmo": "Upper Earth Atmosphere",
     "un_earth_suborbital": "Uncrewed Suborbital Flight",
@@ -404,13 +439,13 @@ def moon_base_site_survey_landings():
         "First Moon Base Site Survey",
         "Use the experience from the Earth orbital station to test a possible site for a future Moon base. Land precisely, inspect the area and bring the crew safely home.",
         "Bemannt", "Moon", "TrackingStation_ButtonMapFlag", 176,
-        ["cr_earth_station_expand4"], common, epoch=2)
+        ["cr_earth_station_expand4"], common, epoch=3)
     second = de.contract(
         "cr_luna_station_precision_landing_2",
         "Second Moon Base Site Survey",
         "Test a second possible site for the later Moon base. This remains an optional comparison flight and does not block the infrastructure path.",
         "Bemannt", "Moon", "TrackingStation_ButtonMapFlag", 188,
-        ["cr_luna_station_precision_landing_1"], common, epoch=2)
+        ["cr_luna_station_precision_landing_1"], common, epoch=3)
     return first + second
 
 
@@ -525,7 +560,8 @@ def main():
         if m["id"] == "cr_earth_docking_demo":
             buckets["Pioniere"].append(docking_target_contract())
         buckets[m["sparte"]].append(mission_contract(m))
-    write_file(os.path.join(OUT, "A_Pioniere.cfg"), "BRANCH A - PIONEERS (crewed)", "".join(buckets["Pioniere"]))
+    write_file(os.path.join(OUT, "A_Pioniere.cfg"), "BRANCH A - PIONEERS (crewed)",
+               de.epoch_nodes(EPOCH_TEXTS) + "".join(buckets["Pioniere"]))
     write_file(os.path.join(OUT, "B_Spaeher.cfg"), "BRANCH B - ROBOTIC EXPLORERS", "".join(buckets["Robotische Erkunder"]))
     write_file(os.path.join(OUT, "C_Lebensadern.cfg"), "BRANCH C - LIFELINES (network/logistics)", "".join(buckets["Versorgungsnetz"]))
     write_file(os.path.join(OUT, "D_Stationen.cfg"), "STATIONS, BASES AND DEPOTS", build_stations())

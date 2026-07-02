@@ -145,6 +145,12 @@ namespace CustomScienceContracts.Conditions
                     var rng = new System.Random(c.Id.GetHashCode());
                     lat = rng.NextDouble() * 140.0 - 70.0;     // -70..70, avoid poles
                     lon = rng.NextDouble() * 360.0 - 180.0;
+                    // Ocean bodies: redraw deterministically until the target is on land.
+                    for (int attempt = 0; attempt < 25 && MarkerWaypoint.IsWater(body, lat, lon); attempt++)
+                    {
+                        lat = rng.NextDouble() * 140.0 - 70.0;
+                        lon = rng.NextDouble() * 360.0 - 180.0;
+                    }
                 }
                 c.Progress.SetValue("ml_lat", lat.ToString("R", CultureInfo.InvariantCulture), true);
                 c.Progress.SetValue("ml_lon", lon.ToString("R", CultureInfo.InvariantCulture), true);

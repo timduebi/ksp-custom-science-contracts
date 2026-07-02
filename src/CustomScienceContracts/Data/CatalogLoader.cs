@@ -36,6 +36,32 @@ namespace CustomScienceContracts.Data
             return result;
         }
 
+        /// <summary>Loads optional EPOCH metadata nodes (number/name/description) from all
+        /// catalogs. Missing metadata is fine; the UI falls back to built-in epoch names.</summary>
+        public static List<ContractCatalog.EpochInfo> LoadEpochs()
+        {
+            var result = new List<ContractCatalog.EpochInfo>();
+            if (GameDatabase.Instance == null) return result;
+            foreach (ConfigNode catalog in GameDatabase.Instance.GetConfigNodes(CatalogNodeName))
+            {
+                foreach (ConfigNode e in catalog.GetNodes("EPOCH"))
+                {
+                    if (!int.TryParse(e.GetValue("number"), out int number) || number < 1)
+                    {
+                        Debug.LogWarning("[CSC] Skipped EPOCH node without valid 'number'.");
+                        continue;
+                    }
+                    result.Add(new ContractCatalog.EpochInfo
+                    {
+                        Number = number,
+                        Name = (e.GetValue("name") ?? "").Trim(),
+                        Description = (e.GetValue("description") ?? "").Trim()
+                    });
+                }
+            }
+            return result;
+        }
+
         private static MissionContract ParseContract(ConfigNode node)
         {
             string id = node.GetValue("id");

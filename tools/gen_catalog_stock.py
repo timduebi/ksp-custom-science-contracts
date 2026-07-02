@@ -27,6 +27,44 @@ BUCKET_FILES = {
     "NetzwerkLogistik": ("C_Lebensadern.cfg", "BRANCH C - LIFELINES"),
 }
 
+# Epoch story texts shown by the atlas intro panel (EPOCH nodes in the A catalog file).
+# English retellings of the German chapter notes in the Stock design source.
+EPOCH_TEXTS = {
+    1: "True Stock style: a crewed launch right away — suborbital hops, the first orbit, an EVA "
+       "and three days around Kerbin. Early probes fly alongside as optional science runs.",
+    2: "Docking is learned the honest way: a three-seat Kerbin station goes up uncrewed, then "
+       "the crew arrives — and stays. 150-day rotations, a fuel depot and Kerbin's first relay "
+       "net make orbit a place to live, not to visit.",
+    3: "The Mun is the first great leap. Probes prepare the ground, crews orbit and land, rovers "
+       "and precision landings scout the sites — then a Mun station and the first surface base "
+       "take root.",
+    4: "Minmus opens as the program's fuel country: flyby, landing, a relay net and the fuel "
+       "base on its flats — while the Mun infrastructure grows to six Kerbals.",
+    5: "Eve, Moho and Dres open the inner side paths: atmo probes and landers at Eve, the "
+       "Mohole hunt at Moho's north pole. Optional, stubborn, rewarding.",
+    6: "Duna is the first serious interplanetary arc: probes, rovers and crew landings, then a "
+       "station in orbit and a base in the dust. After the four-seat upgrade the deep-space "
+       "phase can begin.",
+    7: "An interplanetary relay ring in solar orbit opens Jool and Eeloo at once. Duna "
+       "operations grow into deep-space routine, and Eeloo gets a direct crewed landing at the "
+       "edge of the system.",
+    8: "The giant and its moons: atmospheric entry at Jool, then moon by moon — Laythe with its "
+       "own base growing to fifteen Kerbals, and a three-Kerbal challenge outpost on Tylo.",
+    9: "Everything led here: Gilly as the fuel stepping stone, a support station above the "
+       "purple planet — then the crewed Eve landing and return. And afterwards, one absurd "
+       "question: are we living here now?",
+}
+
+def epoch_nodes(epoch_names):
+    s = ""
+    for number in sorted(EPOCH_TEXTS):
+        s += "    EPOCH\n    {\n"
+        s += f"        number = {number}\n"
+        s += f"        name = {epoch_names.get(number, 'Epoch ' + str(number))}\n"
+        s += f"        description = {EPOCH_TEXTS[number]}\n"
+        s += "    }\n"
+    return s + "\n"
+
 SUBCAT = {
     "Sun": "Outer System",
     "Kerbin": "Kerbin",
@@ -466,7 +504,10 @@ def main():
     for m in missions:
         buckets[SPARTE[m["sparte"]]].append(contract(m, epoch_names))
     for name, (fn, title) in BUCKET_FILES.items():
-        write_file(os.path.join(OUT, fn), title, "".join(buckets[name]))
+        body = "".join(buckets[name])
+        if name == "Bemannt":
+            body = epoch_nodes(epoch_names) + body
+        write_file(os.path.join(OUT, fn), title, body)
     write_file(os.path.join(OUT, "D_Stationen.cfg"), "STATION CHAINS - explicit in Stock branches", "")
     write_readme({k: len(v) for k, v in buckets.items()}, epoch_names)
     for name, items in buckets.items():

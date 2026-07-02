@@ -8,11 +8,33 @@ namespace CustomScienceContracts.Data
     /// Holds MissionContract instances with definition and runtime state.</summary>
     public class ContractCatalog
     {
+        /// <summary>Optional per-epoch metadata supplied by the catalog (EPOCH nodes): display
+        /// name and the narrative intro shown in the Campaign Atlas header.</summary>
+        public class EpochInfo
+        {
+            public int Number;
+            public string Name = "";
+            public string Description = "";
+        }
+
         private readonly List<MissionContract> _all = new List<MissionContract>();
         private readonly Dictionary<string, MissionContract> _byId = new Dictionary<string, MissionContract>();
         private readonly Dictionary<string, int> _indexById = new Dictionary<string, int>();
+        private readonly Dictionary<int, EpochInfo> _epochs = new Dictionary<int, EpochInfo>();
 
         public IReadOnlyList<MissionContract> All => _all;
+
+        public void SetEpochs(IEnumerable<EpochInfo> infos)
+        {
+            _epochs.Clear();
+            foreach (var info in infos)
+                if (info != null && info.Number >= 1)
+                    _epochs[info.Number] = info;
+        }
+
+        /// <summary>Catalog-supplied metadata for an epoch, or null.</summary>
+        public EpochInfo Epoch(int number) =>
+            _epochs.TryGetValue(number, out var e) ? e : null;
 
         public void Set(IEnumerable<MissionContract> contracts)
         {

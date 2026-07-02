@@ -56,6 +56,7 @@ namespace CustomScienceContracts.Persistence
             _manager = new ContractManager();
             List<Model.MissionContract> catalog = CatalogLoader.LoadAll();
             _manager.Initialize(catalog);
+            _manager.Catalog.SetEpochs(CatalogLoader.LoadEpochs());
 
             // Register the concrete evaluators here.
             //   _manager.Evaluators.Register(new OrbitEvaluator());

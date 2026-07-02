@@ -8,6 +8,9 @@ namespace CustomScienceContracts.UI
     public class SettingsWindow
     {
         private Vector2 _scroll;
+        // Two-step skip confirmation: first click arms the button for a few seconds.
+        private string _pendingSkipId;
+        private float _pendingSkipUntil;
 
         public void Draw(ContractManager mgr, float width, float height, System.Action onClose)
         {
@@ -52,13 +55,28 @@ namespace CustomScienceContracts.UI
             var active = mgr.ActiveContracts().ToList();
             if (active.Count == 0)
                 GUILayout.Label("No active missions.", Theme.Locked);
+            if (_pendingSkipId != null && Time.realtimeSinceStartup > _pendingSkipUntil)
+                _pendingSkipId = null;
             foreach (var c in active)
             {
                 GUILayout.BeginHorizontal(Theme.ItemBox);
                 GUILayout.Label(c.Titel, Theme.ItemSub);
                 GUILayout.FlexibleSpace();
-                if (GUILayout.Button("Skip", Theme.SettingsBtn, GUILayout.Width(132), GUILayout.Height(26)))
-                    mgr.Skip(c.Id);
+                bool armed = _pendingSkipId == c.Id;
+                if (GUILayout.Button(armed ? "Really skip? No reward" : "Skip",
+                        armed ? Theme.CloseBtn : Theme.SettingsBtn, GUILayout.Width(armed ? 196 : 132), GUILayout.Height(26)))
+                {
+                    if (armed)
+                    {
+                        mgr.Skip(c.Id);
+                        _pendingSkipId = null;
+                    }
+                    else
+                    {
+                        _pendingSkipId = c.Id;
+                        _pendingSkipUntil = Time.realtimeSinceStartup + 4f;
+                    }
+                }
                 GUILayout.EndHorizontal();
                 GUILayout.Space(3);
             }

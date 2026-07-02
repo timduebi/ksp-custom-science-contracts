@@ -4,12 +4,12 @@
 #   tools/make_release.sh             # build all assets locally into compiled/release-vX/
 #   tools/make_release.sh --publish   # also create/update the single GitHub release
 #
-# One release, three downloads (named so the main download sorts to the top of the asset list):
-#   1. CustomScienceContracts-vX.zip                  full mod, default SOL catalog
-#   2. CustomScienceContracts-vX_Sol-German-Config.zip optional: swap SOL catalog to German
-#   3. CustomScienceContracts-vX_Stock-Config.zip     optional: swap catalog to stock KSP
-# The optional packs only replace GameData/CustomScienceContracts/Contracts/*.cfg; the shared
+# One release, two downloads (named so the main download sorts to the top of the asset list):
+#   1. CustomScienceContracts-vX.zip              full mod, default SOL catalog
+#   2. CustomScienceContracts-vX_Stock-Config.zip optional: swap catalog to stock KSP
+# The optional pack only replaces GameData/CustomScienceContracts/Contracts/*.cfg; the shared
 # engine DLL already supports both the real-solar-system and stock bodies. See DEVELOPMENT.md.
+# The German SOL catalog is still generated and validated in-repo but not shipped since 0.6.
 set -euo pipefail
 
 PUBLISH="${1:-}"
@@ -26,6 +26,10 @@ export DOTNET_CLI_TELEMETRY_OPTOUT=1
 VERSION="$(sed -n 's/.*public const string Version = "\([^"]*\)".*/\1/p' \
   "$ROOT/src/CustomScienceContracts/Core/ModInfo.cs")"
 [ -n "$VERSION" ] || { echo "could not read Version from ModInfo.cs"; exit 1; }
+# The AVC .version file ships inside the main zip; it must match ModInfo.
+AVC_VERSION="$("$PYTHON" -c "import json,sys;v=json.load(open(sys.argv[1]))['VERSION'];print(f\"{v['MAJOR']}.{v['MINOR']}.{v['PATCH']}\")" \
+  "$ROOT/GameData/CustomScienceContracts/CustomScienceContracts.version")"
+[ "$AVC_VERSION" = "$VERSION" ] || { echo "version mismatch: ModInfo=$VERSION but .version=$AVC_VERSION"; exit 1; }
 OUTDIR="$ROOT/compiled/release-v$VERSION"
 mkdir -p "$OUTDIR"
 echo "==> CustomScienceContracts v$VERSION (single release + config overlays)"
@@ -80,13 +84,10 @@ cp "$ROOT/OptionalConfigs/Stock/GameData/CustomScienceContracts/Contracts/"*.cfg
 cp "$ROOT/OptionalConfigs/Stock/README.md" "$STK/"
 STOCKZIP="$OUTDIR/CustomScienceContracts-v${VERSION}_Stock-Config.zip"; zipdir "$STK" "$STOCKZIP"
 
-# --- 3. German SOL config overlay (Contracts cfgs only) -------------------------------
-GER="$OUTDIR/sol-german"; rm -rf "$GER"; mkdir -p "$GER"
-cp -R "$ROOT/OptionalConfigs/SOL-German/GameData" "$GER/"
-cp "$ROOT/OptionalConfigs/SOL-German/README.md" "$GER/"
-GZIP="$OUTDIR/CustomScienceContracts-v${VERSION}_Sol-German-Config.zip"; zipdir "$GER" "$GZIP"
+# The German SOL catalog stays maintained in the repo (generated + validated) but is not
+# packaged since 0.6; it returns as a release asset once the plugin UI is localizable too.
 
-ASSETS=("$MAINZIP" "$STOCKZIP" "$GZIP")
+ASSETS=("$MAINZIP" "$STOCKZIP")
 echo "==> Packaged:"; for a in "${ASSETS[@]}"; do echo "    $(basename "$a") ($(du -h "$a" | cut -f1))"; done
 
 [ "$PUBLISH" = "--publish" ] || { echo "==> Done (local only; pass --publish to release to GitHub)."; exit 0; }
@@ -109,7 +110,8 @@ if [ -n "$RID" ]; then
 else
   RID="$(curl -s -X POST -H "Authorization: token $TOKEN" -H "Content-Type: application/json" --data "$PAYLOAD" "$API/releases" | "$PYTHON" -c "import sys,json;print(json.load(sys.stdin)['id'])")"
 fi
-for stale in "CustomScienceContracts-v${VERSION}_German-Config.zip"; do
+for stale in "CustomScienceContracts-v${VERSION}_German-Config.zip" \
+             "CustomScienceContracts-v${VERSION}_Sol-German-Config.zip"; do
   old="$(curl -s -H "Authorization: token $TOKEN" "$API/releases/$RID/assets" | "$PYTHON" -c "import sys,json;[print(x['id']) for x in json.load(sys.stdin) if x['name']==sys.argv[1]]" "$stale")"
   [ -n "$old" ] && curl -s -X DELETE -H "Authorization: token $TOKEN" "$API/releases/assets/$old" >/dev/null
 done

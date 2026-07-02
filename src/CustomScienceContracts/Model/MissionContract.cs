@@ -39,6 +39,9 @@ namespace CustomScienceContracts.Model
         public int CompletionsSinceLastClaim = 0;
         /// <summary>Total completion count for statistics/UI.</summary>
         public int TotalCompletions = 0;
+        /// <summary>In-game UT of the first completion (claim or skip), -1 if never completed.
+        /// Shown in the Campaign Atlas so the timeline doubles as a mission chronicle.</summary>
+        public double FirstCompletedUT = -1.0;
         /// <summary>Scratch state for condition evaluators (flyby phase, crew-duration start time,
         /// marker waypoint state, ...). Relevant for active contracts and persisted with the save.</summary>
         public ConfigNode Progress = new ConfigNode("PROGRESS");

@@ -90,7 +90,7 @@ namespace CustomScienceContracts.Core
             if (penalty > 0f && ResearchAndDevelopment.Instance != null)
             {
                 float pen = Mathf.Min(penalty, ResearchAndDevelopment.Instance.Science);
-                if (pen > 0f) ResearchAndDevelopment.Instance.AddScience(-pen, TransactionReasons.Cheating);
+                if (pen > 0f) ResearchAndDevelopment.Instance.AddScience(-pen, TransactionReasons.ScienceTransmission);
             }
 
             Evaluators.NotifyCleared(c);
@@ -112,11 +112,13 @@ namespace CustomScienceContracts.Core
             Evaluators.NotifyCleared(c);
             c.Progress = new ConfigNode("PROGRESS");
             c.TotalCompletions++;
+            RecordFirstCompletion(c);
             AdvanceRepeatableCooldowns(c);   // a skip is still a completion for cooldown purposes
             if (c.Repeatable) { c.CompletionsSinceLastClaim = 0; c.Status = MissionStatus.Available; }
             else c.Status = MissionStatus.CompletedOnce;
             Log.Info($"Skipped without reward: {c.Id}");
             RecomputeAvailability();
+            if (c.TotalCompletions == 1) AnnounceEpochIfComplete(c);
             return true;
         }
 
@@ -362,6 +364,7 @@ namespace CustomScienceContracts.Core
                     }
                     c.Status = MissionStatus.ReadyToClaim;
                     Log.Info($"Ready to claim: {c.Id}");
+                    Toast($"Mission ready to claim: {c.Titel}");
                 }
             }
             Events.ClearFrameBuffer();
@@ -404,10 +407,16 @@ namespace CustomScienceContracts.Core
             var c = Catalog.Get(id);
             if (c == null || c.Status != MissionStatus.ReadyToClaim) return false;
 
+            // Snapshot for the "Unlocked: ..." toast after availability is recomputed.
+            var availableBefore = new HashSet<string>();
+            foreach (var x in Catalog.All)
+                if (x.Status == MissionStatus.Available) availableBefore.Add(x.Id);
+
             float amount = c.ScienceReward * (float)ScienceMultiplier;
             PayReward(amount);
             LastClaimId = c.Id; LastClaimAmount = amount; LastClaimRealtime = Time.realtimeSinceStartup;
             c.TotalCompletions++;
+            RecordFirstCompletion(c);
             StoreFleetIfNetwork(c);   // keep the constellation so a follow-up network can inherit it
             Evaluators.NotifyCleared(c);
             c.Progress = new ConfigNode("PROGRESS");
@@ -422,7 +431,55 @@ namespace CustomScienceContracts.Core
 
             Log.Info($"Claimed: {c.Id} (+{c.ScienceReward} science)");
             RecomputeAvailability();
+
+            Toast($"+{amount:0} Science — {c.Titel}");
+            AnnounceUnlocked(c, availableBefore);
+            if (c.TotalCompletions == 1) AnnounceEpochIfComplete(c);
             return true;
+        }
+
+        /// <summary>Stamps the in-game time of the first completion for the atlas chronicle.</summary>
+        private static void RecordFirstCompletion(MissionContract c)
+        {
+            if (c.FirstCompletedUT < 0.0)
+                c.FirstCompletedUT = Planetarium.GetUniversalTime();
+        }
+
+        /// <summary>Toast listing missions that just became available, capped at three titles.</summary>
+        private void AnnounceUnlocked(MissionContract claimed, HashSet<string> availableBefore)
+        {
+            var unlocked = new List<string>();
+            foreach (var x in Catalog.All)
+                if (x.Status == MissionStatus.Available && !availableBefore.Contains(x.Id) &&
+                    !ReferenceEquals(x, claimed))
+                    unlocked.Add(x.Titel);
+            if (unlocked.Count == 0) return;
+
+            string titles = string.Join(", ", unlocked.Take(3));
+            if (unlocked.Count > 3) titles += $" (+{unlocked.Count - 3} more)";
+            Toast("Unlocked: " + titles);
+        }
+
+        /// <summary>Toast when the first completion of a mission finishes its whole epoch.</summary>
+        private void AnnounceEpochIfComplete(MissionContract c)
+        {
+            int epoch = Mathf.Max(1, c.Epoch);
+            foreach (var other in Catalog.All)
+                if (Mathf.Max(1, other.Epoch) == epoch && !IsCompleted(other)) return;
+            string name = Catalog.Epoch(epoch)?.Name;
+            Toast($"Epoch complete: {(string.IsNullOrEmpty(name) ? "Epoch " + epoch : name)}");
+        }
+
+        /// <summary>On-screen message; missions complete in scenes without ScreenMessages too,
+        /// so failures are ignored.</summary>
+        private static void Toast(string message)
+        {
+            try
+            {
+                if (ScreenMessages.Instance != null)
+                    ScreenMessages.PostScreenMessage(message, 6f, ScreenMessageStyle.UPPER_CENTER);
+            }
+            catch (System.Exception) { }
         }
 
         /// <summary>Cooldown bookkeeping: every pool repeatable except the completed one gets +1.
@@ -438,7 +495,7 @@ namespace CustomScienceContracts.Core
         {
             if (amount <= 0f) return;
             if (ResearchAndDevelopment.Instance != null)
-                ResearchAndDevelopment.Instance.AddScience(amount, TransactionReasons.Cheating);
+                ResearchAndDevelopment.Instance.AddScience(amount, TransactionReasons.ScienceTransmission);
             else
                 Debug.LogWarning("[CSC] No ResearchAndDevelopment instance (not Science/Career?) - reward lost.");
         }

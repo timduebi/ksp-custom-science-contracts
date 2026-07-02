@@ -29,6 +29,16 @@ namespace CustomScienceContracts.Conditions
             _sceneKnown = true;
         }
 
+        /// <summary>Whether a surface point on the body is water. Bodies without an ocean are
+        /// always land. Without PQS data (some scenes) terrain height reads 0, which counts as
+        /// water on ocean bodies; callers keep the last sample after their retry budget.</summary>
+        public static bool IsWater(CelestialBody body, double lat, double lon)
+        {
+            if (body == null || !body.ocean) return false;
+            try { return body.TerrainAltitude(lat, lon, true) <= 0.0; }
+            catch (Exception) { return false; }
+        }
+
         public static bool Has(string contractId)
         {
             if (!WaypointScene) return false;

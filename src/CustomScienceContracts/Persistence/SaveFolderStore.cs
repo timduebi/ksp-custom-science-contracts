@@ -37,6 +37,8 @@ namespace CustomScienceContracts.Persistence
                     n.AddValue("status", c.Status.ToString());
                     n.AddValue("totalCompletions", c.TotalCompletions);
                     n.AddValue("completionsSinceLastClaim", c.CompletionsSinceLastClaim);
+                    if (c.FirstCompletedUT >= 0.0)
+                        n.AddValue("firstCompletedUT", c.FirstCompletedUT.ToString("R", CultureInfo.InvariantCulture));
                     if (c.Status == MissionStatus.Active && c.Progress != null && c.Progress.CountValues + c.Progress.CountNodes > 0)
                         n.AddNode(c.Progress.CreateCopy());
                 }
@@ -76,6 +78,8 @@ namespace CustomScienceContracts.Persistence
                     if (Enum.TryParse(n.GetValue("status"), true, out MissionStatus st)) c.Status = st;
                     c.TotalCompletions = ParseInt(n.GetValue("totalCompletions"));
                     c.CompletionsSinceLastClaim = ParseInt(n.GetValue("completionsSinceLastClaim"));
+                    c.FirstCompletedUT = double.TryParse(n.GetValue("firstCompletedUT"), NumberStyles.Float,
+                        CultureInfo.InvariantCulture, out double fut) ? fut : -1.0;
                     var prog = n.GetNode("PROGRESS");
                     c.Progress = prog != null ? prog.CreateCopy() : new ConfigNode("PROGRESS");
                 }

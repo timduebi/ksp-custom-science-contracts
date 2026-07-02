@@ -68,7 +68,10 @@ namespace CustomScienceContracts.UI
             MapLayout layout;
             if (_mode == CenterMode.Campaign)
             {
-                mapTop += DrawEpochTabs(mgr, visible, new Rect(14f, 70f, width - 28f, 0f)) + 8f;
+                ComputeEpochStats(mgr, visible, out int[] acceptable, out int[] done, out int[] total);
+                mapTop += DrawEpochTabs(mgr, acceptable, done, total, new Rect(14f, 70f, width - 28f, 0f)) + 8f;
+                float introH = DrawEpochIntro(mgr, done, total, new Rect(14f, mapTop, width - 28f, 0f));
+                if (introH > 0f) mapTop += introH + 8f;
                 Rect viewport = new Rect(14f, mapTop, width - 28f, height - mapTop - 16f);
                 layout = BuildCampaignLayout(mgr, visible, viewport.width);
                 DrawMap(mgr, visible, viewport, layout);
@@ -137,10 +140,8 @@ namespace CustomScienceContracts.UI
         /// <summary>Epoch tabs sized to the window: they wrap into extra rows instead of running
         /// off-screen, so every epoch stays reachable. Each tab shows the epoch name, the number of
         /// currently acceptable missions and a completion progress bar. Returns the height used.</summary>
-        private float DrawEpochTabs(ContractManager mgr, HashSet<string> visible, Rect r)
+        private float DrawEpochTabs(ContractManager mgr, int[] acceptable, int[] done, int[] total, Rect r)
         {
-            ComputeEpochStats(mgr, visible, out int[] acceptable, out int[] done, out int[] total);
-
             const float minTabW = 128f;
             int perRow = Mathf.Clamp(Mathf.FloorToInt((r.width + EpochTabGap) / (minTabW + EpochTabGap)), 1, _maxEpoch);
             int rows = Mathf.CeilToInt(_maxEpoch / (float)perRow);
@@ -191,6 +192,29 @@ namespace CustomScienceContracts.UI
                 if (ContractManager.IsCompleted(c)) done[epoch]++;
                 if (CampaignAcceptable(mgr, c, visible)) acceptable[epoch]++;
             }
+        }
+
+        /// <summary>Narrative intro panel for the selected epoch, fed by the catalog's EPOCH
+        /// metadata. Returns the height used, or 0 when the catalog ships no epoch story.</summary>
+        private float DrawEpochIntro(ContractManager mgr, int[] done, int[] total, Rect r)
+        {
+            var info = mgr.Catalog.Epoch(_selectedEpoch);
+            if (info == null || string.IsNullOrEmpty(info.Description)) return 0f;
+
+            float textW = r.width - 26f;
+            float dh = TextHeight(Theme.ItemSub, info.Description, textW);
+            float h = 8f + 24f + dh + 10f;
+
+            GUI.Box(new Rect(r.x, r.y, r.width, h), GUIContent.none, Theme.EpochPanel);
+            if (Event.current.type == EventType.Repaint)
+                Theme.DrawLeftAccent(new Rect(r.x, r.y, r.width, h), Theme.Accent, null, 5f);
+
+            GUI.Label(new Rect(r.x + 16f, r.y + 8f, r.width - 200f, 22f), EpochName(_selectedEpoch), Theme.ItemTitle);
+            if (_selectedEpoch < total.Length)
+                GUI.Label(new Rect(r.xMax - 190f, r.y + 10f, 176f, 20f),
+                    $"{done[_selectedEpoch]} of {total[_selectedEpoch]} completed", Theme.SectionCount);
+            GUI.Label(new Rect(r.x + 16f, r.y + 32f, textW, dh), info.Description, Theme.ItemSub);
+            return h;
         }
 
         /// <summary>Gear icon button in the top-right corner.</summary>
@@ -546,7 +570,7 @@ namespace CustomScienceContracts.UI
             }
             else if (canAccept)
             {
-                text = "Ready — can be accepted again"; style = Theme.CondOk; barColor = Theme.Ok; frac = 1f;
+                text = $"Ready — completed {c.TotalCompletions}×"; style = Theme.CondOk; barColor = Theme.Ok; frac = 1f;
             }
             else
             {
@@ -1130,13 +1154,14 @@ namespace CustomScienceContracts.UI
 
             if (c.IsRepeatableInPool)
             {
+                string times = $"completed {c.TotalCompletions}×";
                 if (_mode == CenterMode.Campaign)
                 {
-                    if (c.Status == MissionStatus.Active) return "Active (repeatable)";
+                    if (c.Status == MissionStatus.Active) return $"Active (repeatable, {times})";
                     int cd = mgr.RemainingCooldown(c);
                     return cd > 0
-                        ? $"Completed — repeatable again after {cd} more mission{(cd == 1 ? "" : "s")}"
-                        : "Completed — accept again from the Repeatables tab";
+                        ? $"Completed {c.TotalCompletions}× — repeatable again after {cd} more mission{(cd == 1 ? "" : "s")}"
+                        : $"Completed {c.TotalCompletions}× — accept again from the Repeatables tab";
                 }
                 if (c.Status == MissionStatus.Active) return "Active";
                 int cooldown = mgr.RemainingCooldown(c);
@@ -1147,11 +1172,29 @@ namespace CustomScienceContracts.UI
             }
 
             if (c.Status == MissionStatus.Active) return "Active";
-            if (ContractManager.IsCompleted(c)) return "Completed";
+            if (ContractManager.IsCompleted(c))
+            {
+                string date = FormatUT(c.FirstCompletedUT);
+                return date != null ? $"Completed — {date}" : "Completed";
+            }
             if (canAccept) return "Available";
             if (c.Status == MissionStatus.Available && !visible.Contains(c.Id))
                 return "Prerequisites met, waiting behind the branch visibility limit";
             return "Locked";
+        }
+
+        /// <summary>In-game date of a UT, e.g. "Y2, D113", or null when unknown.</summary>
+        private static string FormatUT(double ut)
+        {
+            if (ut < 0.0) return null;
+            try
+            {
+                return KSPUtil.PrintDateCompact(ut, false);
+            }
+            catch (System.Exception)
+            {
+                return null;
+            }
         }
 
         // --- Ordering helpers ---
@@ -1234,10 +1277,13 @@ namespace CustomScienceContracts.UI
             _epochNames = new string[_maxEpoch + 1];
             for (int epoch = 1; epoch <= _maxEpoch; epoch++)
             {
-                string catalogName = mgr.Catalog.All
-                    .Where(c => EpochOf(c) == epoch && !string.IsNullOrEmpty(c.EpochTitle))
-                    .Select(c => c.EpochTitle)
-                    .FirstOrDefault();
+                // Name priority: EPOCH metadata node, per-contract epochName, built-in fallback.
+                string catalogName = mgr.Catalog.Epoch(epoch)?.Name;
+                if (string.IsNullOrEmpty(catalogName))
+                    catalogName = mgr.Catalog.All
+                        .Where(c => EpochOf(c) == epoch && !string.IsNullOrEmpty(c.EpochTitle))
+                        .Select(c => c.EpochTitle)
+                        .FirstOrDefault();
                 _epochNames[epoch] = !string.IsNullOrEmpty(catalogName)
                     ? catalogName
                     : (stock ? StockEpochName(epoch) : SolEpochName(epoch));

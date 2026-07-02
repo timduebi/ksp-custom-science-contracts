@@ -448,6 +448,14 @@ namespace CustomScienceContracts.Conditions
                 double absLat = rng.NextDouble() * (aMax - aMin) + aMin;
                 double lat = rng.Next(2) == 0 ? absLat : -absLat;   // northern or southern hemisphere
                 double lon = rng.NextDouble() * 360.0 - 180.0;
+                // Ocean bodies: redraw deterministically until the target is on land, so a
+                // precision landing never asks for a splashdown site.
+                for (int attempt = 0; attempt < 25 && MarkerWaypoint.IsWater(body, lat, lon); attempt++)
+                {
+                    absLat = rng.NextDouble() * (aMax - aMin) + aMin;
+                    lat = rng.Next(2) == 0 ? absLat : -absLat;
+                    lon = rng.NextDouble() * 360.0 - 180.0;
+                }
                 c.Progress.SetValue(pfx + "lat", lat.ToString("R", Inv), true);
                 c.Progress.SetValue(pfx + "lon", lon.ToString("R", Inv), true);
                 c.Progress.SetValue(pfx + "set", "1", true);

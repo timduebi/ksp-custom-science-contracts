@@ -18,7 +18,7 @@ namespace CustomScienceContracts.Core
         public static int VisibleNetzwerkPerSub = 3;       // network/logistics: 3 per subcategory
 
         // --- Active limits ---
-        public static int ActiveBemannt = 3;
+        public static int ActiveBemannt = 4;   // 4 since 0.6: station chains need a slot besides missions
         public static int ActiveErkundung = 10;
         public static int ActiveNetzwerk = 5;
 
