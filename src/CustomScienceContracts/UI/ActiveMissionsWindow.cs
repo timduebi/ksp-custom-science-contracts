@@ -15,7 +15,7 @@ namespace CustomScienceContracts.UI
         public Rect ConfirmRect = new Rect(0, 0, 340, 175);
 
         private static readonly Sparte[] Groups =
-            { Sparte.Bemannt, Sparte.UnbemannteErkundung, Sparte.NetzwerkLogistik };
+            { Sparte.Bemannt, Sparte.UnbemannteErkundung, Sparte.Stationen, Sparte.NetzwerkLogistik };
         private readonly HashSet<string> _collapsed = new HashSet<string>();
 
         public void Draw(ContractManager mgr, float width, float height, System.Action onClose)

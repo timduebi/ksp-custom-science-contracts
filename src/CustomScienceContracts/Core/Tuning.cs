@@ -15,11 +15,13 @@ namespace CustomScienceContracts.Core
         public static int VisibleBemanntBoosted = 5;       // 5 once >= 50 % of crewed missions are done
         public static float BemanntBoostFraction = 0.5f;
         public static int VisibleErkundungPerSub = 4;      // exploration: 4 per subcategory
+        public static int VisibleStationenPerSub = 3;      // stations: 3 per subcategory (body)
         public static int VisibleNetzwerkPerSub = 3;       // network/logistics: 3 per subcategory
 
         // --- Active limits ---
-        public static int ActiveBemannt = 4;   // 4 since 0.6: station chains need a slot besides missions
+        public static int ActiveBemannt = 4;   // 4 since 0.6: keeps a crewed slot free besides ops
         public static int ActiveErkundung = 10;
+        public static int ActiveStationen = 5; // station/base/depot chains incl. 150-day operations
         public static int ActiveNetzwerk = 5;
 
         // --- Repeatable ---
@@ -58,9 +60,11 @@ namespace CustomScienceContracts.Core
                 VisibleBemanntBoosted = GetI(n, "visibleBemanntBoosted", VisibleBemanntBoosted);
                 BemanntBoostFraction  = GetF(n, "bemanntBoostFraction", BemanntBoostFraction);
                 VisibleErkundungPerSub= GetI(n, "visibleErkundungPerSub", VisibleErkundungPerSub);
+                VisibleStationenPerSub= GetI(n, "visibleStationenPerSub", VisibleStationenPerSub);
                 VisibleNetzwerkPerSub = GetI(n, "visibleNetzwerkPerSub", VisibleNetzwerkPerSub);
                 ActiveBemannt         = GetI(n, "activeBemannt", ActiveBemannt);
                 ActiveErkundung       = GetI(n, "activeErkundung", ActiveErkundung);
+                ActiveStationen       = GetI(n, "activeStationen", ActiveStationen);
                 ActiveNetzwerk        = GetI(n, "activeNetzwerk", ActiveNetzwerk);
                 RepeatableCooldown    = GetI(n, "repeatableCooldown", RepeatableCooldown);
                 MarkerRadiusKmDefault = GetD(n, "markerRadiusKmDefault", MarkerRadiusKmDefault);

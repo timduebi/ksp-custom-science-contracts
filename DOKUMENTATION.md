@@ -63,15 +63,19 @@ Mission Control has two top-level views:
 - Repeatables: the interactive pool for missions that have completed once.
   Re-accepting a repeatable happens exclusively here.
 
-Within an epoch page, the campaign atlas displays three branch rows:
+Within an epoch page, the campaign atlas displays four branch rows in fixed
+order:
 
 - Pioneers: crewed progression.
 - Robotic Explorers: probes, mapping, landers and flybys.
-- Lifelines: communication networks, logistics and depots.
+- Stations: the station/base/depot infrastructure chains (since 0.6.1 their
+  own branch with the station icon; each expansion stage sits in the epoch it
+  thematically belongs to, so no single epoch carries a whole chain).
+- Lifelines: communication relay networks.
 
 The internal enum names are still German (`Bemannt`, `UnbemannteErkundung`,
-`NetzwerkLogistik`, `Wiederholbar`). They are stable config/save keys and should
-not be renamed without migration.
+`NetzwerkLogistik`, `Wiederholbar`, plus `Stationen`). They are stable
+config/save keys and should not be renamed without migration.
 
 ## Mission Control Atlas
 
@@ -143,12 +147,15 @@ Home-branch visibility is computed by `VisibilityRules`:
 - Robotic Explorers: 4 visible missions per subcategory.
 - Outer-system robotic branches can reveal all missions in a subcategory after
   the planet flyby is completed.
+- Stations: 3 visible missions per subcategory (the chains are serial, so this
+  shows the current frontier of each station/base).
 - Lifelines: 3 visible missions per subcategory.
 
 Active limits are enforced by `ActiveLimits`:
 
-- Pioneers: 3 active missions.
+- Pioneers: 4 active missions.
 - Robotic Explorers: 10 active missions.
+- Stations: 5 active missions.
 - Lifelines: 5 active missions.
 
 ## Conditions and Checks
@@ -424,7 +431,9 @@ files. The German SOL catalog is not packaged since 0.6 (kept in-repo only).
 - Every infrastructure chain now lives in exactly one epoch (SOL: Earth+Moon
   stations in Orbital Roots, Moon base + depot in Inner Reach, Mars station in
   Red Horizon, Mars base in Beltworks). Chains that straddle epochs read as
-  holes, not as pacing.
+  holes, not as pacing. *(Superseded in 0.6.1: chains moved into their own
+  Stations branch, where per-stage epoch placement works because the branch
+  row continues visibly through every chapter.)*
 - Explicit `epoch=` parameters in generator helpers override `EPOCH_EXACT` —
   when moving missions, grep for both or the move silently does nothing.
 - Branch meaning must match across editions: stations/bases/resupplies are

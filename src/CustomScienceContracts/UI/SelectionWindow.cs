@@ -16,8 +16,9 @@ namespace CustomScienceContracts.UI
     {
         private enum CenterMode { Campaign, Repeatable }
 
+        // Fixed display order: Stations sit below Robotic Explorers and above Lifelines.
         private static readonly Sparte[] Branches =
-            { Sparte.Bemannt, Sparte.UnbemannteErkundung, Sparte.NetzwerkLogistik };
+            { Sparte.Bemannt, Sparte.UnbemannteErkundung, Sparte.Stationen, Sparte.NetzwerkLogistik };
 
         private const float CardW = 280f;
         private const float CardBaseH = 104f;
@@ -280,7 +281,7 @@ namespace CustomScienceContracts.UI
             var columns = ComputeDependencyColumns(epochContracts);
             float y = 12f;
 
-            foreach (var branch in BranchOrderFor(epochContracts))
+            foreach (var branch in Branches)
             {
                 var branchContracts = epochContracts
                     .Where(c => c.HeimatSparte == branch)
@@ -1219,39 +1220,6 @@ namespace CustomScienceContracts.UI
         }
 
         // --- Ordering helpers ---
-
-        private static IEnumerable<Sparte> BranchOrderFor(List<MissionContract> contracts)
-        {
-            var byId = contracts.ToDictionary(c => c.Id);
-            var score = Branches.ToDictionary(b => b, b => 0);
-            var seen = new HashSet<string>();
-
-            foreach (var c in contracts)
-            {
-                foreach (string preId in c.Voraussetzungen)
-                {
-                    if (!byId.TryGetValue(preId, out var pre) || pre.HeimatSparte == c.HeimatSparte)
-                        continue;
-
-                    string key = ((int)pre.HeimatSparte) + ">" + ((int)c.HeimatSparte);
-                    if (!seen.Add(key)) continue;
-                    score[pre.HeimatSparte] += 2;
-                    score[c.HeimatSparte] -= 2;
-                }
-            }
-
-            return Branches
-                .OrderByDescending(b => score[b])
-                .ThenBy(BranchDefaultIndex)
-                .ToList();
-        }
-
-        private static int BranchDefaultIndex(Sparte branch)
-        {
-            for (int i = 0; i < Branches.Length; i++)
-                if (Branches[i] == branch) return i;
-            return int.MaxValue;
-        }
 
         private static Dictionary<string, int> ComputeDependencyColumns(List<MissionContract> contracts)
         {

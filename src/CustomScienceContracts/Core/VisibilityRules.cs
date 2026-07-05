@@ -49,6 +49,14 @@ namespace CustomScienceContracts.Core
                 foreach (var c in shown) visible.Add(c.Id);
             }
 
+            // --- Stations: 3 per subcategory (chains are serial, so this shows the frontier) ---
+            foreach (string sub in cat.Subcategories(Sparte.Stationen))
+            {
+                var inSub = cat.InSubcategory(Sparte.Stationen, sub);
+                foreach (var c in inSub.Where(IsHomeAvailable).Take(Tuning.VisibleStationenPerSub))
+                    visible.Add(c.Id);
+            }
+
             // --- Network/logistics: 3 per subcategory ---
             foreach (string sub in cat.Subcategories(Sparte.NetzwerkLogistik))
             {

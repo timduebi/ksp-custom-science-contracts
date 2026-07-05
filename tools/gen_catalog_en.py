@@ -53,9 +53,9 @@ EPOCH_TEXTS = {
         "The Moon is the first great horizon. Probes map and land, then the first Kerbals follow "
         "— flyby, orbit, landing and the first days on another world."),
     3: ("Orbital Roots",
-        "The program puts down roots in orbit: the Earth station grows from 3 to 12 seats, the "
-        "first lunar station rises, comm networks span Earth and Moon — and the first probes "
-        "depart for Venus, Mercury and Mars."),
+        "The program puts down roots in orbit: the first stations rise above Earth and the Moon "
+        "— the start of an infrastructure that keeps growing for the rest of the campaign. Comm "
+        "networks span both worlds, and the first probes depart for Venus, Mercury and Mars."),
     4: ("Inner Reach",
         "Reaching into the inner system: a Moon base, a fuel depot in Earth orbit and a relay "
         "net around Venus. The first crew swings past Venus while probes touch down on Mars."),
@@ -400,16 +400,16 @@ def orbit_chain(key, body, sub, orbitword, km, stages, prereq0, station_word, mu
         if build:
             title = f"{station_word} ({seats(n)})"
             desc = f"Build your first {station_word.lower()} with at least {seats(n)}. The station must be empty and uncrewed; crew is counted from resupply onward. The station name will be reused by future supply flights."
-            out.append(de.contract(sid, title, desc, "Bemannt", sub, "TrackingStation_ButtonMapStation",
+            out.append(de.contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
                        round(220 * mult), [prereq0], station_checks, record=key))
         else:
             title = f"Station Expansion to {seats(n)}"
             desc = f"Expand %station% to at least {seats(n)} and keep the station empty and uncrewed for this expansion. Crew is counted from the next resupply onward."
-            out.append(de.contract(sid, title, desc, "Bemannt", sub, "TrackingStation_ButtonMapStation",
+            out.append(de.contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
                        round((180 + 20 * n) * mult), [prev_long], station_checks, ref=key))
         out.append(de.contract(sup, f"Station Resupply ({kerbals(n)})",
                    f"Bring a fresh crew of at least {kerbals(n)} to %station% and dock with the station.",
-                   "Bemannt", sub, "TrackingStation_ButtonMapShips", round((110 + 12 * n) * mult), [sid],
+                   "Stationen", sub, "TrackingStation_ButtonMapShips", round((110 + 12 * n) * mult), [sid],
                    [make_check("CREW_MIN", f"Supply craft with at least {kerbals(n)} aboard", min=n),
                     make_check("ORBIT_ABOVE", f"Stable {orbitword}, periapsis above {km} km", body=body, km=km),
                     make_check("APOAPSIS_MAX", f"Apoapsis below {max_km} km", body=body, km=max_km),
@@ -417,7 +417,7 @@ def orbit_chain(key, body, sub, orbitword, km, stages, prereq0, station_word, mu
                    repeatable=True, ref=key))
         out.append(de.contract(lng, f"150-Day Operations ({kerbals(n)})",
                    f"Keep %station% crewed continuously for 150 days with at least {kerbals(n)} aboard.",
-                   "Bemannt", sub, "TrackingStation_ButtonMapStation", round((260 + 30 * n) * mult), [sup],
+                   "Stationen", sub, "TrackingStation_ButtonMapStation", round((260 + 30 * n) * mult), [sup],
                    [make_check("CREW_MIN", f"Crewed with at least {kerbals(n)} aboard", min=n),
                     make_check("ORBIT_ABOVE", f"Stable {orbitword}, periapsis above {km} km", body=body, km=km),
                     make_check("APOAPSIS_MAX", f"Apoapsis below {max_km} km", body=body, km=max_km),
@@ -465,22 +465,22 @@ def base_chain(key, body, sub, stages, prereq0, base_word, mult):
         if build:
             title = f"{base_word} ({kerbals(n)})"
             desc = f"Build your first base on {body_name} and keep it occupied with at least {kerbals(n)}. Its name will be used by future supply flights."
-            out.append(de.contract(sid, title, desc, "Bemannt", sub, "TrackingStation_ButtonMapBase",
+            out.append(de.contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapBase",
                        round(240 * mult), prereq0_list, checks, record=key))
         else:
             title = f"Base Expansion to {kerbals(n)}"
             desc = f"Expand %station% to at least {kerbals(n)} and keep the base operating steadily."
-            out.append(de.contract(sid, title, desc, "Bemannt", sub, "TrackingStation_ButtonMapBase",
+            out.append(de.contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapBase",
                        round((180 + 20 * n) * mult), [prev_long], checks, ref=key))
         out.append(de.contract(sup, f"Base Resupply ({kerbals(n)})",
                    f"Land a fresh crew of at least {kerbals(n)} at %station% and keep surface operations running.",
-                   "Bemannt", sub, "TrackingStation_ButtonMapLander", round((110 + 12 * n) * mult), [sid],
+                   "Stationen", sub, "TrackingStation_ButtonMapLander", round((110 + 12 * n) * mult), [sid],
                    [make_check("CREW_MIN", f"Supply lander with at least {kerbals(n)} aboard", min=n),
                     make_check("LANDED", f"Landed on {body_name}", body=body)],
                    repeatable=True, ref=key))
         out.append(de.contract(lng, f"150-Day Base Operations ({kerbals(n)})",
                    f"Keep %station% alive continuously for 150 days with at least {kerbals(n)} aboard.",
-                   "Bemannt", sub, "TrackingStation_ButtonMapBase", round((260 + 30 * n) * mult), [sup],
+                   "Stationen", sub, "TrackingStation_ButtonMapBase", round((260 + 30 * n) * mult), [sup],
                    [make_check("CREW_MIN", f"Crewed with at least {kerbals(n)} aboard", min=n),
                     make_check("LANDED", f"Landed on {body_name}", body=body),
                     make_check("DURATION", f"Hold for 150 days with {kerbals(n)} aboard", days=150)],
@@ -508,16 +508,16 @@ def fuel_depot_chain(key, sub, stages, prereq0, mult):
         if build:
             title = f"Orbital Fuel Depot ({kerbals(n)})"
             desc = f"Build a crewed fuel depot in Earth orbit, staff it with at least {kerbals(n)}, and stock {lf} LiquidFuel plus {ox} Oxidizer."
-            out.append(de.contract(sid, title, desc, "NetzwerkLogistik", sub, "TrackingStation_ButtonMapStation",
+            out.append(de.contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
                        round(150 * mult), [prereq0], checks, record=key))
         else:
             title = f"Fuel Depot Expansion ({kerbals(n)})"
             desc = f"Expand %station% to at least {kerbals(n)} and raise its stockpile to {lf} LiquidFuel and {ox} Oxidizer."
-            out.append(de.contract(sid, title, desc, "NetzwerkLogistik", sub, "TrackingStation_ButtonMapStation",
+            out.append(de.contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
                        round((150 + 25 * i) * mult), [prev], checks, ref=key))
         out.append(de.contract(sup, f"Fuel Depot Resupply ({kerbals(n)})",
                    f"Bring fresh fuel and a crew of at least {kerbals(n)} to %station% and dock.",
-                   "NetzwerkLogistik", sub, "TrackingStation_ButtonMapShips", round((90 + 12 * n) * mult), [sid],
+                   "Stationen", sub, "TrackingStation_ButtonMapShips", round((90 + 12 * n) * mult), [sid],
                    [make_check("CREW_MIN", f"Supply craft with at least {kerbals(n)} aboard", min=n),
                     make_check("ORBIT_ABOVE", "Stable Earth orbit, periapsis above 130 km", body="Earth", km=130),
                     make_check("APOAPSIS_MAX", f"Apoapsis below {max_km} km", body="Earth", km=max_km),

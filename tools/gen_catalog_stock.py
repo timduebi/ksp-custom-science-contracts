@@ -16,14 +16,17 @@ SPARTE = {
     "Pioniere": "Bemannt",
     "Robotische Erkunder": "UnbemannteErkundung",
     "Versorgungsnetz": "NetzwerkLogistik",
+    "Stationen": "Stationen",
     "Pioneers": "Bemannt",
     "Robotic Explorers": "UnbemannteErkundung",
     "Lifelines": "NetzwerkLogistik",
+    "Stations": "Stationen",
 }
 
 BUCKET_FILES = {
     "Bemannt": ("A_Pioniere.cfg", "BRANCH A - PIONEERS (crewed)"),
     "UnbemannteErkundung": ("B_Spaeher.cfg", "BRANCH B - ROBOTIC EXPLORERS"),
+    "Stationen": ("D_Stationen.cfg", "BRANCH D - STATIONS (infrastructure chains)"),
     "NetzwerkLogistik": ("C_Lebensadern.cfg", "BRANCH C - LIFELINES"),
 }
 
@@ -508,7 +511,6 @@ def main():
         if name == "Bemannt":
             body = epoch_nodes(epoch_names) + body
         write_file(os.path.join(OUT, fn), title, body)
-    write_file(os.path.join(OUT, "D_Stationen.cfg"), "STATION CHAINS - explicit in Stock branches", "")
     write_readme({k: len(v) for k, v in buckets.items()}, epoch_names)
     for name, items in buckets.items():
         print(f"{name}: {len(items)}")

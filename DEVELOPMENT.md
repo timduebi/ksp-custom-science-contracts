@@ -15,10 +15,13 @@ Everything else — the engine in `src/`, icons, UI, validators, generators — 
 **`main`** (no per-edition branch). The same DLL handles real-solar-system and stock bodies, so an
 engine change applies to every catalog at once.
 
-Branch convention (both editions since 0.6): station, base and resupply chains are **Pioneers**
-(`Bemannt`); uncrewed fuel depots and relay networks are **Lifelines** (`NetzwerkLogistik`).
-Each catalog's `A_Pioniere.cfg` also carries nine `EPOCH` story nodes (number/name/description,
-`EPOCH_TEXTS` in the generators) that the atlas shows as chapter intros.
+Branch convention (both editions since 0.6.1): station, base, depot and resupply chains live in
+the dedicated **Stations** branch (`Stationen`, station icon, displayed between Robotic Explorers
+and Lifelines); relay networks are **Lifelines** (`NetzwerkLogistik`). Station expansion stages
+are placed per epoch through `epoch_for_id` in `tools/gen_catalog.py` (SOL) and the `epoche:`
+fields in the Stock design source. Each catalog's `A_Pioniere.cfg` also carries nine `EPOCH`
+story nodes (number/name/description, `EPOCH_TEXTS` in the generators) that the atlas shows as
+chapter intros.
 
 ## Generators
 

@@ -126,16 +126,21 @@ def epoch_for_id(cid):
     if m:
         key, action, raw_stage = m.groups()
         stage = _stage_from_chain_suffix(action, raw_stage or "2")
-        # Since 0.6 every infrastructure chain lives in exactly one epoch, so a chain is
-        # playable as one chapter instead of being spread across the campaign.
-        if key in ("earth_station", "moon_station"):
-            return 3   # Orbital Roots: both orbital stations
-        if key in ("moon_base", "earth_fuel_depot"):
-            return 4   # Inner Reach: lunar surface permanence + Earth depot
+        # Since 0.6.1 the chains live in their own Stations branch, and each expansion stage
+        # sits in the epoch it thematically belongs to. Hard constraints kept forward-safe:
+        # earth longstay12 gates Ceres (E6), mars longstay3 gates E5 nets, longstay6 gates E8.
+        if key == "earth_station":
+            return 3 if stage <= 4 else 4 if stage <= 6 else 5 if stage <= 8 else 6
+        if key == "moon_station":
+            return 3 if stage <= 3 else 4 if stage <= 6 else 5 if stage <= 8 else 6
+        if key == "moon_base":
+            return 4 if stage <= 3 else 5 if stage <= 6 else 6 if stage <= 8 else 7
+        if key == "earth_fuel_depot":
+            return 4 if stage <= 3 else 5 if stage <= 4 else 6
         if key == "mars_station":
-            return 5   # Red Horizon
+            return 5 if stage <= 3 else 6 if stage <= 4 else 7
         if key == "mars_base":
-            return 6   # Beltworks: Mars consolidation during the belt era
+            return 6 if stage <= 3 else 7 if stage <= 4 else 8
 
     if cid.startswith(("un_venus_", "un_mercury_", "un_sun_", "un_mars_", "un_phobos_", "un_deimos_")):
         return 4
@@ -167,9 +172,10 @@ EPOCH_TEXTS = {
         "Luna ist der erste grosse Horizont. Sonden kartieren und landen, dann folgen die ersten "
         "Kerbals — Vorbeiflug, Orbit, Landung und die ersten Tage auf einer fremden Welt."),
     3: ("Orbital Roots",
-        "Das Programm schlägt Wurzeln im Orbit: Die Erdstation wächst von 3 auf 12 Plätze, die "
-        "erste Mondstation entsteht, Kommunikationsnetze spannen sich um Erde und Mond — und die "
-        "ersten Sonden brechen zu Venus, Merkur und Mars auf."),
+        "Das Programm schlägt Wurzeln im Orbit: Die ersten Stationen entstehen über Erde und "
+        "Mond — der Beginn einer Infrastruktur, die die ganze Kampagne hindurch weiterwächst. "
+        "Kommunikationsnetze spannen sich um beide Welten, und die ersten Sonden brechen zu "
+        "Venus, Merkur und Mars auf."),
     4: ("Inner Reach",
         "Der Griff ins innere System: eine Mondbasis, ein Treibstoffdepot im Erdorbit und ein "
         "Relais-Netz um die Venus. Die erste Crew fliegt an der Venus vorbei, während Sonden auf "
@@ -612,7 +618,7 @@ def orbit_chain(key, body, sub, orbitword, km, stages, prereq0, station_word, mu
                     f"{seats_dative(n)}. Die Station muss dabei leer und unbemannt sein; Besatzung "
                     f"zählt erst ab der Versorgung. Mit ihr beginnt für dein Programm die Ära ständiger Präsenz — "
                     f"der Name, den du ihr gibst, begleitet jeden künftigen Versorgungsflug.")
-            out.append(contract(sid, title, desc, "Bemannt", sub, "TrackingStation_ButtonMapStation",
+            out.append(contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
                        round(220 * mult), [prereq0],
                        cks([empty, capacity(n), orbit, apo, {"kind": "DURATION", "days": 10, "label": "10 Tage im Zielorbit stabil halten"}]),
                        record=key))
@@ -621,20 +627,20 @@ def orbit_chain(key, body, sub, orbitword, km, stages, prereq0, station_word, mu
             desc = (f"Erweitere %station% auf mindestens {seats(n)} und "
                     f"halte die Station für diesen Ausbau leer und unbemannt. Besatzung "
                     f"zählt erst ab der nächsten Versorgung.")
-            out.append(contract(sid, title, desc, "Bemannt", sub, "TrackingStation_ButtonMapStation",
+            out.append(contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
                        round((180 + 20 * n) * mult), [prev_long],
                        cks([empty, capacity(n), orbit, apo, {"kind": "DURATION", "days": 10, "label": "10 Tage im Zielorbit stabil halten"}]),
                        ref=key))
         out.append(contract(sup, f"Versorgung der Station ({kerbals(n)})",
                    f"Bring eine frische Ablösung von mindestens {kerbals(n)} zu %station% und docke an, um die "
-                   f"müde gewordene Stammbesatzung abzulösen.", "Bemannt", sub, "TrackingStation_ButtonMapShips",
+                   f"müde gewordene Stammbesatzung abzulösen.", "Stationen", sub, "TrackingStation_ButtonMapShips",
                    round((110 + 12 * n) * mult), [sid],
                    cks([{"kind": "CREW_MIN", "min": n, "label": f"Versorgungsschiff mit mindestens {kerbals(n)} an Bord"},
                         orbit, apo, {"kind": "DOCK_STATION", "stationKey": key, "label": "An der Station angedockt"}]),
                    repeatable=True, ref=key))
         out.append(contract(lng, f"Dauerbetrieb 150 Tage ({kerbals(n)})",
                    f"Halte %station% 150 Tage ununterbrochen mit mindestens {kerbals(n)} besetzt und "
-                   f"beweise stabilen Langzeitbetrieb auf dieser Stufe.", "Bemannt", sub, "TrackingStation_ButtonMapStation",
+                   f"beweise stabilen Langzeitbetrieb auf dieser Stufe.", "Stationen", sub, "TrackingStation_ButtonMapStation",
                    round((260 + 30 * n) * mult), [sup],
                    cks([crew(n), orbit, apo, {"kind": "DURATION", "days": 150, "label": f"150 Tage mit {kerbals(n)} ausharren"}]),
                    ref=key))
@@ -680,7 +686,7 @@ def base_chain(key, body, sub, stages, prereq0, base_word, mult):
             desc = (f"Errichte deine erste Basis auf {bdisp} und halte sie mit mindestens {kerbals(n)} "
                     f"besetzt. Fester Boden unter den Stiefeln — der Name der Basis bleibt erhalten und "
                     f"gilt für jeden weiteren Flug dorthin.")
-            out.append(contract(sid, title, desc, "Bemannt", sub, "TrackingStation_ButtonMapBase",
+            out.append(contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapBase",
                        round(240 * mult), prereq0_list,
                        cks([crew(n), landed, {"kind": "DURATION", "days": 10, "label": f"10 Tage mit {kerbals(n)} halten"}]),
                        record=key))
@@ -688,19 +694,19 @@ def base_chain(key, body, sub, stages, prereq0, base_word, mult):
             title = f"Basisausbau auf {kerbals(n)}"
             desc = (f"Erweitere %station% auf mindestens {kerbals(n)} und halte den Basisbetrieb stabil, "
                     f"bevor der nächste Ausbau folgt.")
-            out.append(contract(sid, title, desc, "Bemannt", sub, "TrackingStation_ButtonMapBase",
+            out.append(contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapBase",
                        round((180 + 20 * n) * mult), [prev_long],
                        cks([crew(n), landed, {"kind": "DURATION", "days": 10, "label": f"10 Tage mit {kerbals(n)} halten"}]),
                        ref=key))
         out.append(contract(sup, f"Versorgung der Basis ({kerbals(n)})",
                    f"Lande eine frische Ablösung von mindestens {kerbals(n)} bei %station% und halte die "
                    f"Besatzung der Basis in Schwung.",
-                   "Bemannt", sub, "TrackingStation_ButtonMapLander", round((110 + 12 * n) * mult), [sid],
+                   "Stationen", sub, "TrackingStation_ButtonMapLander", round((110 + 12 * n) * mult), [sid],
                    cks([{"kind": "CREW_MIN", "min": n, "label": f"Versorgungsschiff mit mindestens {kerbals(n)} an Bord"}, landed]),
                    repeatable=True, ref=key))
         out.append(contract(lng, f"Dauerbetrieb 150 Tage ({kerbals(n)})",
                    f"Halte %station% 150 Tage ununterbrochen mit mindestens {kerbals(n)} am Leben und "
-                   f"beweise, dass Menschen hier dauerhaft leben können.", "Bemannt", sub, "TrackingStation_ButtonMapBase",
+                   f"beweise, dass Menschen hier dauerhaft leben können.", "Stationen", sub, "TrackingStation_ButtonMapBase",
                    round((260 + 30 * n) * mult), [sup],
                    cks([crew(n), landed, {"kind": "DURATION", "days": 150, "label": f"150 Tage mit {kerbals(n)} ausharren"}]),
                    ref=key))
@@ -728,7 +734,7 @@ def fuel_depot_chain(key, sub, stages, prereq0, mult):
             desc = (f"Errichte deine bemannte Treibstoff-Tankstelle im Erdorbit, besetze sie mit mindestens "
                     f"{kerbals(n)} und fülle die Tanks auf {lf} LiquidFuel und {ox} Oxidizer. Künftige Reisen "
                     f"sollen hier nachtanken — der Name bleibt für jeden Nachschubflug erhalten.")
-            out.append(contract(sid, title, desc, "NetzwerkLogistik", sub, "TrackingStation_ButtonMapStation",
+            out.append(contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
                        round(150 * mult), [prereq0],
                        cks([crew, orbit, apo] + fuel + [{"kind": "DURATION", "days": 10, "label": "10 Tage stabil betrieben"}]),
                        record=key))
@@ -736,13 +742,13 @@ def fuel_depot_chain(key, sub, stages, prereq0, mult):
             title = f"Tankstellen-Ausbau ({kerbals(n)})"
             desc = (f"Erweitere %station% auf mindestens {kerbals(n)} und stocke den Vorrat auf {lf} "
                     f"LiquidFuel und {ox} Oxidizer auf.")
-            out.append(contract(sid, title, desc, "NetzwerkLogistik", sub, "TrackingStation_ButtonMapStation",
+            out.append(contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
                        round((150 + 25 * i) * mult), [prev],
                        cks([crew, orbit, apo] + fuel + [{"kind": "DURATION", "days": 10, "label": "10 Tage stabil betrieben"}]),
                        ref=key))
         out.append(contract(sup, f"Nachbetankung der Tankstelle ({kerbals(n)})",
                    f"Bring frischen Treibstoff und eine Ablösung von mindestens {kerbals(n)} zu %station% und docke an.",
-                   "NetzwerkLogistik", sub, "TrackingStation_ButtonMapShips", round((90 + 12 * n) * mult), [sid],
+                   "Stationen", sub, "TrackingStation_ButtonMapShips", round((90 + 12 * n) * mult), [sid],
                    cks([{"kind": "CREW_MIN", "min": n, "label": f"Versorgungsschiff mit mindestens {kerbals(n)} an Bord"},
                         orbit, apo, {"kind": "DOCK_STATION", "stationKey": key, "label": "An der Tankstelle angedockt"}]),
                    repeatable=True, ref=key))

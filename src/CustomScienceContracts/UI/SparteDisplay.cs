@@ -11,6 +11,7 @@ namespace CustomScienceContracts.UI
             {
                 case Sparte.Bemannt:             return "Pioneers";
                 case Sparte.UnbemannteErkundung: return "Robotic Explorers";
+                case Sparte.Stationen:           return "Stations";
                 case Sparte.NetzwerkLogistik:    return "Lifelines";
                 case Sparte.Wiederholbar:        return "Repeatable";
                 default:                          return s.ToString();

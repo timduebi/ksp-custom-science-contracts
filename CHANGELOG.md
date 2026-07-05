@@ -6,6 +6,29 @@ This project uses simple `MAJOR.MINOR.PATCH` versioning.
 The mod ships as one download with the SOL (real solar system) campaign, plus optional config
 packs on the same release that swap the catalog to the stock KSP system or to German.
 
+## [0.6.1] - 2026-07-02
+
+### Added
+- New **Stations** branch: all station, base and depot infrastructure chains
+  now live in their own category with the station icon, displayed between
+  Robotic Explorers and Lifelines — in the Campaign Atlas and as their own
+  group in the Active Missions window. New tuning values `activeStationen`
+  (default 5) and `visibleStationenPerSub` (default 3).
+
+### Changed
+- Station chains no longer sit in a single epoch: each expansion stage is
+  placed in the epoch it thematically belongs to (SOL: Earth station E3→E6,
+  Moon station E3→E6, Moon base E4→E7, depot E4→E6, Mars station E5→E7, Mars
+  base E6→E8; Stock: Kerbin station upgrades spread E2→E6). Orbital Roots
+  shrank from 45 to 21 missions, and the Stations row now grows visibly
+  through the whole campaign. No backwards prerequisites anywhere.
+- Branch rows render in a fixed order (Pioneers, Robotic Explorers, Stations,
+  Lifelines) instead of reordering per epoch.
+- Epoch intro panel redesigned: kicker line with epoch position and
+  completion, large chapter title, italic story text and a bottom progress
+  bar. Wrapped card texts (descriptions, requirements, unlock hints) reserve
+  an extra line so they can no longer lose their last line.
+
 ## [0.6.0] - 2026-07-02
 
 The story release: the campaign now tells its chapters in-game, the atlas

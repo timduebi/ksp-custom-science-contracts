@@ -22,7 +22,7 @@ CHECK_KINDS = {"CREW_MIN","CREW_NONE","CREW_EXACT","CREW_CAPACITY_MIN","ON_BODY"
   "ORE_PRESENT","ORE_SURFACE","FUEL_MIN","RESOURCE_MIN","WHEEL_MOTION","EVA","DOCK_STATION","DOCK_ANY",
   "VESSEL_COUNT","VESSEL_COUNT_INCLINATION","RELAY_VESSEL_COUNT","RELAY_VESSEL_COUNT_INCLINATION",
   "FLYBY","MARKER_LANDING","RETURN_FROM_BODY","HOLD","DURATION"}
-SPARTEN = {"Bemannt","UnbemannteErkundung","NetzwerkLogistik"}
+SPARTEN = {"Bemannt","UnbemannteErkundung","Stationen","NetzwerkLogistik"}
 SOL_BODIES = {"Amalthea","Ariel","Arrokoth","Callisto","Ceres","Charon","Dactyl","Deimos","Dione",
   "Earth","Enceladus","Eros","Europa","Ganymede","Hydra","Hyperion","Iapetus","Ida","Io","Jupiter",
   "Kerberos","Mars","Mercury","Mimas","Miranda","Moon","Neptune","Nereid","Nix","Oberon","Pallas",

@@ -1,13 +1,14 @@
-## Custom Science Contracts 0.6.0 — The Story Release
+## Custom Science Contracts 0.6.1 — The Stations Branch
 
 **Custom Science Contracts** gives KSP Science Mode a structured mission campaign:
 robotic scouting, crewed milestones, stations, bases, supply routes, relays and
 long-duration operations all feed into one progression.
 
-0.6.0 makes the campaign *tell its story in-game*: every epoch opens with its
-chapter narrative, the atlas records when you achieved what, the game announces
-claims, unlocks and finished chapters — and both campaigns were rebalanced
-epoch by epoch, including a proper crewed finale.
+0.6.1 gives the infrastructure program its own home: a new **Stations** branch
+holds every station, base and depot chain, growing stage by stage across the
+epochs instead of flooding a single chapter. On top of the 0.6.0 story release:
+epoch intros, a mission chronicle, on-screen claim/unlock/epoch announcements
+and a rebalanced campaign with a crewed finale.
 
 ### Important requirement
 
@@ -19,7 +20,7 @@ does not require that probe-first setup.
 
 ### Main download
 
-**`CustomScienceContracts-v0.6.0.zip`** — the complete mod with the default Sol campaign.
+**`CustomScienceContracts-v0.6.1.zip`** — the complete mod with the default Sol campaign.
 
 1. Download and unzip.
 2. Copy the `GameData` folder into your KSP install root.
@@ -30,10 +31,25 @@ does not require that probe-first setup.
 Install the main download first, then unzip this over it and overwrite the four
 `GameData/CustomScienceContracts/Contracts/*.cfg` files:
 
-- **Stock Kerbol system** — **`CustomScienceContracts-v0.6.0_Stock-Config.zip`**
+- **Stock Kerbol system** — **`CustomScienceContracts-v0.6.1_Stock-Config.zip`**
 
 The German Sol config is not shipped in this release; it stays maintained in the
 repository and returns once the plugin UI is translatable as well.
+
+### New in 0.6.1 — the Stations branch
+
+- All station, base and depot chains moved into their own **Stations** category
+  (station icon), shown between Robotic Explorers and Lifelines in the Campaign
+  Atlas and as their own group in the Active Missions window.
+- Expansion stages now sit in the epoch they belong to: the Earth station is
+  founded in Orbital Roots and reaches its 12-seat final stage in Beltworks,
+  the Mars base grows into Ringed Worlds, Kerbin's station upgrades stretch
+  from Orbital Habits to Red Dust. Orbital Roots dropped from 45 to 21 missions
+  — no more endless station chapter.
+- Stations get their own pacing: up to 5 active missions and 3 visible per
+  body, tunable via `activeStationen` / `visibleStationenPerSub`.
+- Polished epoch intro panel (chapter kicker, large title, story text,
+  progress bar) and a hard guarantee against clipped card texts.
 
 ### Highlights in 0.6.0
 

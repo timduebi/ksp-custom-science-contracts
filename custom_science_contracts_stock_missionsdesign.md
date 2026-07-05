@@ -172,7 +172,7 @@ check: HOLD 10 | hold stable orbit for 10 seconds
 === MISSION ===
 id: st_kerbin_station_core3
 title: Empty Room in Space
-sparte: Pioniere
+sparte: Stationen
 body: Kerbin
 epoche: 2
 prereq: cr_kerbin_orbit_3d
@@ -189,7 +189,7 @@ check: CREW_CAPACITY_MIN 3 | station has room for at least 3 Kerbals
 === MISSION ===
 id: st_kerbin_station_crew3
 title: Moving Day with Docking
-sparte: Pioniere
+sparte: Stationen
 body: Kerbin
 epoche: 2
 prereq: st_kerbin_station_core3
@@ -205,7 +205,7 @@ check: DOCK_ANY | dock a crew vehicle to the station
 === MISSION ===
 id: st_kerbin_station_longstay3
 title: 150 Days of Snacks
-sparte: Pioniere
+sparte: Stationen
 body: Kerbin
 epoche: 2
 prereq: st_kerbin_station_crew3
@@ -221,7 +221,7 @@ check: DURATION 150 | operate continuously for 150 days
 === MISSION ===
 id: rep_kerbin_station_resupply
 title: Snacks Around Home
-sparte: Pioniere
+sparte: Stationen
 body: Kerbin
 epoche: 2
 prereq: st_kerbin_station_longstay3
@@ -238,9 +238,9 @@ check: DOCK_STATION kerbin_station Kerbin | dock with the Kerbin station
 === MISSION ===
 id: st_kerbin_station_upgrade4
 title: One More Seat
-sparte: Pioniere
+sparte: Stationen
 body: Kerbin
-epoche: 2
+epoche: 3
 prereq: st_kerbin_station_longstay3
 reward: 120
 repeatable: no
@@ -255,9 +255,9 @@ check: DURATION 10 | keep the empty station stable for 10 days
 === MISSION ===
 id: st_kerbin_station_longstay4
 title: Four Kerbals, Still Fine
-sparte: Pioniere
+sparte: Stationen
 body: Kerbin
-epoche: 2
+epoche: 3
 prereq: st_kerbin_station_upgrade4
 reward: 165
 repeatable: no
@@ -271,9 +271,9 @@ check: DURATION 150 | operate continuously for 150 days
 === MISSION ===
 id: st_kerbin_station_upgrade6
 title: Room for Six
-sparte: Pioniere
+sparte: Stationen
 body: Kerbin
-epoche: 2
+epoche: 4
 prereq: st_kerbin_station_longstay4
 reward: 160
 repeatable: no
@@ -288,9 +288,9 @@ check: DURATION 10 | keep the empty station stable for 10 days
 === MISSION ===
 id: st_kerbin_station_longstay6
 title: Crowded but Scientific
-sparte: Pioniere
+sparte: Stationen
 body: Kerbin
-epoche: 2
+epoche: 4
 prereq: st_kerbin_station_upgrade6
 reward: 205
 repeatable: no
@@ -304,9 +304,9 @@ check: DURATION 150 | operate continuously for 150 days
 === MISSION ===
 id: st_kerbin_station_upgrade8
 title: The Big Can
-sparte: Pioniere
+sparte: Stationen
 body: Kerbin
-epoche: 2
+epoche: 5
 prereq: st_kerbin_station_longstay6
 reward: 210
 repeatable: no
@@ -321,9 +321,9 @@ check: DURATION 10 | keep the empty station stable for 10 days
 === MISSION ===
 id: st_kerbin_station_longstay8
 title: Eight Up, None Down
-sparte: Pioniere
+sparte: Stationen
 body: Kerbin
-epoche: 2
+epoche: 5
 prereq: st_kerbin_station_upgrade8
 reward: 255
 repeatable: no
@@ -337,9 +337,9 @@ check: DURATION 150 | operate continuously for 150 days
 === MISSION ===
 id: st_kerbin_station_upgrade10
 title: Kerbin Hotel Ten
-sparte: Pioniere
+sparte: Stationen
 body: Kerbin
-epoche: 2
+epoche: 6
 prereq: st_kerbin_station_longstay8
 reward: 270
 repeatable: no
@@ -354,9 +354,9 @@ check: DURATION 10 | keep the empty station stable for 10 days
 === MISSION ===
 id: st_kerbin_station_longstay10
 title: The Ten-Kerbal Test
-sparte: Pioniere
+sparte: Stationen
 body: Kerbin
-epoche: 2
+epoche: 6
 prereq: st_kerbin_station_upgrade10
 reward: 315
 repeatable: no
@@ -403,7 +403,7 @@ check: DURATION 1 | upgraded network remains active for 1 day
 === MISSION ===
 id: dep_kerbin_fuel_depot_core
 title: Gas Station Above Kerbin
-sparte: Versorgungsnetz
+sparte: Stationen
 body: Kerbin
 epoche: 2
 prereq: st_kerbin_station_longstay3
@@ -419,7 +419,7 @@ check: FUEL_MIN 1000 | fuel reserves above 1000
 === MISSION ===
 id: dep_kerbin_fuel_delivery
 title: Top Off the Tin Can
-sparte: Versorgungsnetz
+sparte: Stationen
 body: Kerbin
 epoche: 2
 prereq: dep_kerbin_fuel_depot_core
@@ -603,7 +603,7 @@ check: DURATION 1 | upgraded network remains active for 1 day
 === MISSION ===
 id: st_mun_station_core3
 title: Gateway-ish Around Mun
-sparte: Pioniere
+sparte: Stationen
 body: Mun
 epoche: 3
 prereq: cr_mun_precision_landing, net_mun_relay3
@@ -620,7 +620,7 @@ check: CREW_CAPACITY_MIN 3 | station has room for at least 3 Kerbals
 === MISSION ===
 id: st_mun_station_crew3
 title: Mun Station Move-In
-sparte: Pioniere
+sparte: Stationen
 body: Mun
 epoche: 3
 prereq: st_mun_station_core3
@@ -636,7 +636,7 @@ check: DOCK_ANY | dock with the Mun station
 === MISSION ===
 id: st_mun_station_longstay3
 title: Grey Orbit Residency
-sparte: Pioniere
+sparte: Stationen
 body: Mun
 epoche: 3
 prereq: st_mun_station_crew3
@@ -652,7 +652,7 @@ check: DURATION 150 | operate continuously for 150 days
 === MISSION ===
 id: rep_mun_station_resupply
 title: Grey Orbit Supply Run
-sparte: Pioniere
+sparte: Stationen
 body: Mun
 epoche: 3
 prereq: st_mun_station_longstay3
@@ -669,7 +669,7 @@ check: DOCK_STATION mun_station Mun | dock with the Mun orbital station
 === MISSION ===
 id: st_mun_station_upgrade6
 title: More Room Over Mun
-sparte: Pioniere
+sparte: Stationen
 body: Mun
 epoche: 4
 prereq: st_mun_station_longstay3
@@ -686,7 +686,7 @@ check: DURATION 10 | keep the empty station stable for 10 days
 === MISSION ===
 id: st_mun_station_longstay6
 title: Six Around the Mun
-sparte: Pioniere
+sparte: Stationen
 body: Mun
 epoche: 4
 prereq: st_mun_station_upgrade6
@@ -702,7 +702,7 @@ check: DURATION 150 | operate continuously for 150 days
 === MISSION ===
 id: base_mun_base3
 title: Not Just Footprints
-sparte: Pioniere
+sparte: Stationen
 body: Mun
 epoche: 3
 prereq: st_mun_station_longstay3, cr_mun_precision_landing
@@ -718,7 +718,7 @@ check: DURATION 30 | operate the base for 30 days
 === MISSION ===
 id: rep_mun_base_supply
 title: Grey Dust Delivery
-sparte: Pioniere
+sparte: Stationen
 body: Mun
 epoche: 3
 prereq: base_mun_base3
@@ -734,7 +734,7 @@ check: FUEL_MIN 300 | fuel reserve above 300 units
 === MISSION ===
 id: base_mun_base6
 title: Mun Base, Now With Neighbours
-sparte: Pioniere
+sparte: Stationen
 body: Mun
 epoche: 4
 prereq: base_mun_base3, st_mun_station_upgrade6
@@ -816,7 +816,7 @@ check: DURATION 1 | network remains active for 1 day
 === MISSION ===
 id: base_minmus_fuel_base
 title: Fuel from the Flats
-sparte: Pioniere
+sparte: Stationen
 body: Minmus
 epoche: 4
 prereq: cr_minmus_precision_landing, net_minmus_relay3
@@ -959,7 +959,7 @@ check: RETURN_FROM_BODY Gilly Kerbin | return the crew safely to Kerbin
 === MISSION ===
 id: un_gilly_fuel_station
 title: Fuel Pebble
-sparte: Versorgungsnetz
+sparte: Stationen
 body: Gilly
 epoche: 9
 prereq: cr_gilly_landing, un_eve_lander
@@ -977,7 +977,7 @@ check: DURATION 30 | keep the fuel station operating for 30 days
 === MISSION ===
 id: st_eve_support_station
 title: The Emergency Excuse
-sparte: Pioniere
+sparte: Stationen
 body: Eve
 epoche: 9
 prereq: cr_eve_orbit, un_eve_lander, net_eve_relay3
@@ -1300,7 +1300,7 @@ check: RETURN_FROM_BODY Ike Kerbin | return the crew safely to Kerbin
 === MISSION ===
 id: st_duna_station_core2
 title: Station After the Landing
-sparte: Pioniere
+sparte: Stationen
 body: Duna
 epoche: 6
 prereq: cr_duna_landing
@@ -1317,7 +1317,7 @@ check: CREW_CAPACITY_MIN 2 | station has room for at least 2 Kerbals
 === MISSION ===
 id: st_duna_station_crew2
 title: Two Kerbals Over Duna
-sparte: Pioniere
+sparte: Stationen
 body: Duna
 epoche: 6
 prereq: st_duna_station_core2
@@ -1333,7 +1333,7 @@ check: DOCK_ANY | dock with the Duna station
 === MISSION ===
 id: st_duna_station_longstay2
 title: Red Orbit Residence
-sparte: Pioniere
+sparte: Stationen
 body: Duna
 epoche: 6
 prereq: st_duna_station_crew2
@@ -1349,7 +1349,7 @@ check: DURATION 150 | operate continuously for 150 days
 === MISSION ===
 id: rep_duna_orbit_supply
 title: Red Orbit Supply Run
-sparte: Pioniere
+sparte: Stationen
 body: Duna
 epoche: 6
 prereq: st_duna_station_longstay2
@@ -1366,7 +1366,7 @@ check: DOCK_STATION duna_station Duna | dock with the Duna station
 === MISSION ===
 id: st_duna_station_upgrade4
 title: Duna Gets Serious
-sparte: Pioniere
+sparte: Stationen
 body: Duna
 epoche: 6
 prereq: st_duna_station_longstay2
@@ -1383,7 +1383,7 @@ check: DURATION 10 | keep the empty station stable for 10 days
 === MISSION ===
 id: st_duna_station_longstay4
 title: Four Watch the Rust
-sparte: Pioniere
+sparte: Stationen
 body: Duna
 epoche: 6
 prereq: st_duna_station_upgrade4
@@ -1399,7 +1399,7 @@ check: DURATION 150 | operate continuously for 150 days
 === MISSION ===
 id: st_duna_station_upgrade6
 title: More Seats, More Dust
-sparte: Pioniere
+sparte: Stationen
 body: Duna
 epoche: 7
 prereq: st_duna_station_longstay4
@@ -1416,7 +1416,7 @@ check: DURATION 10 | keep the empty station stable for 10 days
 === MISSION ===
 id: st_duna_station_longstay6
 title: Six in Red Orbit
-sparte: Pioniere
+sparte: Stationen
 body: Duna
 epoche: 7
 prereq: st_duna_station_upgrade6
@@ -1432,7 +1432,7 @@ check: DURATION 150 | operate continuously for 150 days
 === MISSION ===
 id: st_duna_station_upgrade8
 title: Deep Red Expansion
-sparte: Pioniere
+sparte: Stationen
 body: Duna
 epoche: 7
 prereq: st_duna_station_longstay6
@@ -1449,7 +1449,7 @@ check: DURATION 10 | keep the empty station stable for 10 days
 === MISSION ===
 id: st_duna_station_longstay8
 title: Eight Over Duna
-sparte: Pioniere
+sparte: Stationen
 body: Duna
 epoche: 7
 prereq: st_duna_station_upgrade8
@@ -1465,7 +1465,7 @@ check: DURATION 150 | operate continuously for 150 days
 === MISSION ===
 id: base_duna_base2
 title: The Red Front Door
-sparte: Pioniere
+sparte: Stationen
 body: Duna
 epoche: 6
 prereq: st_duna_station_longstay2, cr_duna_landing
@@ -1481,7 +1481,7 @@ check: DURATION 30 | operate the base for 30 days
 === MISSION ===
 id: base_duna_base4
 title: Duna Base Grows
-sparte: Pioniere
+sparte: Stationen
 body: Duna
 epoche: 6
 prereq: base_duna_base2
@@ -1497,7 +1497,7 @@ check: DURATION 60 | operate the expanded base for 60 days
 === MISSION ===
 id: base_duna_base6
 title: Permanent-ish on Duna
-sparte: Pioniere
+sparte: Stationen
 body: Duna
 epoche: 6
 prereq: base_duna_base4
@@ -1623,7 +1623,7 @@ check: DURATION 1 | network remains active for 1 day
 === MISSION ===
 id: st_jool_gateway
 title: A Hub in Trouble
-sparte: Pioniere
+sparte: Stationen
 body: Jool
 epoche: 8
 prereq: net_jool_relay3
@@ -1705,7 +1705,7 @@ check: RETURN_FROM_BODY Laythe Kerbin | return the crew safely to Kerbin
 === MISSION ===
 id: base_laythe_base3
 title: First Beach Camp
-sparte: Pioniere
+sparte: Stationen
 body: Laythe
 epoche: 8
 prereq: cr_laythe_landing, net_laythe_relay3
@@ -1721,7 +1721,7 @@ check: DURATION 30 | operate the base for 30 days
 === MISSION ===
 id: rep_laythe_base_supply
 title: Beachhead Supply Run
-sparte: Pioniere
+sparte: Stationen
 body: Laythe
 epoche: 8
 prereq: base_laythe_base3
@@ -1737,7 +1737,7 @@ check: FUEL_MIN 800 | fuel reserve above 800 units
 === MISSION ===
 id: base_laythe_base6
 title: Six by the Sea
-sparte: Pioniere
+sparte: Stationen
 body: Laythe
 epoche: 8
 prereq: base_laythe_base3
@@ -1753,7 +1753,7 @@ check: DURATION 60 | operate the expanded base for 60 days
 === MISSION ===
 id: base_laythe_base10
 title: Laythe Gets Crowded
-sparte: Pioniere
+sparte: Stationen
 body: Laythe
 epoche: 8
 prereq: base_laythe_base6
@@ -1769,7 +1769,7 @@ check: DURATION 100 | operate the expanded base for 100 days
 === MISSION ===
 id: base_laythe_base15
 title: Almost a Town
-sparte: Pioniere
+sparte: Stationen
 body: Laythe
 epoche: 8
 prereq: base_laythe_base10
@@ -1946,7 +1946,7 @@ check: RETURN_FROM_BODY Eve Kerbin | return the crew safely to Kerbin
 === MISSION ===
 id: base_eve_are_we_living_here_now
 title: Are We Living Here Now?
-sparte: Pioniere
+sparte: Stationen
 body: Eve
 epoche: 9
 prereq: cr_eve_landing_return

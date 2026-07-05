@@ -241,6 +241,8 @@ namespace CustomScienceContracts.UI
                     return new Visual { Icon = IconLibrary.UI("TrackingStation_ButtonMapRover"), Color = RGB(79,195,247) };
                 case Sparte.NetzwerkLogistik:
                     return new Visual { Icon = IconLibrary.UI("TrackingStation_ButtonMapCommunicationsRelay"), Color = RGB(102,187,106) };
+                case Sparte.Stationen:
+                    return new Visual { Icon = IconLibrary.UI("TrackingStation_ButtonMapStation"), Color = RGB(38,198,218) };
                 case Sparte.Wiederholbar:
                     return new Visual { Icon = IconLibrary.UI("TrackingStation_ButtonMapStation"), Color = RGB(186,104,200) };
                 default:

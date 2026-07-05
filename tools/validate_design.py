@@ -32,8 +32,8 @@ CHECK_BODY = {"ATMO_FRACTION","SUBORBITAL","ORBIT_ABOVE","APOAPSIS_MAX","INCLINA
 CHECK_NOBODY = {"CREW_NONE","CREW_MIN","CREW_EXACT","CREW_CAPACITY_MIN","HOLD","DURATION","DOCK_ANY",
                 "DOCK_STATION","FUEL_MIN","RESOURCE_MIN"}
 KNOWN_CHECKS = CHECK_BODY | CHECK_NOBODY
-SPARTEN = {"Pioniere","Robotische Erkunder","Versorgungsnetz",
-           "Pioneers","Robotic Explorers","Lifelines"}
+SPARTEN = {"Pioniere","Robotische Erkunder","Versorgungsnetz","Stationen",
+           "Pioneers","Robotic Explorers","Lifelines","Stations"}
 
 # ---- Parse missions ----
 missions = []

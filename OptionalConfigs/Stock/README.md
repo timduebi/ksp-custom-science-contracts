@@ -27,6 +27,6 @@ Campaign chapters:
 9. The Purple Finale
 
 Generated mission counts:
-- Pioneers: 75
+- Pioneers: 32
 - Robotic Explorers: 30
-- Lifelines: 13
+- Lifelines: 10

@@ -25,10 +25,11 @@ Custom Science Contracts is made for players who love Science Mode but want thei
 Everything is managed from the in-game **Mission Control** window:
 
 - **Campaign Atlas** — the campaign timeline. Each epoch opens with a short story intro and a
-  completion count, followed by branch rows (Pioneers, Robotic Explorers, Lifelines), mission
-  cards grouped by celestial body and arrows for real prerequisites. Completed missions stay
-  visible in green with the in-game date of their first completion — including repeatable
-  missions, so the atlas is a full chronicle of everything you have achieved.
+  completion count, followed by branch rows (Pioneers, Robotic Explorers, Stations, Lifelines),
+  mission cards grouped by celestial body and arrows for real prerequisites. Station, base and
+  depot chains live in their own Stations branch, growing stage by stage across the epochs.
+  Completed missions stay visible in green with the in-game date of their first completion —
+  including repeatable missions, so the atlas is a full chronicle of everything you have achieved.
 - **Repeatables** — one page with every unlocked repeatable mission (marked ↻), grouped by target
   body. Each card always shows whether it is ready or how many more missions you need to complete
   before it refreshes ("Available after 2 more missions"), with a progress bar and how often you
