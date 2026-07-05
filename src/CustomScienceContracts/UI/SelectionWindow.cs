@@ -195,25 +195,42 @@ namespace CustomScienceContracts.UI
         }
 
         /// <summary>Narrative intro panel for the selected epoch, fed by the catalog's EPOCH
-        /// metadata. Returns the height used, or 0 when the catalog ships no epoch story.</summary>
+        /// metadata: kicker line (epoch position + completion), large chapter title, story text
+        /// and a completion bar. Returns the height used, or 0 without epoch metadata.</summary>
         private float DrawEpochIntro(ContractManager mgr, int[] done, int[] total, Rect r)
         {
             var info = mgr.Catalog.Epoch(_selectedEpoch);
             if (info == null || string.IsNullOrEmpty(info.Description)) return 0f;
 
-            float textW = r.width - 26f;
-            float dh = TextHeight(Theme.ItemSub, info.Description, textW);
-            float h = 8f + 24f + dh + 10f;
+            float textW = r.width - 40f;
+            float dh = TextHeight(Theme.EpochIntroText, info.Description, textW);
+            float h = 12f + 15f + 28f + dh + 15f;
 
-            GUI.Box(new Rect(r.x, r.y, r.width, h), GUIContent.none, Theme.EpochPanel);
+            Rect panel = new Rect(r.x, r.y, r.width, h);
+            GUI.Box(panel, GUIContent.none, Theme.EpochPanel);
             if (Event.current.type == EventType.Repaint)
-                Theme.DrawLeftAccent(new Rect(r.x, r.y, r.width, h), Theme.Accent, null, 5f);
+                Theme.DrawLeftAccent(panel, Theme.Accent, null, 5f);
 
-            GUI.Label(new Rect(r.x + 16f, r.y + 8f, r.width - 200f, 22f), EpochName(_selectedEpoch), Theme.ItemTitle);
-            if (_selectedEpoch < total.Length)
-                GUI.Label(new Rect(r.xMax - 190f, r.y + 10f, 176f, 20f),
-                    $"{done[_selectedEpoch]} of {total[_selectedEpoch]} completed", Theme.SectionCount);
-            GUI.Label(new Rect(r.x + 16f, r.y + 32f, textW, dh), info.Description, Theme.ItemSub);
+            int doneCount = _selectedEpoch < done.Length ? done[_selectedEpoch] : 0;
+            int totalCount = _selectedEpoch < total.Length ? total[_selectedEpoch] : 0;
+            bool epochDone = totalCount > 0 && doneCount == totalCount;
+            string kicker = totalCount > 0
+                ? $"EPOCH {_selectedEpoch} OF {_maxEpoch}   ·   {doneCount} OF {totalCount} MISSIONS COMPLETED{(epochDone ? "  ✓" : "")}"
+                : $"EPOCH {_selectedEpoch} OF {_maxEpoch}";
+            GUI.Label(new Rect(r.x + 20f, r.y + 12f, textW, 14f), kicker, Theme.EpochKicker);
+            GUI.Label(new Rect(r.x + 20f, r.y + 27f, textW, 26f), EpochName(_selectedEpoch), Theme.EpochTitle);
+            GUI.Label(new Rect(r.x + 20f, r.y + 56f, textW, dh), info.Description, Theme.EpochIntroText);
+
+            if (Event.current.type == EventType.Repaint)
+            {
+                // Completion progress along the bottom edge of the panel.
+                Rect bar = new Rect(r.x + 20f, panel.yMax - 9f, r.width - 40f, 3f);
+                Theme.DrawRect(bar, new Color(1f, 1f, 1f, 0.08f));
+                float frac = totalCount > 0 ? doneCount / (float)totalCount : 0f;
+                if (frac > 0f)
+                    Theme.DrawRect(new Rect(bar.x, bar.y, bar.width * frac, bar.height),
+                        epochDone ? Theme.Ok : Theme.Accent);
+            }
             return h;
         }
 
@@ -1104,10 +1121,14 @@ namespace CustomScienceContracts.UI
 
         private static float TextHeight(GUIStyle style, string text, float width)
         {
-            // Measure slightly narrower than the render rect. IMGUI's CalcHeight can pick a later
-            // wrap point than the actual render pass, which cut off the last line of longer
-            // mission descriptions; measuring narrow guarantees the reserved rect is tall enough.
-            return Mathf.Max(18f, style.CalcHeight(new GUIContent(text), width - 8f));
+            // IMGUI's CalcHeight and the actual render pass can disagree by one wrap point
+            // (rounding/kerning), which clipped the last line of descriptions, requirement lists
+            // and unlock hints. Measure slightly narrow AND reserve a full extra line whenever
+            // the text wraps at all — spare air never clips, a missing line always does.
+            float h = style.CalcHeight(new GUIContent(text), width - 8f);
+            float singleLine = style.CalcHeight(new GUIContent("X"), width);
+            if (h > singleLine + 1f) h += style.lineHeight;
+            return Mathf.Max(18f, h);
         }
 
         // --- Card state presentation ---

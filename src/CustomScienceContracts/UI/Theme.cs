@@ -31,6 +31,7 @@ namespace CustomScienceContracts.UI
                                CardLocked, CardAvailable, CardActive, CardReady, CardCompleted,
                                BodyRowLabel, CardTitle, CardMeta, FoldoutBtn,
                                LockBadge, UnlockHeader, UnlockTag, RepeatBadge, SectionCount,
+                               EpochKicker, EpochTitle, EpochIntroText,
                                EpochTabActive, EpochTabInactive;
 
         public static void EnsureBuilt()
@@ -118,6 +119,11 @@ namespace CustomScienceContracts.UI
             UnlockTag = Label(10, FontStyle.Bold, Accent, TextAnchor.MiddleCenter);
             RepeatBadge = Label(13, FontStyle.Bold, new Color(0.73f, 0.41f, 0.78f), TextAnchor.MiddleCenter);
             SectionCount = Label(13, FontStyle.Normal, TextDim, TextAnchor.MiddleRight);
+            // Epoch intro panel: small-caps kicker line, large chapter title, calm story text.
+            EpochKicker = Label(11, FontStyle.Bold, new Color(0.55f, 0.72f, 0.86f), TextAnchor.MiddleLeft);
+            EpochTitle = Label(20, FontStyle.Bold, TextBright, TextAnchor.MiddleLeft);
+            EpochIntroText = Label(14, FontStyle.Italic, TextDim, TextAnchor.UpperLeft);
+            EpochIntroText.wordWrap = true;
             // Epoch tabs: compact buttons that work in one or two rows; the selection is
             // reinforced by the per-epoch progress bar drawn underneath.
             EpochTabActive = Btn(new Color(0.17f, 0.30f, 0.40f), TextBright, 6);
