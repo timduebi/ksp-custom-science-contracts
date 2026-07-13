@@ -18,16 +18,26 @@ namespace CustomScienceContracts.UI
         private bool _settingsOpen;
 
         private const float ActW = 480f, ActH = 620f, ConfW = 340f, ConfH = 178f;
-        private const float SetW = 440f, SetH = 560f;
+        private const float SetW = 440f, SetH = 740f;
         private const float MinSelW = 760f, MinSelH = 520f;
+        private const float MinActW = 400f, MinActH = 420f;
         private Rect _selRect = new Rect(24, 24, 1200, 760);
         private Rect _actRect = new Rect(700, 80, ActW, ActH);
-        private Rect _setRect = new Rect(180, 120, SetW, SetH);
+        private Rect _setRect = new Rect(180, 60, SetW, SetH);
         private bool _selRectInitialized;
-        private bool _resizingSelection;
+        private int _resizing;   // 0 = none, 1 = mission control, 2 = active missions
         private Vector2 _resizeStartMouse;
         private Vector2 _resizeStartSize;
         private float _appliedMissionCenterScale = -1f;
+        private Texture2D _iconActiveAlert;
+        private bool _badgeOn;
+        private float _nextBadgeCheck;
+
+        /// <summary>Global window scale; IMGUI ignores KSP's UI scale, so the mod has its own.</summary>
+        private static float UiScale => Mathf.Clamp(Tuning.UiScale, 0.8f, 1.6f);
+        /// <summary>Screen size in scaled GUI coordinates.</summary>
+        private static float VirtualW => Screen.width / UiScale;
+        private static float VirtualH => Screen.height / UiScale;
 
         public void Bind(ContractManager mgr) => _mgr = mgr;
 
@@ -73,10 +83,13 @@ namespace CustomScienceContracts.UI
         {
             if (_mgr == null) return;
             GUISkin prevSkin = GUI.skin;
+            Matrix4x4 prevMatrix = GUI.matrix;
             try
             {
                 Theme.EnsureBuilt();
                 GUI.skin = Theme.Skin;
+                if (Mathf.Abs(UiScale - 1f) > 0.001f)
+                    GUI.matrix = Matrix4x4.Scale(new Vector3(UiScale, UiScale, 1f)) * GUI.matrix;
 
                 if (_availOpen && AvailableSceneAllowed)
                 {
@@ -84,9 +97,9 @@ namespace CustomScienceContracts.UI
                     _selRect = GUI.Window(GetInstanceID(), _selRect,
                         _ => _selection.Draw(_mgr, _selRect.width, _selRect.height, CloseAvail),
                         "Mission Control", Theme.Window);
-                    _selRect = ClampSelectionRect(_selRect);
+                    _selRect = ClampRect(_selRect, MinSelW, MinSelH);
                     Theme.DrawWindowBorder(_selRect);
-                    DrawSelectionResizeHandle();
+                    DrawResizeHandle(1, ref _selRect, MinSelW, MinSelH);
 
                     if (_selection.SettingsToggleRequested)
                     { _settingsOpen = !_settingsOpen; _selection.SettingsToggleRequested = false; }
@@ -103,15 +116,17 @@ namespace CustomScienceContracts.UI
                 if (_activeOpen)
                 {
                     _actRect = GUILayout.Window(GetInstanceID() + 1, _actRect,
-                        _ => _activeWin.Draw(_mgr, ActW, ActH, CloseActive), "Active Missions", Theme.Window,
-                        GUILayout.Width(ActW), GUILayout.Height(ActH));
-                    Theme.DrawWindowBorder(new Rect(_actRect.x, _actRect.y, ActW, ActH));
+                        _ => _activeWin.Draw(_mgr, _actRect.width, _actRect.height, CloseActive), "Active Missions", Theme.Window,
+                        GUILayout.Width(_actRect.width), GUILayout.Height(_actRect.height));
+                    _actRect = ClampRect(_actRect, MinActW, MinActH);
+                    Theme.DrawWindowBorder(_actRect);
+                    DrawResizeHandle(2, ref _actRect, MinActW, MinActH);
                 }
 
                 if (_activeWin.PendingAbortId != null)
                 {
                     if (_activeWin.ConfirmRect.x <= 1f)
-                        _activeWin.ConfirmRect = new Rect(Screen.width / 2f - ConfW / 2f, Screen.height / 2f - ConfH / 2f, ConfW, ConfH);
+                        _activeWin.ConfirmRect = new Rect(VirtualW / 2f - ConfW / 2f, VirtualH / 2f - ConfH / 2f, ConfW, ConfH);
                     _activeWin.ConfirmRect = GUILayout.Window(GetInstanceID() + 2, _activeWin.ConfirmRect,
                         _ => _activeWin.DrawConfirm(_mgr, ConfW), "Confirm", Theme.Window,
                         GUILayout.Width(ConfW), GUILayout.Height(ConfH));
@@ -119,7 +134,51 @@ namespace CustomScienceContracts.UI
                 }
             }
             catch (System.Exception e) { Log.Ex("OnGUI", e); }
-            finally { GUI.skin = prevSkin; }
+            finally { GUI.skin = prevSkin; GUI.matrix = prevMatrix; }
+        }
+
+        /// <summary>Swaps the active-missions launcher icon to the badge variant while any
+        /// mission is ready to claim, so the toolbar shows it without opening a window.</summary>
+        private void Update()
+        {
+            if (_mgr == null || _btnActive == null) return;
+            if (Time.realtimeSinceStartup < _nextBadgeCheck) return;
+            _nextBadgeCheck = Time.realtimeSinceStartup + 1f;
+
+            bool ready = false;
+            var all = _mgr.Catalog.All;
+            for (int i = 0; i < all.Count; i++)
+                if (all[i].Status == Model.MissionStatus.ReadyToClaim) { ready = true; break; }
+            if (ready == _badgeOn) return;
+            _badgeOn = ready;
+            try { _btnActive.SetTexture(ready ? AlertIcon() : IconApp("aktiv")); }
+            catch (System.Exception) { }
+        }
+
+        /// <summary>The active-missions icon with a green claim dot in the top-right corner.</summary>
+        private Texture2D AlertIcon()
+        {
+            if (_iconActiveAlert != null) return _iconActiveAlert;
+            Texture2D baseTex = IconApp("aktiv");
+            try
+            {
+                int w = baseTex.width, h = baseTex.height;
+                var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave };
+                tex.SetPixels32(baseTex.GetPixels32());
+                float radius = w * 0.17f;
+                float cx = w - radius - 2f, cy = h - radius - 2f;   // texture origin bottom-left -> top-right corner
+                for (int y = 0; y < h; y++)
+                    for (int x = 0; x < w; x++)
+                    {
+                        float d = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+                        if (d <= radius) tex.SetPixel(x, y, new Color(0.28f, 0.85f, 0.36f, 1f));
+                        else if (d <= radius + 1.6f) tex.SetPixel(x, y, new Color(0.04f, 0.09f, 0.05f, 1f));
+                    }
+                tex.Apply();
+                _iconActiveAlert = tex;
+            }
+            catch (System.Exception) { _iconActiveAlert = baseTex; }
+            return _iconActiveAlert;
         }
 
         private void OpenAvail()
@@ -132,18 +191,18 @@ namespace CustomScienceContracts.UI
             if (_mgr != null) _selection.FocusRelevantEpoch(_mgr);
         }
 
-        private void CloseAvail() { _availOpen = false; _resizingSelection = false; _btnAvail?.SetFalse(false); }
+        private void CloseAvail() { _availOpen = false; _resizing = 0; _btnAvail?.SetFalse(false); }
         private void CloseActive() { _activeOpen = false; _btnActive?.SetFalse(false); }
 
         private static Rect MissionCenterRect()
         {
             const float margin = 24f;
             float scale = Mathf.Clamp(Tuning.MissionCenterScale, 0.55f, 1.0f);
-            float maxW = Mathf.Max(MinSelW, Screen.width - margin * 2f);
-            float maxH = Mathf.Max(MinSelH, Screen.height - margin * 2f);
+            float maxW = Mathf.Max(MinSelW, VirtualW - margin * 2f);
+            float maxH = Mathf.Max(MinSelH, VirtualH - margin * 2f);
             float w = Mathf.Clamp(maxW * scale, MinSelW, maxW);
             float h = Mathf.Clamp(maxH * scale, MinSelH, maxH);
-            return new Rect((Screen.width - w) * 0.5f, (Screen.height - h) * 0.5f, w, h);
+            return new Rect((VirtualW - w) * 0.5f, (VirtualH - h) * 0.5f, w, h);
         }
 
         private void EnsureMissionCenterRect()
@@ -155,23 +214,25 @@ namespace CustomScienceContracts.UI
                 _selRectInitialized = true;
                 _appliedMissionCenterScale = Tuning.MissionCenterScale;
             }
-            _selRect = ClampSelectionRect(_selRect);
+            _selRect = ClampRect(_selRect, MinSelW, MinSelH);
         }
 
-        private static Rect ClampSelectionRect(Rect r)
+        /// <summary>Keeps a window rect on the (scaled) screen and above its minimum size.</summary>
+        private static Rect ClampRect(Rect r, float minW, float minH)
         {
-            float maxW = Mathf.Max(MinSelW, Screen.width - 8f);
-            float maxH = Mathf.Max(MinSelH, Screen.height - 8f);
-            r.width = Mathf.Clamp(r.width, MinSelW, maxW);
-            r.height = Mathf.Clamp(r.height, MinSelH, maxH);
-            r.x = Mathf.Clamp(r.x, 4f, Mathf.Max(4f, Screen.width - r.width - 4f));
-            r.y = Mathf.Clamp(r.y, 4f, Mathf.Max(4f, Screen.height - r.height - 4f));
+            float maxW = Mathf.Max(minW, VirtualW - 8f);
+            float maxH = Mathf.Max(minH, VirtualH - 8f);
+            r.width = Mathf.Clamp(r.width, minW, maxW);
+            r.height = Mathf.Clamp(r.height, minH, maxH);
+            r.x = Mathf.Clamp(r.x, 4f, Mathf.Max(4f, VirtualW - r.width - 4f));
+            r.y = Mathf.Clamp(r.y, 4f, Mathf.Max(4f, VirtualH - r.height - 4f));
             return r;
         }
 
-        private void DrawSelectionResizeHandle()
+        /// <summary>Bottom-right drag handle shared by the resizable windows.</summary>
+        private void DrawResizeHandle(int id, ref Rect rect, float minW, float minH)
         {
-            Rect handle = new Rect(_selRect.xMax - 26f, _selRect.yMax - 26f, 20f, 20f);
+            Rect handle = new Rect(rect.xMax - 26f, rect.yMax - 26f, 20f, 20f);
             Event ev = Event.current;
 
             if (ev.type == EventType.Repaint)
@@ -184,24 +245,24 @@ namespace CustomScienceContracts.UI
 
             if (ev.type == EventType.MouseDown && ev.button == 0 && handle.Contains(ev.mousePosition))
             {
-                _resizingSelection = true;
+                _resizing = id;
                 _resizeStartMouse = ev.mousePosition;
-                _resizeStartSize = new Vector2(_selRect.width, _selRect.height);
+                _resizeStartSize = new Vector2(rect.width, rect.height);
                 ev.Use();
             }
 
-            if (!_resizingSelection) return;
+            if (_resizing != id) return;
             if (ev.type == EventType.MouseDrag || ev.type == EventType.Repaint)
             {
                 Vector2 delta = ev.mousePosition - _resizeStartMouse;
-                _selRect.width = _resizeStartSize.x + delta.x;
-                _selRect.height = _resizeStartSize.y + delta.y;
-                _selRect = ClampSelectionRect(_selRect);
+                rect.width = _resizeStartSize.x + delta.x;
+                rect.height = _resizeStartSize.y + delta.y;
+                rect = ClampRect(rect, minW, minH);
                 if (ev.type == EventType.MouseDrag) ev.Use();
             }
             if (ev.type == EventType.MouseUp)
             {
-                _resizingSelection = false;
+                _resizing = 0;
                 ev.Use();
             }
         }

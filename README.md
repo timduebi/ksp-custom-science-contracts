@@ -34,10 +34,17 @@ Everything is managed from the in-game **Mission Control** window:
   body. Each card always shows whether it is ready or how many more missions you need to complete
   before it refreshes ("Available after 2 more missions"), with a progress bar and how often you
   have flown it.
-- **Active Missions** — a separate window tracking accepted missions with live objective status,
-  vessel assignment and claim/abort actions.
-- **On-screen updates** — short messages announce when a mission becomes claimable, what a claim
-  paid out and unlocked, and when you finish a whole epoch.
+- **Program Log** — every completed mission in chronological order with its in-game date, epoch
+  and reward: your campaign as a flight log.
+- **Active Missions** — a separate window (resizable) tracking accepted missions with live
+  objective status, vessel assignment and claim/abort actions. Its toolbar icon shows a green
+  dot while something is ready to claim.
+- **On-screen updates** — short messages and a soft chime announce when a mission becomes
+  claimable, what a claim paid out and unlocked, when a repeatable's cooldown finishes and when
+  you complete a whole epoch (both can be turned off in the settings).
+- **Settings** — science multiplier, UI scale for high-DPI displays, difficulty presets
+  (Casual / Normal / Hard) and notification toggles. A "?" button in Mission Control explains
+  every color and symbol.
 
 ## Features
 

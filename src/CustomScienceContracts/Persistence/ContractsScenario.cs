@@ -43,6 +43,11 @@ namespace CustomScienceContracts.Persistence
         {
             EnsureInitialized();
             _manager.Events.Subscribe();
+            if (Tuning.SelfTest)
+            {
+                Tuning.SelfTest = false;   // once per session, not on every scene change
+                SelfTest.Run();
+            }
             if (_loop == null) _loop = StartCoroutine(CheckLoop());
         }
 

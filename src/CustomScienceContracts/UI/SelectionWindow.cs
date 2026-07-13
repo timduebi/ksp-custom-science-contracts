@@ -14,7 +14,7 @@ namespace CustomScienceContracts.UI
     /// cooldown progress always visible on each card.</summary>
     public class SelectionWindow
     {
-        private enum CenterMode { Campaign, Repeatable }
+        private enum CenterMode { Campaign, Repeatable, Log }
 
         // Fixed display order: Stations sit below Robotic Explorers and above Lifelines.
         private static readonly Sparte[] Branches =
@@ -39,6 +39,7 @@ namespace CustomScienceContracts.UI
         private CenterMode _mode = CenterMode.Campaign;
         private int _selectedEpoch = 1;
         private Vector2 _scroll;
+        private bool _legendOpen;
         private readonly HashSet<string> _expandedCards = new HashSet<string>();
         private readonly Dictionary<string, Rect> _cardRects = new Dictionary<string, Rect>();
 
@@ -53,17 +54,25 @@ namespace CustomScienceContracts.UI
 
         public void Draw(ContractManager mgr, float width, float height, System.Action onClose)
         {
+            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
+            {
+                Event.current.Use();
+                onClose();
+                return;
+            }
             if (GUI.Button(new Rect(width - 30f, 4f, 22f, 22f), "✕", Theme.CloseBtn))
             {
                 onClose();
                 return;
             }
             DrawGear(new Rect(width - 58f, 5f, 22f, 22f));
+            if (GUI.Button(new Rect(width - 86f, 5f, 22f, 22f), "?", _legendOpen ? Theme.AcceptBtn : Theme.SettingsBtn))
+                _legendOpen = !_legendOpen;
 
             EnsureCatalogCache(mgr);
             HashSet<string> visible = VisibilityRules.ComputeVisible(mgr.Catalog);
 
-            DrawModeTabs(mgr, visible, new Rect(14f, 30f, width - 86f, 32f));
+            DrawModeTabs(mgr, visible, new Rect(14f, 30f, width - 114f, 32f));
 
             float mapTop = 70f;
             MapLayout layout;
@@ -77,14 +86,21 @@ namespace CustomScienceContracts.UI
                 layout = BuildCampaignLayout(mgr, visible, viewport.width);
                 DrawMap(mgr, visible, viewport, layout);
             }
-            else
+            else if (_mode == CenterMode.Repeatable)
             {
                 Rect viewport = new Rect(14f, mapTop, width - 28f, height - mapTop - 16f);
                 layout = BuildRepeatableLayout(mgr, visible, viewport.width);
                 DrawMap(mgr, visible, viewport, layout);
             }
+            else
+            {
+                DrawProgramLog(mgr, new Rect(14f, mapTop, width - 28f, height - mapTop - 16f));
+            }
 
-            GUI.DragWindow(new Rect(0f, 0f, width - 64f, 26f));
+            if (_legendOpen)
+                DrawLegend(width);
+
+            GUI.DragWindow(new Rect(0f, 0f, width - 92f, 26f));
         }
 
         /// <summary>Selects the first epoch that has work (claimable, active or acceptable
@@ -101,6 +117,7 @@ namespace CustomScienceContracts.UI
                     if (c.Status == MissionStatus.Active || c.Status == MissionStatus.ReadyToClaim ||
                         CampaignAcceptable(mgr, c, visible))
                     {
+                        if (_selectedEpoch != epoch) _scroll = Vector2.zero;
                         _selectedEpoch = epoch;
                         return;
                     }
@@ -113,11 +130,13 @@ namespace CustomScienceContracts.UI
         private void DrawModeTabs(ContractManager mgr, HashSet<string> visible, Rect r)
         {
             float gap = 8f;
-            float w = (r.width - gap) * 0.5f;
+            float w = (r.width - 2f * gap) / 3f;
             int campaignCount = mgr.Catalog.All.Count(c => CampaignAcceptable(mgr, c, visible));
             int repeatableCount = mgr.Catalog.All.Count(c => RepeatableAcceptable(mgr, c));
+            int logCount = mgr.Catalog.All.Count(ContractManager.IsCompleted);
             DrawModeTab(CenterMode.Campaign, $"Campaign Atlas ({campaignCount})", new Rect(r.x, r.y, w, r.height));
             DrawModeTab(CenterMode.Repeatable, $"Repeatables ({repeatableCount})", new Rect(r.x + w + gap, r.y, w, r.height));
+            DrawModeTab(CenterMode.Log, $"Program Log ({logCount})", new Rect(r.x + 2f * (w + gap), r.y, w, r.height));
         }
 
         private void DrawModeTab(CenterMode mode, string title, Rect r)
@@ -131,10 +150,22 @@ namespace CustomScienceContracts.UI
 
             if (Event.current.type == EventType.Repaint)
             {
-                Color col = mode == CenterMode.Campaign ? Theme.Accent : BodyVisual.ForSparte(Sparte.Wiederholbar).Color;
-                Theme.DrawLeftAccent(r, col, mode == CenterMode.Campaign
-                    ? IconLibrary.UI("TrackingStation_ButtonMapShips")
-                    : BodyVisual.ForSparte(Sparte.Wiederholbar).Icon, 4f, 17f);
+                Color col;
+                Texture2D icon;
+                switch (mode)
+                {
+                    case CenterMode.Repeatable:
+                        var sv = BodyVisual.ForSparte(Sparte.Wiederholbar);
+                        col = sv.Color; icon = sv.Icon;
+                        break;
+                    case CenterMode.Log:
+                        col = Theme.Ok; icon = IconLibrary.UI("TrackingStation_ButtonMapFlag");
+                        break;
+                    default:
+                        col = Theme.Accent; icon = IconLibrary.UI("TrackingStation_ButtonMapShips");
+                        break;
+                }
+                Theme.DrawLeftAccent(r, col, icon, 4f, 17f);
             }
         }
 
@@ -160,7 +191,10 @@ namespace CustomScienceContracts.UI
                 string label = (epochDone ? "✓ " : "") + EpochName(epoch)
                              + (acceptable[epoch] > 0 ? $" ({acceptable[epoch]})" : "");
                 if (GUI.Button(er, label, _selectedEpoch == epoch ? Theme.EpochTabActive : Theme.EpochTabInactive))
+                {
+                    if (_selectedEpoch != epoch) _scroll = Vector2.zero;
                     _selectedEpoch = epoch;
+                }
 
                 if (Event.current.type == EventType.Repaint)
                 {
@@ -233,6 +267,129 @@ namespace CustomScienceContracts.UI
                         epochDone ? Theme.Ok : Theme.Accent);
             }
             return h;
+        }
+
+        /// <summary>Chronological mission log: every completed mission with the in-game date of
+        /// its first completion — the campaign's story in list form.</summary>
+        private void DrawProgramLog(ContractManager mgr, Rect viewport)
+        {
+            var entries = mgr.Catalog.All
+                .Where(ContractManager.IsCompleted)
+                .OrderBy(c => c.FirstCompletedUT < 0.0 ? double.MinValue : c.FirstCompletedUT)
+                .ThenBy(c => mgr.Catalog.IndexOf(c))
+                .ToList();
+
+            float contentW = Mathf.Max(viewport.width - 16f, 620f);
+            float rowW = contentW - 24f;
+            float titleW = rowW - 134f - 264f;
+
+            var heights = new float[entries.Count];
+            float contentH = 12f;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                heights[i] = Mathf.Max(34f, TextHeight(Theme.CardTitle, entries[i].Titel, titleW) + 14f);
+                contentH += heights[i] + 6f;
+            }
+            contentH = Mathf.Max(contentH + 14f, 220f);
+
+            _scroll = GUI.BeginScrollView(viewport, _scroll, new Rect(0f, 0f, contentW, contentH), true, true);
+            if (entries.Count == 0)
+            {
+                GUI.Label(new Rect(18f, 16f, 560f, 48f),
+                    "No missions completed yet.\nYour program's story starts with the first claim.", Theme.Locked);
+                GUI.EndScrollView();
+                return;
+            }
+
+            float y = 12f;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                var c = entries[i];
+                Rect row = new Rect(12f, y, rowW, heights[i]);
+                GUI.Box(row, GUIContent.none, Theme.EpochPanel);
+                if (Event.current.type == EventType.Repaint)
+                {
+                    Theme.DrawLeftAccent(row, BodyVisual.ForSparte(c.HeimatSparte).Color, null, 5f);
+                    var bv = BodyVisual.ForBody(BodyVisual.PrimaryBody(c));
+                    if (bv.Icon != null)
+                    {
+                        var prev = GUI.color;
+                        GUI.color = Color.white;
+                        GUI.DrawTexture(new Rect(row.x + 12f, row.y + (row.height - 18f) * 0.5f, 18f, 18f),
+                            bv.Icon, ScaleMode.ScaleToFit, true);
+                        GUI.color = prev;
+                    }
+                }
+
+                GUI.Label(new Rect(row.x + 38f, row.y + 9f, 92f, 18f),
+                    FormatUT(c.FirstCompletedUT) ?? "—", Theme.EpochKicker);
+                string title = c.Titel + (c.Repeatable && c.TotalCompletions > 1 ? $"   ↻ ×{c.TotalCompletions}" : "");
+                GUI.Label(new Rect(row.x + 134f, row.y + 7f, titleW, row.height - 12f), title, Theme.CardTitle);
+                GUI.Label(new Rect(row.xMax - 256f, row.y + 9f, 152f, 18f), EpochName(EpochOf(c)), Theme.SectionCount);
+                var prevCol = GUI.color;
+                GUI.color = Theme.Accent;
+                GUI.Label(new Rect(row.xMax - 98f, row.y + 7f, 86f, 20f),
+                    $"+{c.ScienceReward * (float)mgr.ScienceMultiplier:0}", Theme.Pill);
+                GUI.color = prevCol;
+
+                y += heights[i] + 6f;
+            }
+            GUI.EndScrollView();
+        }
+
+        /// <summary>Overlay explaining card colors, branch colors and the atlas symbols.</summary>
+        private void DrawLegend(float width)
+        {
+            var statusRows = new[]
+            {
+                (Theme.Accent, "Available — can be accepted"),
+                (ActiveOrange, "Active — currently tracked"),
+                (Theme.ClaimGreen, "Ready to claim"),
+                (Theme.Ok, "Completed — stays visible as history"),
+                (new Color(0.48f, 0.50f, 0.56f), "Locked / repeatable on cooldown"),
+            };
+            var branchRows = new[]
+                { Sparte.Bemannt, Sparte.UnbemannteErkundung, Sparte.Stationen, Sparte.NetzwerkLogistik };
+            var symbolRows = new[]
+            {
+                "↻   Repeatable mission (shows how often it was flown)",
+                "→   Tag: unlocks a mission in a later epoch",
+                "◂   Tag: continues a chain from an earlier epoch",
+                "Arrows between cards are real prerequisites",
+                "Repeatables carry a progress bar until their next run",
+            };
+
+            float h = 12f + 26f + statusRows.Length * 22f + 10f + branchRows.Length * 22f + 10f
+                    + symbolRows.Length * 22f + 12f;
+            Rect panel = new Rect(width - 392f, 66f, 378f, h);
+            GUI.Box(panel, GUIContent.none, Theme.EpochPanel);
+            Theme.DrawWindowBorder(panel);
+
+            float y = panel.y + 10f;
+            GUI.Label(new Rect(panel.x + 16f, y, 200f, 22f), "Legend", Theme.ItemTitle);
+            y += 26f;
+            foreach (var (col, text) in statusRows)
+            {
+                Theme.DrawRect(new Rect(panel.x + 18f, y + 4f, 13f, 13f), col);
+                GUI.Label(new Rect(panel.x + 40f, y, panel.width - 54f, 20f), text, Theme.ItemSub);
+                y += 22f;
+            }
+            y += 10f;
+            foreach (var branch in branchRows)
+            {
+                var sv = BodyVisual.ForSparte(branch);
+                Theme.DrawRect(new Rect(panel.x + 18f, y + 4f, 13f, 13f), sv.Color);
+                if (sv.Icon != null && Event.current.type == EventType.Repaint)
+                    GUI.DrawTexture(new Rect(panel.x + 38f, y + 2f, 16f, 16f), sv.Icon, ScaleMode.ScaleToFit, true);
+                GUI.Label(new Rect(panel.x + 60f, y, panel.width - 74f, 20f), SparteDisplay.Name(branch), Theme.ItemSub);
+                y += 22f;
+            }
+            y += 10f;
+            foreach (string line in symbolRows)
+            {
+                GUI.Label(new Rect(panel.x + 18f, y, panel.width - 32f, 20f), line, Theme.ItemSub);
+                y += 22f;
+            }
         }
 
         /// <summary>Gear icon button in the top-right corner.</summary>
@@ -452,10 +609,11 @@ namespace CustomScienceContracts.UI
                     Theme.DrawLeftAccent(h.Rect, sv.Color, sv.Icon, 5f, 19f);
 
                 int ready = h.Contracts.Count(c => CampaignAcceptable(mgr, c, visible));
+                int done = h.Contracts.Count(ContractManager.IsCompleted);
                 GUI.Label(new Rect(h.Rect.x + 36f, h.Rect.y + 5f, 360f, 22f),
                     $"{SparteDisplay.Name(h.Branch)} ({ready})", Theme.ItemTitle);
-                GUI.Label(new Rect(h.Rect.xMax - 120f, h.Rect.y + 7f, 100f, 20f),
-                    $"{h.Contracts.Count} missions", Theme.ItemSub);
+                GUI.Label(new Rect(h.Rect.xMax - 150f, h.Rect.y + 7f, 130f, 20f),
+                    $"{done}/{h.Contracts.Count} completed", Theme.ItemSub);
             }
         }
 
@@ -543,6 +701,7 @@ namespace CustomScienceContracts.UI
                         GUI.Label(new Rect(r.xMax - 48f, r.y + 7f, 18f, 18f), "↻", Theme.RepeatBadge);
                 }
                 DrawCrossEpochTag(mgr, c, r);
+                DrawContinuedFromTag(mgr, c, r);
             }
 
             Rect arrow = new Rect(r.x + 10f, r.y + 8f, 22f, 22f);
@@ -620,6 +779,33 @@ namespace CustomScienceContracts.UI
             var prev = GUI.color;
             GUI.color = tagColor;
             GUI.Label(tag, label, Theme.UnlockTag);
+            GUI.color = prev;
+        }
+
+        /// <summary>Tag for cards whose prerequisites live in an earlier epoch — marks a chain
+        /// that continues from a previous chapter. Sits below the cross-epoch tag when both
+        /// exist; green once every earlier prerequisite is completed.</summary>
+        private void DrawContinuedFromTag(ContractManager mgr, MissionContract c, Rect r)
+        {
+            if (_mode != CenterMode.Campaign) return;
+            int from = 0;
+            bool allDone = true;
+            foreach (string id in c.Voraussetzungen)
+            {
+                var pre = mgr.Catalog.Get(id);
+                if (pre == null || EpochOf(pre) >= EpochOf(c)) continue;
+                from = Mathf.Max(from, EpochOf(pre));
+                if (!ContractManager.IsCompleted(pre)) allDone = false;
+            }
+            if (from == 0) return;
+
+            bool hasOutgoing = CrossEpochUnlocks(mgr, c).Count > 0;
+            Rect tag = new Rect(r.xMax - 88f, r.y + (hasOutgoing ? 49f : 31f), 76f, 16f);
+            Color col = allDone ? Theme.Ok : new Color(0.62f, 0.66f, 0.72f);
+            Theme.DrawRect(tag, WithAlpha(col, 0.20f));
+            var prev = GUI.color;
+            GUI.color = col;
+            GUI.Label(tag, "◂ " + EpochName(from), Theme.UnlockTag);
             GUI.color = prev;
         }
 

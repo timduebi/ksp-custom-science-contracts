@@ -365,6 +365,7 @@ namespace CustomScienceContracts.Core
                     c.Status = MissionStatus.ReadyToClaim;
                     Log.Info($"Ready to claim: {c.Id}");
                     Toast($"Mission ready to claim: {c.Titel}");
+                    Sfx.PlayReady();
                 }
             }
             Events.ClearFrameBuffer();
@@ -471,9 +472,10 @@ namespace CustomScienceContracts.Core
         }
 
         /// <summary>On-screen message; missions complete in scenes without ScreenMessages too,
-        /// so failures are ignored.</summary>
+        /// so failures are ignored. Players can disable these in the settings window.</summary>
         private static void Toast(string message)
         {
+            if (!Tuning.ShowToasts) return;
             try
             {
                 if (ScreenMessages.Instance != null)
@@ -483,12 +485,23 @@ namespace CustomScienceContracts.Core
         }
 
         /// <summary>Cooldown bookkeeping: every pool repeatable except the completed one gets +1.
-        /// Runs on every completion (claim or skip), so cooldowns advance consistently.</summary>
+        /// Runs on every completion (claim or skip), so cooldowns advance consistently. Announces
+        /// repeatables whose cooldown just finished.</summary>
         private void AdvanceRepeatableCooldowns(MissionContract completed)
         {
+            List<string> ready = null;
             foreach (var other in Catalog.All)
-                if (!ReferenceEquals(other, completed) && other.IsRepeatableInPool)
-                    other.CompletionsSinceLastClaim++;
+            {
+                if (ReferenceEquals(other, completed) || !other.IsRepeatableInPool) continue;
+                other.CompletionsSinceLastClaim++;
+                if (other.CompletionsSinceLastClaim == Tuning.RepeatableCooldown &&
+                    other.Status == MissionStatus.Available)
+                    (ready ?? (ready = new List<string>())).Add(other.Titel);
+            }
+            if (ready == null) return;
+            string titles = string.Join(", ", ready.Take(2));
+            if (ready.Count > 2) titles += $" (+{ready.Count - 2} more)";
+            Toast($"Repeatable ready again: {titles}");
         }
 
         private static void PayReward(float amount)

@@ -6,6 +6,40 @@ This project uses simple `MAJOR.MINOR.PATCH` versioning.
 The mod ships as one download with the SOL (real solar system) campaign, plus optional config
 packs on the same release that swap the catalog to the stock KSP system or to German.
 
+## [Unreleased]
+
+### Added
+- **Program Log**: a third Mission Control tab listing every completed mission
+  chronologically with its in-game completion date, epoch and reward — the
+  campaign as a flight log.
+- **Legend**: a "?" button in Mission Control explains card colors, branch
+  colors and all atlas symbols.
+- **"◂ epoch" tags** on cards whose chain continues from an earlier epoch
+  (green once the earlier stages are done), complementing the existing "→"
+  unlock tags.
+- **UI scale** slider (80–160 %) for all mod windows — legacy IMGUI ignores
+  KSP's UI scale, so high-DPI players get their own.
+- **Toolbar claim badge**: the Active Missions launcher icon shows a green dot
+  while any mission is ready to claim.
+- **Notification controls**: settings toggles for on-screen messages and the
+  new ready-to-claim chime (bundled sound, `playSounds`), plus a toast when a
+  repeatable's cooldown finishes.
+- **Difficulty presets** (Casual / Normal / Hard) setting repeatable cooldown,
+  active limits and the science multiplier in one click; persisted per save.
+- **Save backup**: `contracts_state.cfg` is copied to `.bak` before every
+  write, and loading falls back to the backup if the main file is broken.
+- **Logic self-test** (`selfTest = true`): exercises status flow,
+  prerequisites and cooldowns on a throwaway manager at startup and logs
+  PASS/FAIL.
+
+### Changed
+- The Active Missions window is resizable via its lower-right corner.
+- ESC closes the mod's windows; switching epochs resets the atlas scroll
+  position; branch headers show their completion count ("8/12 completed").
+- EVA Kerbals now only count toward a vessel's effective crew within 500 m
+  (was 2.5 km), so a kerbal from an unrelated craft no longer satisfies crew
+  checks.
+
 ## [0.6.1] - 2026-07-02
 
 ### Added

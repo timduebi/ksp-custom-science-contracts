@@ -61,6 +61,10 @@
       <HintPath>$(KSPManaged)\UnityEngine.PhysicsModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>$(KSPManaged)\UnityEngine.AudioModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="UnityEngine.AnimationModule">
       <HintPath>$(KSPManaged)\UnityEngine.AnimationModule.dll</HintPath>
       <Private>false</Private>

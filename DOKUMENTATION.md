@@ -54,7 +54,7 @@ they can be accepted again.
 
 ## Branches
 
-Mission Control has two top-level views:
+Mission Control has three top-level views:
 
 - Campaign Atlas: the campaign flow and timeline. Repeatable missions stay here
   permanently after their first completion, rendered as completed (green), so
@@ -62,6 +62,11 @@ Mission Control has two top-level views:
   once. They cannot be re-accepted from this view.
 - Repeatables: the interactive pool for missions that have completed once.
   Re-accepting a repeatable happens exclusively here.
+- Program Log: every completed mission in chronological order of its first
+  completion (`FirstCompletedUT`), with date, epoch and reward.
+
+A "?" button in the window header opens a legend explaining card colors,
+branch colors and the atlas symbols. ESC closes the mod's windows.
 
 Within an epoch page, the campaign atlas displays four branch rows in fixed
 order:
@@ -240,7 +245,18 @@ It contains:
 - completed network fleet records,
 - science multiplier and unlock-all test setting.
 
-If the state file is missing or broken, the mod seeds state from the catalog.
+Before every write the previous file is copied to `contracts_state.cfg.bak`;
+loading falls back to that backup when the main file is missing or broken.
+Only if neither parses does the mod seed fresh state from the catalog.
+
+Per-save the file also persists the notification toggles, UI scale and the
+selected difficulty preset (`difficulty = casual|normal|hard|custom`; presets
+set the repeatable cooldown and active limits via `Tuning.ApplyDifficulty`).
+
+`settings.cfg` additionally offers `uiScale`, `showToasts`, `playSounds` and
+`selfTest` (runs the startup logic self-test in `Core/SelfTest.cs`, which
+checks status flow, prerequisites and cooldown bookkeeping on a throwaway
+manager and logs PASS/FAIL lines).
 
 ## Mission Catalogs
 

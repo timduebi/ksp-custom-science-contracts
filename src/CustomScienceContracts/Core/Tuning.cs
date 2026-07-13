@@ -35,11 +35,47 @@ namespace CustomScienceContracts.Core
 
         // --- Mission Control window ---
         public static float MissionCenterScale = 0.96f; // fraction of the screen used when opened
+        /// <summary>Global scale for all mod windows (0.8-1.6); helps on 4K displays where
+        /// legacy IMGUI ignores KSP's UI scale setting.</summary>
+        public static float UiScale = 1.0f;
+
+        // --- Notifications ---
+        public static bool ShowToasts = true;   // on-screen messages (ready/claim/unlock/epoch)
+        public static bool PlaySounds = true;   // soft chime when a mission becomes claimable
+
+        // --- Difficulty preset ("custom" keeps the settings.cfg values) ---
+        public static string Difficulty = "custom";
 
         // --- Diagnostics ---
         public static bool VerboseLogging = false;
         /// <summary>Test switch: unlocks all missions and ignores visibility limits.</summary>
         public static bool UnlockAll = false;
+        /// <summary>Runs the logic self-test once at startup and logs PASS/FAIL lines.</summary>
+        public static bool SelfTest = false;
+
+        /// <summary>Applies a difficulty preset to cooldown and active limits. "custom" (or any
+        /// unknown name) leaves the settings.cfg values untouched.</summary>
+        public static void ApplyDifficulty(string name)
+        {
+            switch (name)
+            {
+                case "casual":
+                    RepeatableCooldown = 1;
+                    ActiveBemannt = 5; ActiveErkundung = 12; ActiveStationen = 6; ActiveNetzwerk = 6;
+                    break;
+                case "normal":
+                    RepeatableCooldown = 2;
+                    ActiveBemannt = 4; ActiveErkundung = 10; ActiveStationen = 5; ActiveNetzwerk = 5;
+                    break;
+                case "hard":
+                    RepeatableCooldown = 3;
+                    ActiveBemannt = 3; ActiveErkundung = 8; ActiveStationen = 4; ActiveNetzwerk = 4;
+                    break;
+                default:
+                    return;
+            }
+            Difficulty = name;
+        }
 
         private static bool _loaded;
 
@@ -70,8 +106,12 @@ namespace CustomScienceContracts.Core
                 MarkerRadiusKmDefault = GetD(n, "markerRadiusKmDefault", MarkerRadiusKmDefault);
                 CheckIntervalSeconds  = GetF(n, "checkIntervalSeconds", CheckIntervalSeconds);
                 MissionCenterScale    = Mathf.Clamp(GetF(n, "missionCenterScale", MissionCenterScale), 0.55f, 1.0f);
+                UiScale               = Mathf.Clamp(GetF(n, "uiScale", UiScale), 0.8f, 1.6f);
+                ShowToasts            = GetB(n, "showToasts", ShowToasts);
+                PlaySounds            = GetB(n, "playSounds", PlaySounds);
                 VerboseLogging        = GetB(n, "verboseLogging", VerboseLogging);
                 UnlockAll             = GetB(n, "unlockAll", UnlockAll);
+                SelfTest              = GetB(n, "selfTest", SelfTest);
             }
             Debug.Log("[CSC] settings.cfg loaded.");
         }

@@ -74,14 +74,16 @@ namespace CustomScienceContracts.Conditions
         }
 
         /// <summary>Effective crew for crew checks: onboard crew plus nearby EVA Kerbals in the same
-        /// SOI. This keeps a short EVA near a station from breaking a crew-duration timer.</summary>
+        /// SOI. This keeps a short EVA near a station from breaking a crew-duration timer.
+        /// 500 m is generous for a real EVA but tight enough that a kerbal from an unrelated
+        /// craft parked nearby no longer counts toward this vessel's crew.</summary>
         public static int EffectiveCrew(Vessel v)
         {
             if (v == null) return 0;
             int crew = v.GetCrewCount();
             var list = FlightGlobals.Vessels;
             if (list == null) return crew;
-            const double nearM = 2500.0;
+            const double nearM = 500.0;
             Vector3d pos = v.GetWorldPos3D();
             foreach (var e in list)
             {

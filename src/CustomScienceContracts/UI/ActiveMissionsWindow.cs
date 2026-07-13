@@ -20,6 +20,12 @@ namespace CustomScienceContracts.UI
 
         public void Draw(ContractManager mgr, float width, float height, System.Action onClose)
         {
+            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
+            {
+                Event.current.Use();
+                onClose();
+                return;
+            }
             DrawClose(width, onClose);
 
             var active = mgr.ActiveContracts().ToList();
@@ -198,6 +204,12 @@ namespace CustomScienceContracts.UI
         /// <summary>Abort confirmation dialog drawn as its own CscUI window.</summary>
         public void DrawConfirm(ContractManager mgr, float width)
         {
+            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
+            {
+                Event.current.Use();
+                PendingAbortId = null;
+                return;
+            }
             var c = mgr.Catalog.Get(PendingAbortId);
             GUILayout.Space(6);
             GUILayout.Label("Abort this mission?", Theme.Title);
