@@ -20,12 +20,11 @@ namespace CustomScienceContracts.UI
         private const float ActW = 480f, ActH = 620f, ConfW = 340f, ConfH = 178f;
         private const float SetW = 440f, SetH = 740f;
         private const float MinSelW = 760f, MinSelH = 520f;
-        private const float MinActW = 400f, MinActH = 420f;
         private Rect _selRect = new Rect(24, 24, 1200, 760);
         private Rect _actRect = new Rect(700, 80, ActW, ActH);
         private Rect _setRect = new Rect(180, 60, SetW, SetH);
         private bool _selRectInitialized;
-        private int _resizing;   // 0 = none, 1 = mission control, 2 = active missions
+        private bool _resizingSelection;   // Mission Control's own handle; Active Missions is fixed-size
         private Vector2 _resizeStartMouse;
         private Vector2 _resizeStartSize;
         private float _appliedMissionCenterScale = -1f;
@@ -88,8 +87,10 @@ namespace CustomScienceContracts.UI
             {
                 Theme.EnsureBuilt();
                 GUI.skin = Theme.Skin;
+
+                // Mission Control and Settings honor the UI scale slider.
                 if (Mathf.Abs(UiScale - 1f) > 0.001f)
-                    GUI.matrix = Matrix4x4.Scale(new Vector3(UiScale, UiScale, 1f)) * GUI.matrix;
+                    GUI.matrix = Matrix4x4.Scale(new Vector3(UiScale, UiScale, 1f)) * prevMatrix;
 
                 if (_availOpen && AvailableSceneAllowed)
                 {
@@ -99,7 +100,7 @@ namespace CustomScienceContracts.UI
                         "Mission Control", Theme.Window);
                     _selRect = ClampRect(_selRect, MinSelW, MinSelH);
                     Theme.DrawWindowBorder(_selRect);
-                    DrawResizeHandle(1, ref _selRect, MinSelW, MinSelH);
+                    DrawSelectionResizeHandle();
 
                     if (_selection.SettingsToggleRequested)
                     { _settingsOpen = !_settingsOpen; _selection.SettingsToggleRequested = false; }
@@ -113,20 +114,22 @@ namespace CustomScienceContracts.UI
                     Theme.DrawWindowBorder(new Rect(_setRect.x, _setRect.y, SetW, SetH));
                 }
 
+                // Active Missions and its confirm dialog keep their original fixed size and
+                // ignore the UI scale slider, so they never stretch along with Mission Control.
+                GUI.matrix = prevMatrix;
+
                 if (_activeOpen)
                 {
                     _actRect = GUILayout.Window(GetInstanceID() + 1, _actRect,
-                        _ => _activeWin.Draw(_mgr, _actRect.width, _actRect.height, CloseActive), "Active Missions", Theme.Window,
-                        GUILayout.Width(_actRect.width), GUILayout.Height(_actRect.height));
-                    _actRect = ClampRect(_actRect, MinActW, MinActH);
-                    Theme.DrawWindowBorder(_actRect);
-                    DrawResizeHandle(2, ref _actRect, MinActW, MinActH);
+                        _ => _activeWin.Draw(_mgr, ActW, ActH, CloseActive), "Active Missions", Theme.Window,
+                        GUILayout.Width(ActW), GUILayout.Height(ActH));
+                    Theme.DrawWindowBorder(new Rect(_actRect.x, _actRect.y, ActW, ActH));
                 }
 
                 if (_activeWin.PendingAbortId != null)
                 {
                     if (_activeWin.ConfirmRect.x <= 1f)
-                        _activeWin.ConfirmRect = new Rect(VirtualW / 2f - ConfW / 2f, VirtualH / 2f - ConfH / 2f, ConfW, ConfH);
+                        _activeWin.ConfirmRect = new Rect(Screen.width / 2f - ConfW / 2f, Screen.height / 2f - ConfH / 2f, ConfW, ConfH);
                     _activeWin.ConfirmRect = GUILayout.Window(GetInstanceID() + 2, _activeWin.ConfirmRect,
                         _ => _activeWin.DrawConfirm(_mgr, ConfW), "Confirm", Theme.Window,
                         GUILayout.Width(ConfW), GUILayout.Height(ConfH));
@@ -191,7 +194,7 @@ namespace CustomScienceContracts.UI
             if (_mgr != null) _selection.FocusRelevantEpoch(_mgr);
         }
 
-        private void CloseAvail() { _availOpen = false; _resizing = 0; _btnAvail?.SetFalse(false); }
+        private void CloseAvail() { _availOpen = false; _resizingSelection = false; _btnAvail?.SetFalse(false); }
         private void CloseActive() { _activeOpen = false; _btnActive?.SetFalse(false); }
 
         private static Rect MissionCenterRect()
@@ -229,10 +232,10 @@ namespace CustomScienceContracts.UI
             return r;
         }
 
-        /// <summary>Bottom-right drag handle shared by the resizable windows.</summary>
-        private void DrawResizeHandle(int id, ref Rect rect, float minW, float minH)
+        /// <summary>Bottom-right drag handle for Mission Control.</summary>
+        private void DrawSelectionResizeHandle()
         {
-            Rect handle = new Rect(rect.xMax - 26f, rect.yMax - 26f, 20f, 20f);
+            Rect handle = new Rect(_selRect.xMax - 26f, _selRect.yMax - 26f, 20f, 20f);
             Event ev = Event.current;
 
             if (ev.type == EventType.Repaint)
@@ -245,24 +248,24 @@ namespace CustomScienceContracts.UI
 
             if (ev.type == EventType.MouseDown && ev.button == 0 && handle.Contains(ev.mousePosition))
             {
-                _resizing = id;
+                _resizingSelection = true;
                 _resizeStartMouse = ev.mousePosition;
-                _resizeStartSize = new Vector2(rect.width, rect.height);
+                _resizeStartSize = new Vector2(_selRect.width, _selRect.height);
                 ev.Use();
             }
 
-            if (_resizing != id) return;
+            if (!_resizingSelection) return;
             if (ev.type == EventType.MouseDrag || ev.type == EventType.Repaint)
             {
                 Vector2 delta = ev.mousePosition - _resizeStartMouse;
-                rect.width = _resizeStartSize.x + delta.x;
-                rect.height = _resizeStartSize.y + delta.y;
-                rect = ClampRect(rect, minW, minH);
+                _selRect.width = _resizeStartSize.x + delta.x;
+                _selRect.height = _resizeStartSize.y + delta.y;
+                _selRect = ClampRect(_selRect, MinSelW, MinSelH);
                 if (ev.type == EventType.MouseDrag) ev.Use();
             }
             if (ev.type == EventType.MouseUp)
             {
-                _resizing = 0;
+                _resizingSelection = false;
                 ev.Use();
             }
         }

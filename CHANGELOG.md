@@ -13,7 +13,7 @@ packs on the same release that swap the catalog to the stock KSP system or to Ge
   chronologically with its in-game completion date, epoch and reward — the
   campaign as a flight log.
 - **Legend**: a "?" button in Mission Control explains card colors, branch
-  colors and all atlas symbols.
+  colors, all atlas symbols and the repeatable cooldown length.
 - **"◂ epoch" tags** on cards whose chain continues from an earlier epoch
   (green once the earlier stages are done), complementing the existing "→"
   unlock tags.
@@ -24,8 +24,12 @@ packs on the same release that swap the catalog to the stock KSP system or to Ge
 - **Notification controls**: settings toggles for on-screen messages and the
   new ready-to-claim chime (bundled sound, `playSounds`), plus a toast when a
   repeatable's cooldown finishes.
-- **Difficulty presets** (Casual / Normal / Hard) setting repeatable cooldown,
-  active limits and the science multiplier in one click; persisted per save.
+- **Difficulty presets** (Casual x1.3 / Normal x1.0 / Hard x0.4 science)
+  setting repeatable cooldown, active limits and the science multiplier in one
+  click, from the mod's settings window or from KSP's own **native Difficulty
+  Options** — selectable at new-game creation and from the in-game pause-menu
+  Settings, exactly like other mods (`CscDifficultyParams`). Both stay in
+  sync; a mid-game change via the native screen is picked up within a second.
 - **Save backup**: `contracts_state.cfg` is copied to `.bak` before every
   write, and loading falls back to the backup if the main file is broken.
 - **Logic self-test** (`selfTest = true`): exercises status flow,
@@ -33,12 +37,19 @@ packs on the same release that swap the catalog to the stock KSP system or to Ge
   PASS/FAIL.
 
 ### Changed
-- The Active Missions window is resizable via its lower-right corner.
 - ESC closes the mod's windows; switching epochs resets the atlas scroll
   position; branch headers show their completion count ("8/12 completed").
 - EVA Kerbals now only count toward a vessel's effective crew within 500 m
   (was 2.5 km), so a kerbal from an unrelated craft no longer satisfies crew
   checks.
+- The mod's AppLauncher buttons register as early as the scenario module
+  lifecycle allows (`OnAwake` instead of only `OnLoad`), landing as close to
+  the front of the mod list in KSP's toolbar as our own code can influence.
+
+### Fixed
+- Mission Control's UI scale slider no longer stretches the Active Missions
+  window or its abort-confirmation dialog across the screen; both keep their
+  original fixed size regardless of the scale setting.
 
 ## [0.6.1] - 2026-07-02
 

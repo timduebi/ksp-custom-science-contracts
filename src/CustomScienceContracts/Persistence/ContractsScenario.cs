@@ -22,6 +22,11 @@ namespace CustomScienceContracts.Persistence
         private bool _initialized;
         private Coroutine _loop;
 
+        /// <summary>Runs before OnLoad, as early as the scenario module lifecycle allows, so the
+        /// AppLauncher button subscription (inside EnsureInitialized) lands as close to the front
+        /// of the mod list as our own code can influence.</summary>
+        public override void OnAwake() => EnsureInitialized();
+
         public override void OnLoad(ConfigNode node)
         {
             EnsureInitialized();
@@ -31,6 +36,9 @@ namespace CustomScienceContracts.Persistence
                 _manager.RecomputeAvailability();
                 Debug.Log("[CSC] No state in save folder; seeded fresh.");
             }
+            // Picks up a difficulty preset chosen in KSP's native Difficulty Options at
+            // new-game creation, without overriding a save that never touched it ("custom").
+            Tuning.SyncFromGameParameters(_manager);
         }
 
         public override void OnSave(ConfigNode node)
@@ -80,6 +88,8 @@ namespace CustomScienceContracts.Persistence
             {
                 yield return wait;
                 if (_manager == null) continue;
+                // Picks up a difficulty change made mid-game via the pause-menu Settings screen.
+                Tuning.SyncFromGameParameters(_manager);
                 // Evaluate in all mod scenes so duration timers can complete everywhere. UT remains
                 // authoritative: in VAB/Editor it does not advance, but Space Center/Tracking/Flight do.
                 if (!(HighLogic.LoadedSceneIsFlight ||

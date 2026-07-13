@@ -64,13 +64,15 @@ namespace CustomScienceContracts.UI
             GUILayout.Space(12);
             GUILayout.Label($"Difficulty preset:  {Tuning.Difficulty}", Theme.ItemTitle);
             GUILayout.BeginHorizontal();
-            DifficultyButton(mgr, "casual", "Casual", 1.3f);
+            DifficultyButton(mgr, "casual", "Casual");
             GUILayout.Space(6);
-            DifficultyButton(mgr, "normal", "Normal", 1.0f);
+            DifficultyButton(mgr, "normal", "Normal");
             GUILayout.Space(6);
-            DifficultyButton(mgr, "hard", "Hard", 0.8f);
+            DifficultyButton(mgr, "hard", "Hard");
             GUILayout.EndHorizontal();
-            GUILayout.Label("Sets repeatable cooldown, active limits and the science multiplier.", Theme.ItemSub);
+            GUILayout.Label("Sets repeatable cooldown, active limits and the science multiplier "
+                          + "(Casual x1.3, Normal x1.0, Hard x0.4). Also available in KSP's own "
+                          + "Difficulty Options, at new-game creation and via the pause menu.", Theme.ItemSub);
 
             // --- Unlock all ---
             GUILayout.Space(12);
@@ -123,14 +125,16 @@ namespace CustomScienceContracts.UI
             GUI.DragWindow(new Rect(0, 0, width - 34, 24));
         }
 
-        /// <summary>One preset button; applying a preset also sets the science multiplier.</summary>
-        private static void DifficultyButton(ContractManager mgr, string key, string label, float multiplier)
+        /// <summary>One preset button; applying a preset also sets the science multiplier and
+        /// mirrors the choice into KSP's native Difficulty Options.</summary>
+        private static void DifficultyButton(ContractManager mgr, string key, string label)
         {
             bool active = Tuning.Difficulty == key;
             if (GUILayout.Button(label, active ? Theme.AcceptBtn : Theme.SettingsBtn, GUILayout.Height(26)) && !active)
             {
                 Tuning.ApplyDifficulty(key);
-                mgr.ScienceMultiplier = multiplier;
+                float? mult = Tuning.ScienceMultiplierFor(key);
+                if (mult.HasValue) mgr.ScienceMultiplier = mult.Value;
             }
         }
     }

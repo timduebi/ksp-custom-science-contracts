@@ -357,6 +357,7 @@ namespace CustomScienceContracts.UI
                 "◂   Tag: continues a chain from an earlier epoch",
                 "Arrows between cards are real prerequisites",
                 "Repeatables carry a progress bar until their next run",
+                $"Cooldown: complete {Tuning.RepeatableCooldown} other mission(s) to reopen it",
             };
 
             float h = 12f + 26f + statusRows.Length * 22f + 10f + branchRows.Length * 22f + 10f

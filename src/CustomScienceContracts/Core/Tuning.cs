@@ -53,8 +53,11 @@ namespace CustomScienceContracts.Core
         /// <summary>Runs the logic self-test once at startup and logs PASS/FAIL lines.</summary>
         public static bool SelfTest = false;
 
-        /// <summary>Applies a difficulty preset to cooldown and active limits. "custom" (or any
-        /// unknown name) leaves the settings.cfg values untouched.</summary>
+        /// <summary>Applies a difficulty preset to cooldown and active limits, and mirrors the
+        /// choice into KSP's native Difficulty Options (see <see cref="CscDifficultyParams"/>) so
+        /// the mod's own settings window and the native screen never disagree. "custom" leaves
+        /// cooldown/limits untouched (settings.cfg values keep applying); a name that is neither a
+        /// known preset nor "custom" is ignored entirely.</summary>
         public static void ApplyDifficulty(string name)
         {
             switch (name)
@@ -71,10 +74,44 @@ namespace CustomScienceContracts.Core
                     RepeatableCooldown = 3;
                     ActiveBemannt = 3; ActiveErkundung = 8; ActiveStationen = 4; ActiveNetzwerk = 4;
                     break;
+                case "custom":
+                    break;
                 default:
                     return;
             }
             Difficulty = name;
+            try
+            {
+                var p = HighLogic.CurrentGame?.Parameters?.CustomParams<CscDifficultyParams>();
+                if (p != null) p.difficulty = name;
+            }
+            catch (System.Exception) { }
+        }
+
+        /// <summary>Science multiplier for a difficulty preset, or null for "custom"/unknown
+        /// (meaning: leave whatever multiplier is currently set).</summary>
+        public static float? ScienceMultiplierFor(string name)
+        {
+            switch (name)
+            {
+                case "casual": return 1.3f;
+                case "normal": return 1.0f;
+                case "hard": return 0.4f;
+                default: return null;
+            }
+        }
+
+        /// <summary>Re-applies the difficulty preset when it was changed through KSP's native
+        /// Difficulty Options (new-game creation or the in-game pause-menu settings) since we
+        /// last checked. Cheap enough to poll every check-loop tick.</summary>
+        public static void SyncFromGameParameters(ContractManager mgr)
+        {
+            if (HighLogic.CurrentGame == null) return;
+            var p = HighLogic.CurrentGame.Parameters?.CustomParams<CscDifficultyParams>();
+            if (p == null || p.difficulty == Difficulty) return;
+            ApplyDifficulty(p.difficulty);
+            float? mult = ScienceMultiplierFor(p.difficulty);
+            if (mult.HasValue && mgr != null) mgr.ScienceMultiplier = mult.Value;
         }
 
         private static bool _loaded;
