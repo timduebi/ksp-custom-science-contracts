@@ -30,6 +30,10 @@ packs on the same release that swap the catalog to the stock KSP system or to Ge
   Options** — selectable at new-game creation and from the in-game pause-menu
   Settings, exactly like other mods (`CscDifficultyParams`). Both stay in
   sync; a mid-game change via the native screen is picked up within a second.
+  Defaults to "normal" (was "custom"), and follows KSP's own overall
+  Easy/Normal/Moderate/Hard preset slider unless explicitly set to "custom".
+  Uses only stock KSP's built-in `GameParameters.CustomParameterNode` API —
+  **no additional mod or dependency required.**
 - **Save backup**: `contracts_state.cfg` is copied to `.bak` before every
   write, and loading falls back to the backup if the main file is broken.
 - **Logic self-test** (`selfTest = true`): exercises status flow,

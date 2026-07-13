@@ -250,8 +250,20 @@ loading falls back to that backup when the main file is missing or broken.
 Only if neither parses does the mod seed fresh state from the catalog.
 
 Per-save the file also persists the notification toggles, UI scale and the
-selected difficulty preset (`difficulty = casual|normal|hard|custom`; presets
-set the repeatable cooldown and active limits via `Tuning.ApplyDifficulty`).
+selected difficulty preset (`difficulty = casual|normal|hard|custom`, default
+`normal`; presets set the repeatable cooldown, active limits and the science
+multiplier via `Tuning.ApplyDifficulty`/`Tuning.ScienceMultiplierFor`).
+
+The difficulty preset is also shown natively in KSP's own Difficulty Options
+screen (new-game creation and the in-game pause-menu Settings), via
+`Core/DifficultyParams.cs` (`CscDifficultyParams : GameParameters.CustomParameterNode`).
+It follows KSP's overall Easy/Normal/Moderate/Hard preset slider automatically
+(`SetDifficultyPreset`) unless set to "custom", and stays in sync with the
+mod's own settings window in both directions (`Tuning.ApplyDifficulty` writes
+into it; `Tuning.SyncFromGameParameters`, polled once per check-loop tick,
+reads a change made through the native screen back out).
+**This uses only stock KSP's built-in `GameParameters.CustomParameterNode`
+API — no additional mod or dependency is required or added.**
 
 `settings.cfg` additionally offers `uiScale`, `showToasts`, `playSounds` and
 `selfTest` (runs the startup logic self-test in `Core/SelfTest.cs`, which

@@ -44,7 +44,7 @@ namespace CustomScienceContracts.Core
         public static bool PlaySounds = true;   // soft chime when a mission becomes claimable
 
         // --- Difficulty preset ("custom" keeps the settings.cfg values) ---
-        public static string Difficulty = "custom";
+        public static string Difficulty = "normal";
 
         // --- Diagnostics ---
         public static bool VerboseLogging = false;
