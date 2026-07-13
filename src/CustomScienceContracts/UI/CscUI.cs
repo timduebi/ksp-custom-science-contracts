@@ -1,24 +1,16 @@
 using CustomScienceContracts.Core;
 using KSP.UI.Screens;
-using ToolbarControl_NS;
 using UnityEngine;
 
 namespace CustomScienceContracts.UI
 {
-    /// <summary>Two toolbar buttons (active missions and mission control), registered through the
-    /// vendored ToolbarControl library (see Vendor/ToolbarControl). This shows the buttons on
-    /// Blizzy's Toolbar Continued when the player has it installed - freely repositionable, right
-    /// next to any other mod's icon - and always falls back to the stock AppLauncher otherwise, so
-    /// the mod works identically with or without the optional "ToolbarController" companion mod.</summary>
+    /// <summary>Two buttons registered directly with KSP's stock Application Launcher:
+    /// Active Missions and Mission Control.</summary>
     public class CscUI : MonoBehaviour
     {
-        private const string IconActive = "CustomScienceContracts/Icons/App/aktiv";
-        private const string IconActiveAlert = "CustomScienceContracts/Icons/App/aktiv_alert";
-        private const string IconAvail = "CustomScienceContracts/Icons/App/missionen";
-
         private ContractManager _mgr;
-        private ToolbarControl _tcActive;
-        private ToolbarControl _tcAvail;
+        private ApplicationLauncherButton _btnActive;
+        private ApplicationLauncherButton _btnAvail;
         private bool _activeOpen, _availOpen;
 
         private readonly SelectionWindow _selection = new SelectionWindow();
@@ -48,25 +40,56 @@ namespace CustomScienceContracts.UI
 
         public void Bind(ContractManager mgr) => _mgr = mgr;
 
-        private void Start()
+        private void Awake()
         {
+            GameEvents.onGUIApplicationLauncherReady.Add(AddButtons);
+            GameEvents.onGUIApplicationLauncherDestroyed.Add(OnLauncherDestroyed);
+        }
+
+        private void Start() => AddButtons();
+
+        private void OnDestroy()
+        {
+            GameEvents.onGUIApplicationLauncherReady.Remove(AddButtons);
+            GameEvents.onGUIApplicationLauncherDestroyed.Remove(OnLauncherDestroyed);
+            Remove(ref _btnActive);
+            Remove(ref _btnAvail);
+        }
+
+        private void AddButtons()
+        {
+            if (ApplicationLauncher.Instance == null) return;
+
             var all = ApplicationLauncher.AppScenes.SPACECENTER | ApplicationLauncher.AppScenes.FLIGHT |
                       ApplicationLauncher.AppScenes.MAPVIEW | ApplicationLauncher.AppScenes.TRACKSTATION |
                       ApplicationLauncher.AppScenes.VAB | ApplicationLauncher.AppScenes.SPH;
             var planning = ApplicationLauncher.AppScenes.SPACECENTER | ApplicationLauncher.AppScenes.TRACKSTATION |
                            ApplicationLauncher.AppScenes.VAB | ApplicationLauncher.AppScenes.SPH;
 
-            _tcActive = gameObject.AddComponent<ToolbarControl>();
-            _tcActive.AddToAllToolbars(() => _activeOpen = true, () => _activeOpen = false,
-                all, ModInfo.Name, "activeMissions", IconActive, IconActive, "Active Missions");
+            if (_btnActive == null)
+                _btnActive = ApplicationLauncher.Instance.AddModApplication(
+                    () => _activeOpen = true, () => _activeOpen = false,
+                    null, null, null, null, all, IconApp("aktiv"));
 
-            _tcAvail = gameObject.AddComponent<ToolbarControl>();
-            _tcAvail.AddToAllToolbars(OpenAvail, CloseAvail,
-                planning, ModInfo.Name, "missionControl", IconAvail, IconAvail, "Mission Control");
+            if (_btnAvail == null)
+                _btnAvail = ApplicationLauncher.Instance.AddModApplication(
+                    OpenAvail, CloseAvail, null, null, null, null,
+                    planning, IconApp("missionen"));
         }
-        // ToolbarControl components are destroyed automatically along with this GameObject
-        // (Object.Destroy(_ui.gameObject) in ContractsScenario.OnDestroy), which runs their own
-        // cleanup - no manual button removal needed here.
+
+        private void OnLauncherDestroyed()
+        {
+            _btnActive = null;
+            _btnAvail = null;
+            _badgeOn = false;
+        }
+
+        private static void Remove(ref ApplicationLauncherButton button)
+        {
+            if (button != null && ApplicationLauncher.Instance != null)
+                ApplicationLauncher.Instance.RemoveModApplication(button);
+            button = null;
+        }
 
         private static bool AvailableSceneAllowed =>
             HighLogic.LoadedScene == GameScenes.SPACECENTER ||
@@ -131,7 +154,6 @@ namespace CustomScienceContracts.UI
                     Theme.DrawWindowBorder(new Rect(_activeWin.ConfirmRect.x, _activeWin.ConfirmRect.y, ConfW, ConfH));
                 }
             }
-            // Fully qualified: ToolbarControl_NS (vendored) also declares an internal Log class.
             catch (System.Exception e) { Core.Log.Ex("OnGUI", e); }
             finally { GUI.skin = prevSkin; GUI.matrix = prevMatrix; }
         }
@@ -140,7 +162,7 @@ namespace CustomScienceContracts.UI
         /// any mission is ready to claim, so the toolbar shows it without opening a window.</summary>
         private void Update()
         {
-            if (_mgr == null || _tcActive == null) return;
+            if (_mgr == null || _btnActive == null) return;
             if (Time.realtimeSinceStartup < _nextBadgeCheck) return;
             _nextBadgeCheck = Time.realtimeSinceStartup + 1f;
 
@@ -150,8 +172,7 @@ namespace CustomScienceContracts.UI
                 if (all[i].Status == Model.MissionStatus.ReadyToClaim) { ready = true; break; }
             if (ready == _badgeOn) return;
             _badgeOn = ready;
-            string icon = ready ? IconActiveAlert : IconActive;
-            try { _tcActive.SetTexture(icon, icon); }
+            try { _btnActive.SetTexture(IconApp(ready ? "aktiv_alert" : "aktiv")); }
             catch (System.Exception) { }
         }
 
@@ -165,8 +186,8 @@ namespace CustomScienceContracts.UI
             if (_mgr != null) _selection.FocusRelevantEpoch(_mgr);
         }
 
-        private void CloseAvail() { _availOpen = false; _resizingSelection = false; _tcAvail?.SetFalse(false); }
-        private void CloseActive() { _activeOpen = false; _tcActive?.SetFalse(false); }
+        private void CloseAvail() { _availOpen = false; _resizingSelection = false; _btnAvail?.SetFalse(false); }
+        private void CloseActive() { _activeOpen = false; _btnActive?.SetFalse(false); }
 
         private static Rect MissionCenterRect()
         {
@@ -239,6 +260,27 @@ namespace CustomScienceContracts.UI
                 _resizingSelection = false;
                 ev.Use();
             }
+        }
+
+        private static Texture2D IconApp(string name)
+        {
+            var texture = IconLibrary.App(name);
+            return texture != null ? texture : FallbackIcon(name);
+        }
+
+        private static Texture2D FallbackIcon(string name)
+        {
+            var texture = IconLibrary.UI(name);
+            if (texture != null) return texture;
+
+            const int size = 38;
+            var fallback = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            for (int y = 0; y < size; y++)
+                for (int x = 0; x < size; x++)
+                    fallback.SetPixel(x, y,
+                        x < 2 || y < 2 || x >= size - 2 || y >= size - 2 ? Theme.Accent : Theme.WinBg);
+            fallback.Apply();
+            return fallback;
         }
     }
 }

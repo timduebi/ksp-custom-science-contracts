@@ -65,11 +65,6 @@
       <HintPath>$(KSPManaged)\UnityEngine.AudioModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <!-- Needed by the vendored ToolbarControl library (Vendor/ToolbarControl) for Input.mousePosition. -->
-    <Reference Include="UnityEngine.InputLegacyModule">
-      <HintPath>$(KSPManaged)\UnityEngine.InputLegacyModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
     <Reference Include="UnityEngine.AnimationModule">
       <HintPath>$(KSPManaged)\UnityEngine.AnimationModule.dll</HintPath>
       <Private>false</Private>

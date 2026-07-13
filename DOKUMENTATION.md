@@ -368,36 +368,17 @@ When adding a new mission icon:
 
 ## Toolbar Integration
 
-`CscUI` registers its two buttons (Active Missions, Mission Control) through
-the vendored ToolbarControl client library
-(`src/CustomScienceContracts/Vendor/ToolbarControl/`, namespace
-`ToolbarControl_NS`), not raw `ApplicationLauncher.AddModApplication`. This
-gives players who additionally install the optional "ToolbarController"
-GameData mod (and/or Blizzy's Toolbar Continued) a freely repositionable icon
-— dragged anywhere, including right next to the stock icons — while players
-who don't install it get the exact same stock-AppLauncher behavior as before;
-`ToolbarControl.RegisterMod(...)`/`AddToAllToolbars(...)` handle that fallback
-internally, so `CscUI` does not implement one itself.
+`CscUI` registers Active Missions and Mission Control directly with KSP's
+stock `ApplicationLauncher.AddModApplication`. It subscribes to
+`GameEvents.onGUIApplicationLauncherReady`, creates both buttons together and
+removes them when the UI object is destroyed. An immediate, idempotent call
+from `Start()` also covers the case where the launcher-ready event fired
+before the scenario UI was created.
 
-- `UI/RegisterToolbar.cs`: a `[KSPAddon(KSPAddon.Startup.MainMenu, true)]`
-  class that calls `ToolbarControl.RegisterMod` once per game process,
-  independent of any save (matches the pattern documented upstream).
-- `CscUI.Start()`: creates one `ToolbarControl` component per button via
-  `gameObject.AddComponent<ToolbarControl>()` and calls `AddToAllToolbars`;
-  both are destroyed automatically with the owning `CSC_UI` GameObject
-  (`ContractsScenario.OnDestroy`), so no manual button removal is needed.
-- The claimable-mission badge (`Update()`) swaps between two pre-baked PNGs
-  (`aktiv.png` / `aktiv_alert.png`) via `ToolbarControl.SetTexture(path,
-  path)`, which takes GameDatabase-relative paths, not a `Texture2D` — unlike
-  the old raw-`ApplicationLauncherButton` code, the badge is a real bundled
-  asset rather than a texture generated at runtime.
-- `AssemblyDependencies.cs` declares `[assembly:
-  KSPAssemblyDependency("ToolbarController", 1, 0)]`, as required by
-  ToolbarControl so KSP orders assembly loading correctly; this only affects
-  load order and does not make the companion mod a hard requirement.
-- The vendored source has two small modifications from upstream (DDS icon
-  loading removed, `ClickThroughFix` calls replaced with plain
-  `GUILayout.Window`) — see `THIRD_PARTY_NOTICES.md` for exactly what and why.
+The claimable-mission badge swaps the Active Missions button between the
+pre-baked `aktiv.png` and `aktiv_alert.png` textures with
+`ApplicationLauncherButton.SetTexture`. The mod does not bundle or depend on
+Toolbar Controller or Toolbar Continued.
 
 ## Validation
 
@@ -548,9 +529,3 @@ The mod code is GPL-3.0. Some bundled image assets are third-party assets:
 
 No code from those projects is used. Do not claim that all assets are original
 CustomScienceContracts artwork.
-
-Unlike the assets above, the vendored ToolbarControl library
-(`src/CustomScienceContracts/Vendor/ToolbarControl/`) **is** third-party code,
-compiled directly into this mod's assembly (LGPL-3.0, with a BSD-2-Clause
-portion and a CC0 portion — see `THIRD_PARTY_NOTICES.md` for the exact file
-breakdown and the two small modifications made to it).

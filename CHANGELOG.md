@@ -39,16 +39,6 @@ packs on the same release that swap the catalog to the stock KSP system or to Ge
 - **Logic self-test** (`selfTest = true`): exercises status flow,
   prerequisites and cooldowns on a throwaway manager at startup and logs
   PASS/FAIL.
-- **Freely repositionable toolbar icons**: the mod now registers its two
-  toolbar buttons through the vendored ToolbarControl library. Players who
-  also install the optional "ToolbarController" companion mod (and/or
-  Blizzy's Toolbar Continued) can drag the icons anywhere, e.g. right next to
-  the stock icons — solving the "where did my mod go" problem other mods
-  like Kerbal Alarm Clock solve the same way. Without either installed, the
-  buttons fall back to the stock AppLauncher exactly as before; nothing
-  changes for players who don't install the companion mod. See
-  `THIRD_PARTY_NOTICES.md` for the vendored library's licenses.
-
 ### Changed
 - ESC closes the mod's windows; switching epochs resets the atlas scroll
   position; branch headers show their completion count ("8/12 completed").
@@ -59,6 +49,10 @@ packs on the same release that swap the catalog to the stock KSP system or to Ge
   lifecycle allows (`OnAwake` instead of only `OnLoad`).
 
 ### Fixed
+- Removed the accidentally vendored Toolbar Controller application and its
+  hard assembly dependency. This eliminates the false "Incorrect Toolbar
+  Controller Installation" popup and registers both CSC buttons directly in
+  KSP's stock Application Launcher.
 - Mission Control's UI scale slider no longer stretches the Active Missions
   window or its abort-confirmation dialog across the screen; both keep their
   original fixed size regardless of the scale setting.

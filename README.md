@@ -46,12 +46,9 @@ Everything is managed from the in-game **Mission Control** window:
   (Casual / Normal / Hard) and notification toggles. A "?" button in Mission Control explains
   every color and symbol. The difficulty preset is also available natively in KSP's own
   Difficulty Options, at new-game creation and via the pause menu.
-- **Toolbar icon placement** — the two toolbar buttons work with the stock toolbar out of the
-  box. If you additionally install the optional
-  [Toolbar Controller](https://forum.kerbalspaceprogram.com/topic/169509-112x-toolbar-controller-for-modders/) mod
-  (and/or [Toolbar Continued](https://forum.kerbalspaceprogram.com/topic/161857-112x-toolbar-continued-common-api-for-draggableresizable-buttons-toolbar/)),
-  you can freely drag the icons anywhere you like — e.g. right next to the stock icons — instead
-  of wherever the stock AppLauncher happens to place them. Neither is required.
+- **Stock toolbar integration** — Active Missions and Mission Control are registered directly
+  in KSP's stock Application Launcher and appear together with the stock toolbar buttons. No
+  Toolbar Controller installation is required.
 
 ## Features
 
