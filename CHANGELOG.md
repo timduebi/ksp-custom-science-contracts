@@ -39,6 +39,15 @@ packs on the same release that swap the catalog to the stock KSP system or to Ge
 - **Logic self-test** (`selfTest = true`): exercises status flow,
   prerequisites and cooldowns on a throwaway manager at startup and logs
   PASS/FAIL.
+- **Freely repositionable toolbar icons**: the mod now registers its two
+  toolbar buttons through the vendored ToolbarControl library. Players who
+  also install the optional "ToolbarController" companion mod (and/or
+  Blizzy's Toolbar Continued) can drag the icons anywhere, e.g. right next to
+  the stock icons — solving the "where did my mod go" problem other mods
+  like Kerbal Alarm Clock solve the same way. Without either installed, the
+  buttons fall back to the stock AppLauncher exactly as before; nothing
+  changes for players who don't install the companion mod. See
+  `THIRD_PARTY_NOTICES.md` for the vendored library's licenses.
 
 ### Changed
 - ESC closes the mod's windows; switching epochs resets the atlas scroll
@@ -46,9 +55,8 @@ packs on the same release that swap the catalog to the stock KSP system or to Ge
 - EVA Kerbals now only count toward a vessel's effective crew within 500 m
   (was 2.5 km), so a kerbal from an unrelated craft no longer satisfies crew
   checks.
-- The mod's AppLauncher buttons register as early as the scenario module
-  lifecycle allows (`OnAwake` instead of only `OnLoad`), landing as close to
-  the front of the mod list in KSP's toolbar as our own code can influence.
+- The mod's manager/catalog now initialize as early as the scenario module
+  lifecycle allows (`OnAwake` instead of only `OnLoad`).
 
 ### Fixed
 - Mission Control's UI scale slider no longer stretches the Active Missions

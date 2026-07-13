@@ -1,15 +1,24 @@
 using CustomScienceContracts.Core;
 using KSP.UI.Screens;
+using ToolbarControl_NS;
 using UnityEngine;
 
 namespace CustomScienceContracts.UI
 {
-    /// <summary>Two app-launcher buttons: active missions and mission control.</summary>
+    /// <summary>Two toolbar buttons (active missions and mission control), registered through the
+    /// vendored ToolbarControl library (see Vendor/ToolbarControl). This shows the buttons on
+    /// Blizzy's Toolbar Continued when the player has it installed - freely repositionable, right
+    /// next to any other mod's icon - and always falls back to the stock AppLauncher otherwise, so
+    /// the mod works identically with or without the optional "ToolbarController" companion mod.</summary>
     public class CscUI : MonoBehaviour
     {
+        private const string IconActive = "CustomScienceContracts/Icons/App/aktiv";
+        private const string IconActiveAlert = "CustomScienceContracts/Icons/App/aktiv_alert";
+        private const string IconAvail = "CustomScienceContracts/Icons/App/missionen";
+
         private ContractManager _mgr;
-        private ApplicationLauncherButton _btnActive;
-        private ApplicationLauncherButton _btnAvail;
+        private ToolbarControl _tcActive;
+        private ToolbarControl _tcAvail;
         private bool _activeOpen, _availOpen;
 
         private readonly SelectionWindow _selection = new SelectionWindow();
@@ -28,7 +37,6 @@ namespace CustomScienceContracts.UI
         private Vector2 _resizeStartMouse;
         private Vector2 _resizeStartSize;
         private float _appliedMissionCenterScale = -1f;
-        private Texture2D _iconActiveAlert;
         private bool _badgeOn;
         private float _nextBadgeCheck;
 
@@ -40,38 +48,25 @@ namespace CustomScienceContracts.UI
 
         public void Bind(ContractManager mgr) => _mgr = mgr;
 
-        private void Awake() => GameEvents.onGUIApplicationLauncherReady.Add(AddButtons);
-        private void OnDestroy()
+        private void Start()
         {
-            GameEvents.onGUIApplicationLauncherReady.Remove(AddButtons);
-            Remove(ref _btnActive);
-            Remove(ref _btnAvail);
-        }
-
-        private void AddButtons()
-        {
-            if (ApplicationLauncher.Instance == null) return;
             var all = ApplicationLauncher.AppScenes.SPACECENTER | ApplicationLauncher.AppScenes.FLIGHT |
                       ApplicationLauncher.AppScenes.MAPVIEW | ApplicationLauncher.AppScenes.TRACKSTATION |
                       ApplicationLauncher.AppScenes.VAB | ApplicationLauncher.AppScenes.SPH;
             var planning = ApplicationLauncher.AppScenes.SPACECENTER | ApplicationLauncher.AppScenes.TRACKSTATION |
                            ApplicationLauncher.AppScenes.VAB | ApplicationLauncher.AppScenes.SPH;
 
-            if (_btnActive == null)
-                _btnActive = ApplicationLauncher.Instance.AddModApplication(
-                    () => _activeOpen = true, () => _activeOpen = false, null, null, null, null,
-                    all, IconApp("aktiv"));
+            _tcActive = gameObject.AddComponent<ToolbarControl>();
+            _tcActive.AddToAllToolbars(() => _activeOpen = true, () => _activeOpen = false,
+                all, ModInfo.Name, "activeMissions", IconActive, IconActive, "Active Missions");
 
-            if (_btnAvail == null)
-                _btnAvail = ApplicationLauncher.Instance.AddModApplication(
-                    OpenAvail, CloseAvail, null, null, null, null,
-                    planning, IconApp("missionen"));
+            _tcAvail = gameObject.AddComponent<ToolbarControl>();
+            _tcAvail.AddToAllToolbars(OpenAvail, CloseAvail,
+                planning, ModInfo.Name, "missionControl", IconAvail, IconAvail, "Mission Control");
         }
-
-        private void Remove(ref ApplicationLauncherButton b)
-        {
-            if (b != null) { ApplicationLauncher.Instance?.RemoveModApplication(b); b = null; }
-        }
+        // ToolbarControl components are destroyed automatically along with this GameObject
+        // (Object.Destroy(_ui.gameObject) in ContractsScenario.OnDestroy), which runs their own
+        // cleanup - no manual button removal needed here.
 
         private static bool AvailableSceneAllowed =>
             HighLogic.LoadedScene == GameScenes.SPACECENTER ||
@@ -136,15 +131,16 @@ namespace CustomScienceContracts.UI
                     Theme.DrawWindowBorder(new Rect(_activeWin.ConfirmRect.x, _activeWin.ConfirmRect.y, ConfW, ConfH));
                 }
             }
-            catch (System.Exception e) { Log.Ex("OnGUI", e); }
+            // Fully qualified: ToolbarControl_NS (vendored) also declares an internal Log class.
+            catch (System.Exception e) { Core.Log.Ex("OnGUI", e); }
             finally { GUI.skin = prevSkin; GUI.matrix = prevMatrix; }
         }
 
-        /// <summary>Swaps the active-missions launcher icon to the badge variant while any
-        /// mission is ready to claim, so the toolbar shows it without opening a window.</summary>
+        /// <summary>Swaps the active-missions launcher icon to the pre-baked badge variant while
+        /// any mission is ready to claim, so the toolbar shows it without opening a window.</summary>
         private void Update()
         {
-            if (_mgr == null || _btnActive == null) return;
+            if (_mgr == null || _tcActive == null) return;
             if (Time.realtimeSinceStartup < _nextBadgeCheck) return;
             _nextBadgeCheck = Time.realtimeSinceStartup + 1f;
 
@@ -154,34 +150,9 @@ namespace CustomScienceContracts.UI
                 if (all[i].Status == Model.MissionStatus.ReadyToClaim) { ready = true; break; }
             if (ready == _badgeOn) return;
             _badgeOn = ready;
-            try { _btnActive.SetTexture(ready ? AlertIcon() : IconApp("aktiv")); }
+            string icon = ready ? IconActiveAlert : IconActive;
+            try { _tcActive.SetTexture(icon, icon); }
             catch (System.Exception) { }
-        }
-
-        /// <summary>The active-missions icon with a green claim dot in the top-right corner.</summary>
-        private Texture2D AlertIcon()
-        {
-            if (_iconActiveAlert != null) return _iconActiveAlert;
-            Texture2D baseTex = IconApp("aktiv");
-            try
-            {
-                int w = baseTex.width, h = baseTex.height;
-                var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave };
-                tex.SetPixels32(baseTex.GetPixels32());
-                float radius = w * 0.17f;
-                float cx = w - radius - 2f, cy = h - radius - 2f;   // texture origin bottom-left -> top-right corner
-                for (int y = 0; y < h; y++)
-                    for (int x = 0; x < w; x++)
-                    {
-                        float d = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
-                        if (d <= radius) tex.SetPixel(x, y, new Color(0.28f, 0.85f, 0.36f, 1f));
-                        else if (d <= radius + 1.6f) tex.SetPixel(x, y, new Color(0.04f, 0.09f, 0.05f, 1f));
-                    }
-                tex.Apply();
-                _iconActiveAlert = tex;
-            }
-            catch (System.Exception) { _iconActiveAlert = baseTex; }
-            return _iconActiveAlert;
         }
 
         private void OpenAvail()
@@ -194,8 +165,8 @@ namespace CustomScienceContracts.UI
             if (_mgr != null) _selection.FocusRelevantEpoch(_mgr);
         }
 
-        private void CloseAvail() { _availOpen = false; _resizingSelection = false; _btnAvail?.SetFalse(false); }
-        private void CloseActive() { _activeOpen = false; _btnActive?.SetFalse(false); }
+        private void CloseAvail() { _availOpen = false; _resizingSelection = false; _tcAvail?.SetFalse(false); }
+        private void CloseActive() { _activeOpen = false; _tcActive?.SetFalse(false); }
 
         private static Rect MissionCenterRect()
         {
@@ -268,25 +239,6 @@ namespace CustomScienceContracts.UI
                 _resizingSelection = false;
                 ev.Use();
             }
-        }
-
-        private static Texture2D IconApp(string name)
-        {
-            var t = IconLibrary.App(name);
-            return t != null ? t : Icon(name);
-        }
-
-        private static Texture2D Icon(string name)
-        {
-            var t = IconLibrary.UI(name);
-            if (t != null) return t;
-            const int s = 38;
-            var x = new Texture2D(s, s, TextureFormat.RGBA32, false);
-            for (int yy = 0; yy < s; yy++)
-                for (int xx = 0; xx < s; xx++)
-                    x.SetPixel(xx, yy, (xx < 2 || yy < 2 || xx >= s - 2 || yy >= s - 2) ? Theme.Accent : Theme.WinBg);
-            x.Apply();
-            return x;
         }
     }
 }
