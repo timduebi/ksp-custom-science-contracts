@@ -20,11 +20,15 @@ namespace CustomScienceContracts.Conditions
             HighLogic.LoadedSceneIsFlight ||
             HighLogic.LoadedScene == GameScenes.TRACKSTATION;
 
-        private static bool SceneChanged =>
-            _sceneKnown && _scene != HighLogic.LoadedScene;
-
-        private static void NoteScene()
+        private static void EnsureScene()
         {
+            if (_sceneKnown && _scene == HighLogic.LoadedScene) return;
+            // Waypoint instances belong to ScenarioCustomWaypoints in one scene. Invalidate the
+            // entire cache before any marker asks Has(); otherwise only the first marker noticed a
+            // scene switch and the remaining stale entries were incorrectly treated as live.
+            if (_sceneKnown && _active.Count > 0)
+                Log.V($"Invalidating {_active.Count} marker waypoint(s) after scene change.");
+            _active.Clear();
             _scene = HighLogic.LoadedScene;
             _sceneKnown = true;
         }
@@ -41,15 +45,11 @@ namespace CustomScienceContracts.Conditions
 
         public static bool Has(string contractId)
         {
+            EnsureScene();
             if (!WaypointScene) return false;
             if (!_active.TryGetValue(contractId, out var wp) || wp == null)
             {
                 _active.Remove(contractId);
-                return false;
-            }
-            if (SceneChanged)
-            {
-                Log.V($"Refreshing marker waypoint cache after scene change: {contractId}");
                 return false;
             }
             return true;
@@ -59,6 +59,7 @@ namespace CustomScienceContracts.Conditions
         {
             try
             {
+                EnsureScene();
                 if (!WaypointScene)
                 {
                     Log.V($"Marker waypoint visible only in Flight/Map/Tracking: {contractId}");
@@ -80,7 +81,6 @@ namespace CustomScienceContracts.Conditions
                 };
                 ScenarioCustomWaypoints.AddWaypoint(wp);
                 _active[contractId] = wp;
-                NoteScene();
                 Log.Info($"Marker set: {wp.name} @ {lat:0.00}/{lon:0.00} on {body.name}");
             }
             catch (Exception e) { Log.Warn($"Marker waypoint creation failed: {e.Message}"); }
@@ -90,6 +90,7 @@ namespace CustomScienceContracts.Conditions
         {
             try
             {
+                EnsureScene();
                 if (_active.TryGetValue(contractId, out var wp))
                 {
                     ScenarioCustomWaypoints.RemoveWaypoint(wp);

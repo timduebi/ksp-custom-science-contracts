@@ -8,6 +8,32 @@ packs on the same release that swap the catalog to the stock KSP system or to Ge
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-07-14
+
+### Added
+- Append-only Program Log v2 with every claim/skip, actual paid science, vessel and crew snapshots,
+  plus lossless migration of pre-0.7 completion history.
+- Independent Economy, Pacing and Operations difficulty axes; mixed selections become Custom.
+- Startup diagnostics for catalog profile, body availability, file layout, duplicate assemblies and
+  optional CTT/Probes Before Crew companions.
+- Semantic catalog validation, pure C#/Python regression tests, public CI, deterministic packages and
+  a tag-driven stable GitHub release workflow.
+- Hidden return invariant: at least one Kerbal who reached the source must return home.
+
+### Changed
+- Mission Control and Active Missions use KSP's stock launcher lane (`AddApplication`) like Kerbalism,
+  rather than the expandable mod drawer.
+- Station upgrades no longer require evacuating existing crews. Initial 150-day endurance milestones
+  stay intact; later tiers use 60 days and upgrade stabilization uses 3 days.
+- Relay missions require an enabled relay and stock CommNet connectivity when that API is available.
+- Vessel evaluation builds one per-tick index, deterministic mission seeds use FNV-1a, and missing
+  celestial bodies are cached/logged once.
+
+### Fixed
+- Atomic save replacement protects campaign progress; `ReadyToClaim` progress now survives reloads.
+- All precision-landing waypoints refresh after scene changes, not only the first cached marker.
+- Save-scoped tuning no longer leaks between campaigns in the same KSP process.
+
 ### Added
 - **Program Log**: a third Mission Control tab listing every completed mission
   chronologically with its in-game completion date, epoch and reward — the

@@ -67,14 +67,19 @@ namespace CustomScienceContracts.UI
                            ApplicationLauncher.AppScenes.VAB | ApplicationLauncher.AppScenes.SPH;
 
             if (_btnActive == null)
-                _btnActive = ApplicationLauncher.Instance.AddModApplication(
+                // AddApplication is the stock launcher lane used by KSP's own buttons (and by
+                // Kerbalism). AddModApplication deliberately puts an icon in the expandable mod
+                // drawer, which is not where Mission Control belongs.
+                _btnActive = ApplicationLauncher.Instance.AddApplication(
                     () => _activeOpen = true, () => _activeOpen = false,
-                    null, null, null, null, all, IconApp("aktiv"));
+                    null, null, null, null, IconApp("aktiv"));
+            if (_btnActive != null) _btnActive.VisibleInScenes = all;
 
             if (_btnAvail == null)
-                _btnAvail = ApplicationLauncher.Instance.AddModApplication(
+                _btnAvail = ApplicationLauncher.Instance.AddApplication(
                     OpenAvail, CloseAvail, null, null, null, null,
-                    planning, IconApp("missionen"));
+                    IconApp("missionen"));
+            if (_btnAvail != null) _btnAvail.VisibleInScenes = planning;
         }
 
         private void OnLauncherDestroyed()
@@ -87,7 +92,7 @@ namespace CustomScienceContracts.UI
         private static void Remove(ref ApplicationLauncherButton button)
         {
             if (button != null && ApplicationLauncher.Instance != null)
-                ApplicationLauncher.Instance.RemoveModApplication(button);
+                ApplicationLauncher.Instance.RemoveApplication(button);
             button = null;
         }
 

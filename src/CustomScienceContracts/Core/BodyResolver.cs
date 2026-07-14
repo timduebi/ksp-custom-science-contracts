@@ -11,11 +11,15 @@ namespace CustomScienceContracts.Core
     {
         private static readonly Dictionary<string, CelestialBody> _cache =
             new Dictionary<string, CelestialBody>();
+        private static readonly HashSet<string> _missing = new HashSet<string>();
+        private static bool _built;
 
         /// <summary>Call on scene change or after Kopernicus load.</summary>
         public static void RebuildCache()
         {
             _cache.Clear();
+            _missing.Clear();
+            _built = true;
             if (FlightGlobals.Bodies == null) return;
             foreach (var b in FlightGlobals.Bodies)
             {
@@ -28,13 +32,18 @@ namespace CustomScienceContracts.Core
         public static CelestialBody Resolve(string name)
         {
             if (string.IsNullOrEmpty(name)) return null;
-            if (_cache.Count == 0) RebuildCache();
+            if (!_built) RebuildCache();
             if (_cache.TryGetValue(name, out var b) && b != null) return b;
+            if (_missing.Contains(name)) return null;
 
             // Last attempt directly through FlightGlobals in case the cache is stale.
             b = FlightGlobals.Bodies?.FirstOrDefault(x => x != null && (x.name == name || x.bodyName == name));
             if (b != null) _cache[name] = b;
-            else Debug.LogWarning($"[CSC] Body '{name}' not found (missing or incompatible planet pack?).");
+            else
+            {
+                _missing.Add(name);
+                Debug.LogWarning($"[CSC] Body '{name}' not found (missing or incompatible planet pack?). Further checks are suppressed.");
+            }
             return b;
         }
 

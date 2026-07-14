@@ -124,13 +124,13 @@ namespace CustomScienceContracts.Conditions
             double startUT = GetDouble(c.Progress, "cd_startUT", -1.0);
 
             Vessel tracked = trackedId != 0
-                ? ctx.Vessels.FirstOrDefault(v => v != null && v.persistentId == trackedId)
+                ? ctx.FindVessel(trackedId)
                 : null;
 
             if (!(tracked != null && Predicate(tracked) && startUT >= 0.0))
             {
                 // Tracked vessel disappeared or no longer qualifies -> find a new matching vessel.
-                var v0 = VesselQuery.RealVessels(ctx.Vessels).FirstOrDefault(Predicate);
+                var v0 = ctx.RealVessels.FirstOrDefault(Predicate);
                 if (v0 == null) { Reset(c); return false; }
                 startUT = ctx.UniversalTime;
                 c.Progress.SetValue("cd_vesselId", v0.persistentId.ToString(), true);
@@ -203,7 +203,7 @@ namespace CustomScienceContracts.Conditions
             var body = VesselQuery.Body(cond.Body);
             if (body == null) return false;
             double minM = cond.MinAltitudeKm * 1000.0;
-            int count = VesselQuery.RealVessels(ctx.Vessels).Count(v =>
+            int count = ctx.RealVessels.Count(v =>
                 VesselQuery.OnBody(v, body) &&
                 v.situation == Vessel.Situations.ORBITING &&
                 (minM <= 0.0 || (v.orbit != null && v.orbit.PeA > minM)));

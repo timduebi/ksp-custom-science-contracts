@@ -28,7 +28,7 @@ namespace CustomScienceContracts.Conditions
             bool completed = false;
             double bestApproach = Huge;
 
-            foreach (var v in VesselQuery.RealVessels(ctx.Vessels))
+            foreach (var v in ctx.RealVessels)
             {
                 bool atTarget = v.mainBody == body;
                 var node = GetVesselNode(c.Progress, v.persistentId, create: atTarget);
@@ -142,7 +142,7 @@ namespace CustomScienceContracts.Conditions
                 else
                 {
                     // Fresh precision landing: deterministic random point, stable per contract id.
-                    var rng = new System.Random(c.Id.GetHashCode());
+                    var rng = new System.Random(DeterministicHash.Of(c.Id));
                     lat = rng.NextDouble() * 140.0 - 70.0;     // -70..70, avoid poles
                     lon = rng.NextDouble() * 360.0 - 180.0;
                     // Ocean bodies: redraw deterministically until the target is on land.
@@ -162,7 +162,7 @@ namespace CustomScienceContracts.Conditions
             {
                 double lat = GetD(c.Progress, "ml_lat");
                 double lon = GetD(c.Progress, "ml_lon");
-                MarkerWaypoint.Set(c.Id, body, lat, lon, c.Titel, Math.Abs(c.Id.GetHashCode()) % 10000);
+                    MarkerWaypoint.Set(c.Id, body, lat, lon, c.Titel, DeterministicHash.Of(c.Id) % 10000);
             }
         }
 
@@ -192,7 +192,7 @@ namespace CustomScienceContracts.Conditions
             var station = ctx.Stations?.Get(cond.StationKey);
             if (!string.IsNullOrEmpty(cond.StationKey) && station == null) return false;
 
-            foreach (var other in VesselQuery.RealVessels(ctx.Vessels))
+            foreach (var other in ctx.RealVessels)
             {
                 if (other == v) continue;
                 if (station != null && other.persistentId != station.PersistentId) continue;

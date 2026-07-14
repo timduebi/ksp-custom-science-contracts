@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System;
+using CustomScienceContracts.Conditions;
 using CustomScienceContracts.Model;
 
 namespace CustomScienceContracts.Core
@@ -54,6 +56,14 @@ namespace CustomScienceContracts.Core
                 Check(mgr.Skip("t_c"), "skip C");
                 Check(r.CompletionsSinceLastClaim == 2, "skip advanced the cooldown");
                 Check(mgr.CanAccept(r), "repeatable ready after two completions");
+                Check(mgr.CompletionLog.Count == 4, "every claim/skip appended to Program Log");
+
+                // The current catalogs use COMPOSITE, but old third-party catalogs and active saves
+                // can still carry every legacy ConditionType. Keep the compatibility layer complete.
+                var registry = new ConditionEvaluatorRegistry();
+                ConditionRegistration.RegisterAll(registry);
+                foreach (ConditionType type in Enum.GetValues(typeof(ConditionType)))
+                    Check(registry.HasConcreteEvaluator(type), $"legacy evaluator registered: {type}");
 
                 Log.Info(_failures == 0
                     ? "SelfTest PASS — all checks green"

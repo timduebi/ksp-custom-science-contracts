@@ -1,5 +1,18 @@
 # Development — one engine, three catalogs, one release
 
+## 0.7 quality gates
+
+Run `python tools/validate_catalog.py`, `python -m unittest discover -s tests -p "test_*.py"`
+and `dotnet test tests/CoreLogic.Tests/CoreLogic.Tests.csproj -c Release` before packaging.
+
+`tools/analyze_balance.py` compares the SOL reward curve with an installed Stock + Community Tech
+Tree and validates literal Probes Before Crew `TechRequired` targets. The 0.7.0 reference run against
+KSP 1.12.5, current CTT and Moonlington/ProbesBeforeCrew found 145 tech nodes with a nominal
+176,303-science full-tree cost and 90,663 one-pass non-repeatable CSC science (51.4%). This is an
+intentional supplement: experiments remain necessary, while partial mission participation still moves
+the program forward. No broad reward reduction was justified; repetitive operation durations were
+trimmed instead.
+
 CustomScienceContracts has **one shared engine** (one compiled `CustomScienceContracts.dll`) and
 three maintained contract catalogs. Releases ship **two assets**: the main download (engine +
 default SOL catalog) and the Stock overlay, which replaces only
@@ -50,29 +63,28 @@ catalog.
 ## Validators (keep green)
 
 - `tools/validate_design.py [doc]` — auto-detects the `stock` profile from the filename.
-- `tools/validate_catalog.py [dir] [sol|stock]` — pass the `stock` profile when validating the
-  Stock catalog (its body set differs).
+- `tools/validate_catalog.py [dir ...]` — validates profile consistency, graphs, checks and station
+  references; without arguments it validates all three maintained catalogs.
 
 ## Building the release
 
-`tools/make_release.sh [--publish]` builds the shared DLL once, validates all three catalogs
-(including the unshipped German one), packages the assets, and (with `--publish`) creates/updates
-the **single** GitHub release:
+`tools/make_release.sh --ksp-managed <path>` (or `tools/make_release.ps1`) builds the shared DLL,
+tests and validates all three catalogs, then creates deterministic assets plus `SHA256SUMS.txt`:
 
 ```
 CustomScienceContracts-vX.zip                # main download: engine + default SOL catalog
 CustomScienceContracts-vX_Stock-Config.zip   # optional overlay: stock KSP catalog
 ```
 
+Pushing a `vX.Y.Z` tag runs the public release workflow and publishes the stable GitHub release.
 The overlay contains only `GameData/CustomScienceContracts/Contracts/*.cfg`. The release notes come
 from `tools/release_notes.md` (placement instructions). Version is read from
 `src/CustomScienceContracts/Core/ModInfo.cs`; the script aborts when the AVC
 `GameData/CustomScienceContracts/CustomScienceContracts.version` file disagrees. Keep both in sync
 with `<Version>` in `CustomScienceContracts.csproj`.
 
-The main ZIP is assembled from `GameData/` plus player-facing docs and licenses.
-`tools/make_release.sh` removes nested `*.zip` files from the copied `GameData`
-folder before packaging so stale local archives do not ship accidentally.
+The main ZIP is assembled from `GameData/` plus player-facing docs and licenses; generated entries
+are sorted and timestamped from the commit epoch for byte-for-byte reproducibility.
 
 Release notes and README must call out gameplay assumptions that are not enforced
 by code. Since v0.4.0, the important assumption is a probe-first tech progression:

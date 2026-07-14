@@ -42,6 +42,7 @@ namespace CustomScienceContracts.UI
         private bool _legendOpen;
         private readonly HashSet<string> _expandedCards = new HashSet<string>();
         private readonly Dictionary<string, Rect> _cardRects = new Dictionary<string, Rect>();
+        private readonly ProgramLogView _programLog = new ProgramLogView();
 
         // Per-catalog display cache (epoch names, epoch count, stock detection). The catalog is
         // immutable after load, so this is computed once instead of every OnGUI pass.
@@ -75,11 +76,22 @@ namespace CustomScienceContracts.UI
             DrawModeTabs(mgr, visible, new Rect(14f, 30f, width - 114f, 32f));
 
             float mapTop = 70f;
+            if (_mode == CenterMode.Campaign)
+            {
+                int queued = VisibilityRules.Queued(mgr.Catalog, visible).Count;
+                if (queued > 0)
+                {
+                    GUI.Label(new Rect(18f, 65f, width - 40f, 18f),
+                        $"{queued} unlocked mission{(queued == 1 ? " is" : "s are")} queued behind branch frontiers; completing visible missions advances the queue.",
+                        Theme.ItemSub);
+                    mapTop = 88f;
+                }
+            }
             MapLayout layout;
             if (_mode == CenterMode.Campaign)
             {
                 ComputeEpochStats(mgr, visible, out int[] acceptable, out int[] done, out int[] total);
-                mapTop += DrawEpochTabs(mgr, acceptable, done, total, new Rect(14f, 70f, width - 28f, 0f)) + 8f;
+                mapTop += DrawEpochTabs(mgr, acceptable, done, total, new Rect(14f, mapTop, width - 28f, 0f)) + 8f;
                 float introH = DrawEpochIntro(mgr, done, total, new Rect(14f, mapTop, width - 28f, 0f));
                 if (introH > 0f) mapTop += introH + 8f;
                 Rect viewport = new Rect(14f, mapTop, width - 28f, height - mapTop - 16f);
@@ -94,7 +106,8 @@ namespace CustomScienceContracts.UI
             }
             else
             {
-                DrawProgramLog(mgr, new Rect(14f, mapTop, width - 28f, height - mapTop - 16f));
+                _programLog.Draw(mgr, new Rect(14f, mapTop, width - 28f, height - mapTop - 16f),
+                    c => EpochName(EpochOf(c)));
             }
 
             if (_legendOpen)
@@ -132,9 +145,13 @@ namespace CustomScienceContracts.UI
             float gap = 8f;
             float w = (r.width - 2f * gap) / 3f;
             int campaignCount = mgr.Catalog.All.Count(c => CampaignAcceptable(mgr, c, visible));
+            int queuedCount = VisibilityRules.Queued(mgr.Catalog, visible).Count;
             int repeatableCount = mgr.Catalog.All.Count(c => RepeatableAcceptable(mgr, c));
-            int logCount = mgr.Catalog.All.Count(ContractManager.IsCompleted);
-            DrawModeTab(CenterMode.Campaign, $"Campaign Atlas ({campaignCount})", new Rect(r.x, r.y, w, r.height));
+            int logCount = mgr.CompletionLog.Count;
+            string campaignTitle = queuedCount > 0
+                ? $"Atlas ({campaignCount} ready · +{queuedCount})"
+                : $"Campaign Atlas ({campaignCount})";
+            DrawModeTab(CenterMode.Campaign, campaignTitle, new Rect(r.x, r.y, w, r.height));
             DrawModeTab(CenterMode.Repeatable, $"Repeatables ({repeatableCount})", new Rect(r.x + w + gap, r.y, w, r.height));
             DrawModeTab(CenterMode.Log, $"Program Log ({logCount})", new Rect(r.x + 2f * (w + gap), r.y, w, r.height));
         }
@@ -267,74 +284,6 @@ namespace CustomScienceContracts.UI
                         epochDone ? Theme.Ok : Theme.Accent);
             }
             return h;
-        }
-
-        /// <summary>Chronological mission log: every completed mission with the in-game date of
-        /// its first completion — the campaign's story in list form.</summary>
-        private void DrawProgramLog(ContractManager mgr, Rect viewport)
-        {
-            var entries = mgr.Catalog.All
-                .Where(ContractManager.IsCompleted)
-                .OrderBy(c => c.FirstCompletedUT < 0.0 ? double.MinValue : c.FirstCompletedUT)
-                .ThenBy(c => mgr.Catalog.IndexOf(c))
-                .ToList();
-
-            float contentW = Mathf.Max(viewport.width - 16f, 620f);
-            float rowW = contentW - 24f;
-            float titleW = rowW - 134f - 264f;
-
-            var heights = new float[entries.Count];
-            float contentH = 12f;
-            for (int i = 0; i < entries.Count; i++)
-            {
-                heights[i] = Mathf.Max(34f, TextHeight(Theme.CardTitle, entries[i].Titel, titleW) + 14f);
-                contentH += heights[i] + 6f;
-            }
-            contentH = Mathf.Max(contentH + 14f, 220f);
-
-            _scroll = GUI.BeginScrollView(viewport, _scroll, new Rect(0f, 0f, contentW, contentH), true, true);
-            if (entries.Count == 0)
-            {
-                GUI.Label(new Rect(18f, 16f, 560f, 48f),
-                    "No missions completed yet.\nYour program's story starts with the first claim.", Theme.Locked);
-                GUI.EndScrollView();
-                return;
-            }
-
-            float y = 12f;
-            for (int i = 0; i < entries.Count; i++)
-            {
-                var c = entries[i];
-                Rect row = new Rect(12f, y, rowW, heights[i]);
-                GUI.Box(row, GUIContent.none, Theme.EpochPanel);
-                if (Event.current.type == EventType.Repaint)
-                {
-                    Theme.DrawLeftAccent(row, BodyVisual.ForSparte(c.HeimatSparte).Color, null, 5f);
-                    var bv = BodyVisual.ForBody(BodyVisual.PrimaryBody(c));
-                    if (bv.Icon != null)
-                    {
-                        var prev = GUI.color;
-                        GUI.color = Color.white;
-                        GUI.DrawTexture(new Rect(row.x + 12f, row.y + (row.height - 18f) * 0.5f, 18f, 18f),
-                            bv.Icon, ScaleMode.ScaleToFit, true);
-                        GUI.color = prev;
-                    }
-                }
-
-                GUI.Label(new Rect(row.x + 38f, row.y + 9f, 92f, 18f),
-                    FormatUT(c.FirstCompletedUT) ?? "—", Theme.EpochKicker);
-                string title = c.Titel + (c.Repeatable && c.TotalCompletions > 1 ? $"   ↻ ×{c.TotalCompletions}" : "");
-                GUI.Label(new Rect(row.x + 134f, row.y + 7f, titleW, row.height - 12f), title, Theme.CardTitle);
-                GUI.Label(new Rect(row.xMax - 256f, row.y + 9f, 152f, 18f), EpochName(EpochOf(c)), Theme.SectionCount);
-                var prevCol = GUI.color;
-                GUI.color = Theme.Accent;
-                GUI.Label(new Rect(row.xMax - 98f, row.y + 7f, 86f, 20f),
-                    $"+{c.ScienceReward * (float)mgr.ScienceMultiplier:0}", Theme.Pill);
-                GUI.color = prevCol;
-
-                y += heights[i] + 6f;
-            }
-            GUI.EndScrollView();
         }
 
         /// <summary>Overlay explaining card colors, branch colors and the atlas symbols.</summary>
@@ -1388,7 +1337,12 @@ namespace CustomScienceContracts.UI
             }
             if (canAccept) return "Available";
             if (c.Status == MissionStatus.Available && !visible.Contains(c.Id))
-                return "Prerequisites met, waiting behind the branch visibility limit";
+            {
+                var queue = VisibilityRules.QueueFor(mgr.Catalog, visible, c);
+                return queue == null
+                    ? "Prerequisites met; queued behind the visibility frontier"
+                    : $"Mission Control queue {queue.Position}/{queue.Waiting} · frontier shows {queue.FrontierLimit}";
+            }
             return "Locked";
         }
 

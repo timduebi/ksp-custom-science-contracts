@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <Compile Include="../../src/CustomScienceContracts/Core/DeterministicHash.cs" Link="DeterministicHash.cs" />
+    <Compile Include="../../src/CustomScienceContracts/Core/CompletionLog.cs" Link="CompletionLog.cs" />
+    <Compile Include="../../src/CustomScienceContracts/Core/StatePersistencePolicy.cs" Link="StatePersistencePolicy.cs" />
+    <Compile Include="../../src/CustomScienceContracts/Model/MissionStatus.cs" Link="MissionStatus.cs" />
+  </ItemGroup>
+</Project>

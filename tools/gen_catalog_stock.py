@@ -7,6 +7,7 @@ it as an overlay without changing the SOL source catalogs.
 """
 import os
 import re
+from catalog_common import normalize_stock_station_policy, parse_check as parse_common_check
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOC = os.path.join(ROOT, "custom_science_contracts_stock_missionsdesign.md")
@@ -233,68 +234,6 @@ CUSTOM_CONTRACT_CATALOG
 """
 
 
-def fpct(p):
-    v = float(p) / 100.0
-    return (f"{v:.3f}").rstrip("0").rstrip(".")
-
-
-def parse_check(s):
-    head, _, label = s.partition("|")
-    label = label.strip()
-    toks = head.split()
-    if not toks:
-        raise SystemExit("Empty check line")
-    kind, a = toks[0], toks[1:]
-    kv = []
-    if kind in ("CREW_MIN", "CREW_EXACT", "CREW_CAPACITY_MIN"):
-        kv = [("min", a[0])]
-    elif kind == "CREW_NONE":
-        kv = []
-    elif kind in ("SUBORBITAL", "LANDED", "ORE_SURFACE"):
-        kv = [("body", a[0])]
-    elif kind == "ORBIT_ABOVE":
-        kv = [("body", a[0])] + ([("km", a[1])] if len(a) > 1 else [])
-    elif kind == "APOAPSIS_MAX":
-        kv = [("body", a[0]), ("km", a[1])]
-    elif kind == "INCLINATION_MIN":
-        kv = [("body", a[0]), ("inclinationMin", a[1])]
-    elif kind == "ATMO_FRACTION":
-        kv = [("body", a[0]), ("fracMin", fpct(a[1])), ("fracMax", fpct(a[2]))]
-    elif kind == "FLYBY":
-        kv = [("body", a[0]), ("km", a[1])]
-    elif kind == "MARKER_LANDING":
-        kv = [("body", a[0]), ("km", a[1])] + ([("latMin", a[2]), ("latMax", a[3])] if len(a) > 3 else [])
-    elif kind == "VESSEL_COUNT":
-        kv = [("body", a[0]), ("count", a[1])] + ([("km", a[2])] if len(a) > 2 else [])
-    elif kind == "VESSEL_COUNT_INCLINATION":
-        kv = [("body", a[0]), ("count", a[1]), ("inclinationMin", a[2])] + ([("km", a[3])] if len(a) > 3 else [])
-    elif kind == "RELAY_VESSEL_COUNT":
-        kv = [("body", a[0]), ("count", a[1])] + ([("km", a[2])] if len(a) > 2 else [])
-    elif kind == "RELAY_VESSEL_COUNT_INCLINATION":
-        kv = [("body", a[0]), ("count", a[1]), ("inclinationMin", a[2])] + ([("km", a[3])] if len(a) > 3 else [])
-    elif kind == "EVA":
-        kv = [("body", a[0])] + ([("situation", a[1])] if len(a) > 1 else [])
-    elif kind == "FUEL_MIN":
-        kv = [("amount", a[0])]
-    elif kind == "RESOURCE_MIN":
-        kv = [("resource", a[0]), ("amount", a[1])]
-    elif kind == "WHEEL_MOTION":
-        kv = [("body", a[0]), ("speed", a[1])]
-    elif kind == "DOCK_ANY":
-        kv = []
-    elif kind == "DOCK_STATION":
-        kv = [("stationKey", a[0])] + ([("body", a[1])] if len(a) > 1 else [])
-    elif kind == "HOLD":
-        kv = [("seconds", a[0])]
-    elif kind == "DURATION":
-        kv = [("days", a[0])]
-    elif kind == "RETURN_FROM_BODY":
-        kv = [("body", a[0]), ("returnBody", a[1])] + ([("returnMode", a[2])] if len(a) > 2 else [])
-    else:
-        raise SystemExit(f"Unknown check '{kind}' in: {s}")
-    return kind, kv, label
-
-
 def parse_epoch_names(text):
     names = dict(DEFAULT_EPOCH_NAMES)
     for line in text.splitlines():
@@ -317,14 +256,14 @@ def parse_missions(text):
             if s.startswith("=="):
                 break
             if s.startswith("check:"):
-                checks.append(parse_check(s[6:].strip()))
+                checks.append(parse_common_check(s[6:].strip()))
                 continue
             mm = re.match(rf"({keys}):\s*(.*)$", s)
             if mm:
                 m[mm.group(1)] = mm.group(2).strip()
         if "id" in m:
             m["checks"] = checks
-            missions.append(m)
+            missions.append(normalize_stock_station_policy(m))
     return missions
 
 

@@ -390,7 +390,7 @@ python3 tools/gen_catalog.py
 python3 tools/validate_catalog.py
 python3 tools/validate_catalog.py OptionalConfigs/SOL-German/GameData/CustomScienceContracts/Contracts
 python3 tools/validate_design.py custom_science_contracts_stock_missionsdesign.md
-python3 tools/validate_catalog.py OptionalConfigs/Stock/GameData/CustomScienceContracts/Contracts stock
+python3 tools/validate_catalog.py OptionalConfigs/Stock/GameData/CustomScienceContracts/Contracts
 ```
 
 The catalog validator checks:
@@ -430,14 +430,14 @@ GameData/CustomScienceContracts/Plugins/
 Use the release script:
 
 ```bash
-tools/make_release.sh
-tools/make_release.sh --publish
+tools/make_release.sh --ksp-managed "/path/to/KSP_x64_Data/Managed"
+# Windows: tools/make_release.ps1 --ksp-managed "C:\...\KSP_x64_Data\Managed"
 ```
 
 The script reads the version from `src/CustomScienceContracts/Core/ModInfo.cs`,
 verifies the AVC `.version` file matches, validates catalogs, builds the shared
-DLL, packages the two ZIPs (main + Stock overlay) and, with `--publish`,
-creates or updates the GitHub release. Keep `ModInfo.Version`,
+DLL, runs the regression tests and packages deterministic ZIPs plus SHA-256 checksums. A pushed
+`vX.Y.Z` tag publishes these through `.github/workflows/release.yml`. Keep `ModInfo.Version`,
 `CustomScienceContracts.csproj` and
 `GameData/CustomScienceContracts/CustomScienceContracts.version` in sync.
 

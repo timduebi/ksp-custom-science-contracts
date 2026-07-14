@@ -16,6 +16,7 @@ namespace CustomScienceContracts.Core
         public GameEventBridge Events { get; } = new GameEventBridge();
         public StationRegistry Stations { get; } = new StationRegistry();
         public FleetRegistry Fleets { get; } = new FleetRegistry();
+        public CompletionLog CompletionLog { get; } = new CompletionLog();
 
         /// <summary>Global factor for all paid science rewards (settings, 0.1-3.0).</summary>
         public double ScienceMultiplier = 1.0;
@@ -109,6 +110,7 @@ namespace CustomScienceContracts.Core
             var c = Catalog.Get(id);
             if (c == null || (c.Status != MissionStatus.Active && c.Status != MissionStatus.ReadyToClaim)) return false;
             StoreFleetIfNetwork(c);
+            RecordCompletionEvent(c, "skip", null);
             Evaluators.NotifyCleared(c);
             c.Progress = new ConfigNode("PROGRESS");
             c.TotalCompletions++;
@@ -276,17 +278,33 @@ namespace CustomScienceContracts.Core
             if (vid == 0 || c.Progress == null) return;
 
             bool recovered = false, destroyed = false;
+            GameEventBridge.LifecycleEvent recovery = default;
             var events = ctx.Events?.Lifecycles;
+            // Staging and docking can change the vessel id between destination and recovery. Crew
+            // identity is the invariant, so any recovered capsule carrying a logged source Kerbal
+            // may close the return before assigned-vessel loss handling runs.
             if (events != null)
                 for (int i = 0; i < events.Count; i++)
-                    if (events[i].Id == vid) { if (events[i].Recovered) recovered = true; else destroyed = true; }
+                    if (events[i].Recovered && TryCompleteReturnOnRecovery(c, events[i].Crew))
+                    {
+                        MissionBinding.SetLost(c, false);
+                        c.Progress.RemoveValue("assignedDestroyPending");
+                        return;
+                    }
+            if (events != null)
+                for (int i = 0; i < events.Count; i++)
+                    if (events[i].Id == vid)
+                    {
+                        if (events[i].Recovered) { recovered = true; recovery = events[i]; }
+                        else destroyed = true;
+                    }
 
-            bool present = ctx.Vessels != null && ctx.Vessels.Any(v => v != null && v.persistentId == vid);
+            bool present = ctx.FindVessel(vid) != null;
 
             if (recovered)
             {
                 // Recovered on the home body: complete an open crewed return, else the craft is gone.
-                MissionBinding.SetLost(c, !TryCompleteReturnOnRecovery(c));
+                MissionBinding.SetLost(c, !TryCompleteReturnOnRecovery(c, recovery.Crew));
                 c.Progress.RemoveValue("assignedDestroyPending");
                 return;
             }
@@ -308,7 +326,7 @@ namespace CustomScienceContracts.Core
         /// <summary>Marks an open crewed RETURN check as done when its source visit was already
         /// logged, so a vessel recovered at home still pays out. Returns false when the mission has no
         /// such pending return.</summary>
-        private static bool TryCompleteReturnOnRecovery(MissionContract c)
+        private static bool TryCompleteReturnOnRecovery(MissionContract c, IEnumerable<string> recoveredCrew)
         {
             bool any = false;
             for (int ci = 0; ci < c.Bedingungen.Count; ci++)
@@ -320,7 +338,8 @@ namespace CustomScienceContracts.Core
                     var node = c.Progress.GetNode($"ret{ci}_{j}");
                     if (node == null) continue;
                     if (node.GetValue("done") == "1") { any = true; continue; }
-                    if (node.GetValue("seenSource") == "1")
+                    if (node.GetValue("seenSource") == "1" &&
+                        Conditions.ReturnEvaluation.CrewMatches(node, recoveredCrew))
                     {
                         node.SetValue("done", "1", true);
                         c.Progress.SetValue("ret_status", "returned", true);
@@ -341,9 +360,9 @@ namespace CustomScienceContracts.Core
             // not leave DOCK_STATION matching or station tracking pointing at a vanished id.
             if (Events.Merges.Count > 0) Stations.Remap(Events.Merges, ctx.Vessels);
 
-            var active = Catalog.All.Where(c => c.Status == MissionStatus.Active).ToList();
-            foreach (var c in active)
+            foreach (var c in Catalog.All)
             {
+                if (c.Status != MissionStatus.Active) continue;
                 // Recovery/destruction of an assigned vessel before reading bindings, so a returned
                 // crew can complete and a lost craft pauses instead of resetting.
                 ProcessAssignedLifecycle(c, ctx);
@@ -418,6 +437,7 @@ namespace CustomScienceContracts.Core
             LastClaimId = c.Id; LastClaimAmount = amount; LastClaimRealtime = Time.realtimeSinceStartup;
             c.TotalCompletions++;
             RecordFirstCompletion(c);
+            RecordCompletionEvent(c, "claim", amount);
             StoreFleetIfNetwork(c);   // keep the constellation so a follow-up network can inherit it
             Evaluators.NotifyCleared(c);
             c.Progress = new ConfigNode("PROGRESS");
@@ -430,7 +450,7 @@ namespace CustomScienceContracts.Core
             }
             else c.Status = MissionStatus.CompletedOnce;
 
-            Log.Info($"Claimed: {c.Id} (+{c.ScienceReward} science)");
+            Log.Info($"Claimed: {c.Id} (+{amount:0.##} science)");
             RecomputeAvailability();
 
             Toast($"+{amount:0} Science — {c.Titel}");
@@ -444,6 +464,25 @@ namespace CustomScienceContracts.Core
         {
             if (c.FirstCompletedUT < 0.0)
                 c.FirstCompletedUT = Planetarium.GetUniversalTime();
+        }
+
+        private void RecordCompletionEvent(MissionContract c, string action, float? science)
+        {
+            double ut = Planetarium.GetUniversalTime();
+            string vessel = MissionBinding.AssignedName(c);
+            string crew = "";
+            uint vid = MissionBinding.AssignedVid(c);
+            if (vid != 0 && FlightGlobals.Vessels != null)
+            {
+                var v = FlightGlobals.Vessels.FirstOrDefault(x => x != null && x.persistentId == vid);
+                if (v != null)
+                {
+                    if (string.IsNullOrEmpty(vessel)) vessel = v.vesselName;
+                    try { crew = string.Join(", ", v.GetVesselCrew().Select(k => k.name)); }
+                    catch (System.Exception) { }
+                }
+            }
+            CompletionLog.Add(c.Id, ut, action, science, vessel, crew);
         }
 
         /// <summary>Toast listing missions that just became available, capped at three titles.</summary>

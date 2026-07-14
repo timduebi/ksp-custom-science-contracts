@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate-test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Regenerate catalogs
+        run: |
+          python tools/gen_catalog.py
+          python tools/gen_catalog_stock.py
+          git diff --exit-code
+      - name: Semantic catalog validation
+        run: |
+          python tools/validate_design.py
+          python tools/validate_design.py custom_science_contracts_stock_missionsdesign.md
+          python tools/validate_catalog.py
+      - name: Python tests
+        run: python -m unittest discover -s tests -p 'test_*.py'
+      - name: Pure C# tests
+        run: dotnet test tests/CoreLogic.Tests/CoreLogic.Tests.csproj -c Release
+      - name: Fetch transient KSP 1.12.5 reference assemblies
+        run: |
+          curl -L --fail --retry 3 -o /tmp/ksp-libs.zip https://github.com/KSPModdingLibs/KSPLibs/raw/main/KSP-1.12.5.zip
+          mkdir -p "$GITHUB_WORKSPACE/.ksp-managed"
+          unzip -j /tmp/ksp-libs.zip '*.dll' -d "$GITHUB_WORKSPACE/.ksp-managed"
+      - name: Build plugin
+        run: dotnet build CustomScienceContracts.sln -c Release -p:KSPManaged="$GITHUB_WORKSPACE/.ksp-managed"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CustomScienceContracts-plugin
+          path: GameData/CustomScienceContracts/Plugins/CustomScienceContracts.dll

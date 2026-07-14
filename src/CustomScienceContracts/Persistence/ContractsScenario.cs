@@ -21,6 +21,7 @@ namespace CustomScienceContracts.Persistence
         private CscUI _ui;
         private bool _initialized;
         private Coroutine _loop;
+        private static bool _selfTestRan;
 
         /// <summary>Runs before OnLoad, as early as the scenario module lifecycle allows, so the
         /// AppLauncher button subscription (inside EnsureInitialized) lands as close to the front
@@ -50,10 +51,12 @@ namespace CustomScienceContracts.Persistence
         private void Start()
         {
             EnsureInitialized();
+            BodyResolver.RebuildCache();
+            StartupDiagnostics.Run(_manager.Catalog);
             _manager.Events.Subscribe();
-            if (Tuning.SelfTest)
+            if (Tuning.SelfTest && !_selfTestRan)
             {
-                Tuning.SelfTest = false;   // once per session, not on every scene change
+                _selfTestRan = true;
                 SelfTest.Run();
             }
             if (_loop == null) _loop = StartCoroutine(CheckLoop());
@@ -108,6 +111,7 @@ namespace CustomScienceContracts.Persistence
                         Events = _manager.Events,
                         Stations = _manager.Stations
                     };
+                    ctx.BuildIndexes();
                     if (Tuning.VerboseLogging)
                     {
                         int active = 0;

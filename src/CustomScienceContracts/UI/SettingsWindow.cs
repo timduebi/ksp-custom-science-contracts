@@ -25,12 +25,21 @@ namespace CustomScienceContracts.UI
             GUILayout.Space(4);
             GUILayout.Label("Settings", Theme.Title);
             GUILayout.Label($"{ModInfo.Name} v{ModInfo.Version}", Theme.ItemSub);
+            Color diagnosticColor = GUI.color;
+            if (StartupDiagnostics.ErrorCount > 0) GUI.color = Theme.Bad;
+            else if (StartupDiagnostics.WarningCount > 0) GUI.color = new Color(1f, 0.72f, 0.24f);
+            GUILayout.Label($"Profile: {StartupDiagnostics.Profile}  ·  diagnostics: "
+                          + $"{StartupDiagnostics.ErrorCount} error(s), {StartupDiagnostics.WarningCount} warning(s)", Theme.ItemSub);
+            GUI.color = diagnosticColor;
 
             // --- Science multiplier (x0.1 - x3.0, 0.1 steps) ---
             GUILayout.Space(8);
             GUILayout.Label($"Science multiplier:  x{mgr.ScienceMultiplier:0.0}", Theme.ItemTitle);
+            float previousMultiplier = (float)mgr.ScienceMultiplier;
             float m = GUILayout.HorizontalSlider((float)mgr.ScienceMultiplier, 0.1f, 3.0f, GUILayout.Height(20));
             mgr.ScienceMultiplier = Mathf.Clamp(Mathf.Round(m * 10f) / 10f, 0.1f, 3.0f);
+            if (Mathf.Abs(previousMultiplier - (float)mgr.ScienceMultiplier) > 0.001f)
+                Tuning.ApplyEconomy("custom", mgr);
             GUILayout.Label("Applies to all future claimed rewards.", Theme.ItemSub);
 
             // --- Mission Control size ---
@@ -74,6 +83,17 @@ namespace CustomScienceContracts.UI
                           + "(Casual x1.3, Normal x1.0, Hard x0.4). Also available in KSP's own "
                           + "Difficulty Options, at new-game creation and via the pause menu.", Theme.ItemSub);
 
+            GUILayout.Space(8);
+            GUILayout.Label("Independent difficulty axes", Theme.ItemTitle);
+            DifficultyAxis("Economy", Tuning.EconomyDifficulty,
+                (name) => Tuning.ApplyEconomy(name, mgr));
+            DifficultyAxis("Pacing", Tuning.PacingDifficulty,
+                (name) => Tuning.ApplyPacing(name));
+            DifficultyAxis("Operations", Tuning.OperationsDifficulty,
+                (name) => Tuning.ApplyOperations(name));
+            GUILayout.Label("Economy controls payout, Pacing the repeatable cooldown, and Operations "
+                          + "the active-mission limits. Mixed choices are saved as Custom.", Theme.ItemSub);
+
             // --- Unlock all ---
             GUILayout.Space(12);
             bool unlock = Tuning.UnlockAll;
@@ -91,7 +111,8 @@ namespace CustomScienceContracts.UI
             GUILayout.Label("Emergency exit for a broken or too difficult mission: counts as completed "
                           + "and unlocks follow-ups, but pays NO science points.", Theme.ItemSub);
 
-            _scroll = GUILayout.BeginScrollView(_scroll, GUILayout.Width(width - 8), GUILayout.Height(height - 560));
+            _scroll = GUILayout.BeginScrollView(_scroll, GUILayout.Width(width - 8),
+                GUILayout.Height(Mathf.Max(58f, height - 680f)));
             var active = mgr.ActiveContracts().ToList();
             if (active.Count == 0)
                 GUILayout.Label("No active missions.", Theme.Locked);
@@ -136,6 +157,21 @@ namespace CustomScienceContracts.UI
                 float? mult = Tuning.ScienceMultiplierFor(key);
                 if (mult.HasValue) mgr.ScienceMultiplier = mult.Value;
             }
+        }
+
+        private static void DifficultyAxis(string label, string current,
+            System.Action<string> apply)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(label, Theme.ItemSub, GUILayout.Width(92));
+            foreach (string key in new[] { "casual", "normal", "hard" })
+            {
+                string title = char.ToUpperInvariant(key[0]) + key.Substring(1);
+                if (GUILayout.Button(title, current == key ? Theme.AcceptBtn : Theme.SettingsBtn,
+                        GUILayout.Height(24)) && current != key)
+                    apply(key);
+            }
+            GUILayout.EndHorizontal();
         }
     }
 }

@@ -45,6 +45,9 @@ namespace CustomScienceContracts.Core
 
         // --- Difficulty preset ("custom" keeps the settings.cfg values) ---
         public static string Difficulty = "normal";
+        public static string EconomyDifficulty = "normal";
+        public static string PacingDifficulty = "normal";
+        public static string OperationsDifficulty = "normal";
 
         // --- Diagnostics ---
         public static bool VerboseLogging = false;
@@ -60,30 +63,72 @@ namespace CustomScienceContracts.Core
         /// known preset nor "custom" is ignored entirely.</summary>
         public static void ApplyDifficulty(string name)
         {
+            if (name == "custom") { Difficulty = "custom"; MirrorDifficultyParameters(); return; }
+            if (!IsTier(name)) return;
+            ApplyPacing(name);
+            ApplyOperations(name);
+            EconomyDifficulty = name;
+            Difficulty = name;
+            MirrorDifficultyParameters();
+        }
+
+        public static void ApplyEconomy(string name, ContractManager mgr)
+        {
+            if (!IsTierOrCustom(name)) return;
+            EconomyDifficulty = name;
+            float? multiplier = ScienceMultiplierFor(name);
+            if (multiplier.HasValue && mgr != null) mgr.ScienceMultiplier = multiplier.Value;
+            RefreshCombinedDifficulty();
+        }
+
+        public static void ApplyPacing(string name)
+        {
+            if (!IsTierOrCustom(name)) return;
             switch (name)
             {
-                case "casual":
-                    RepeatableCooldown = 1;
-                    ActiveBemannt = 5; ActiveErkundung = 12; ActiveStationen = 6; ActiveNetzwerk = 6;
-                    break;
-                case "normal":
-                    RepeatableCooldown = 2;
-                    ActiveBemannt = 4; ActiveErkundung = 10; ActiveStationen = 5; ActiveNetzwerk = 5;
-                    break;
-                case "hard":
-                    RepeatableCooldown = 3;
-                    ActiveBemannt = 3; ActiveErkundung = 8; ActiveStationen = 4; ActiveNetzwerk = 4;
-                    break;
-                case "custom":
-                    break;
-                default:
-                    return;
+                case "casual": RepeatableCooldown = 1; break;
+                case "normal": RepeatableCooldown = 2; break;
+                case "hard": RepeatableCooldown = 3; break;
             }
-            Difficulty = name;
+            PacingDifficulty = name;
+            RefreshCombinedDifficulty();
+        }
+
+        public static void ApplyOperations(string name)
+        {
+            if (!IsTierOrCustom(name)) return;
+            switch (name)
+            {
+                case "casual": ActiveBemannt = 5; ActiveErkundung = 12; ActiveStationen = 6; ActiveNetzwerk = 6; break;
+                case "normal": ActiveBemannt = 4; ActiveErkundung = 10; ActiveStationen = 5; ActiveNetzwerk = 5; break;
+                case "hard": ActiveBemannt = 3; ActiveErkundung = 8; ActiveStationen = 4; ActiveNetzwerk = 4; break;
+            }
+            OperationsDifficulty = name;
+            RefreshCombinedDifficulty();
+        }
+
+        private static void RefreshCombinedDifficulty()
+        {
+            Difficulty = EconomyDifficulty == PacingDifficulty && PacingDifficulty == OperationsDifficulty
+                ? EconomyDifficulty : "custom";
+            MirrorDifficultyParameters();
+        }
+
+        private static bool IsTier(string name) => name == "casual" || name == "normal" || name == "hard";
+        private static bool IsTierOrCustom(string name) => IsTier(name) || name == "custom";
+
+        private static void MirrorDifficultyParameters()
+        {
             try
             {
                 var p = HighLogic.CurrentGame?.Parameters?.CustomParams<CscDifficultyParams>();
-                if (p != null) p.difficulty = name;
+                if (p != null)
+                {
+                    p.difficulty = Difficulty;
+                    p.economy = EconomyDifficulty;
+                    p.pacing = PacingDifficulty;
+                    p.operations = OperationsDifficulty;
+                }
             }
             catch (System.Exception) { }
         }
@@ -108,19 +153,27 @@ namespace CustomScienceContracts.Core
         {
             if (HighLogic.CurrentGame == null) return;
             var p = HighLogic.CurrentGame.Parameters?.CustomParams<CscDifficultyParams>();
-            if (p == null || p.difficulty == Difficulty) return;
-            ApplyDifficulty(p.difficulty);
-            float? mult = ScienceMultiplierFor(p.difficulty);
-            if (mult.HasValue && mgr != null) mgr.ScienceMultiplier = mult.Value;
+            if (p == null) return;
+            // Old parameter nodes only have the aggregate field; new ones expose independent axes.
+            if (p.difficulty != Difficulty && p.difficulty != "custom" &&
+                p.economy == EconomyDifficulty && p.pacing == PacingDifficulty && p.operations == OperationsDifficulty)
+            {
+                ApplyDifficulty(p.difficulty);
+                float? legacyMultiplier = ScienceMultiplierFor(p.difficulty);
+                if (legacyMultiplier.HasValue && mgr != null) mgr.ScienceMultiplier = legacyMultiplier.Value;
+                return;
+            }
+            if (p.economy != EconomyDifficulty) ApplyEconomy(p.economy, mgr);
+            if (p.pacing != PacingDifficulty) ApplyPacing(p.pacing);
+            if (p.operations != OperationsDifficulty) ApplyOperations(p.operations);
         }
 
-        private static bool _loaded;
-
-        /// <summary>Loads settings.cfg once. Missing values keep their defaults.</summary>
+        /// <summary>Resets and reloads settings.cfg for every scenario instance. KSP can switch
+        /// save games without restarting the process, so process-wide one-shot state leaks choices
+        /// from one campaign into another.</summary>
         public static void Load()
         {
-            if (_loaded) return;
-            _loaded = true;
+            ResetDefaults();
             if (GameDatabase.Instance == null) return;
 
             ConfigNode[] nodes = GameDatabase.Instance.GetConfigNodes(SettingsNode);
@@ -151,6 +204,17 @@ namespace CustomScienceContracts.Core
                 SelfTest              = GetB(n, "selfTest", SelfTest);
             }
             Debug.Log("[CSC] settings.cfg loaded.");
+        }
+
+        private static void ResetDefaults()
+        {
+            VisibleBemanntBase = 3; VisibleBemanntBoosted = 5; BemanntBoostFraction = 0.5f;
+            VisibleErkundungPerSub = 4; VisibleStationenPerSub = 3; VisibleNetzwerkPerSub = 3;
+            ActiveBemannt = 4; ActiveErkundung = 10; ActiveStationen = 5; ActiveNetzwerk = 5;
+            RepeatableCooldown = 2; MarkerRadiusKmDefault = 15.0; CheckIntervalSeconds = 1.0f;
+            MissionCenterScale = 0.96f; UiScale = 1.0f;
+            ShowToasts = true; PlaySounds = true; VerboseLogging = false; UnlockAll = false; SelfTest = false;
+            Difficulty = EconomyDifficulty = PacingDifficulty = OperationsDifficulty = "normal";
         }
 
         private static int GetI(ConfigNode n, string k, int def) =>

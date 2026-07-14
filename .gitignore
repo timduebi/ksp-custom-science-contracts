@@ -3,6 +3,8 @@
 # Build output
 src/**/bin/
 src/**/obj/
+tests/**/bin/
+tests/**/obj/
 GameData/CustomScienceContracts/Plugins/*.dll
 GameData/CustomScienceContracts/Plugins/*.pdb
 *.user

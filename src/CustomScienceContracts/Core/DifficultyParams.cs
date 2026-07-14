@@ -25,9 +25,22 @@ namespace CustomScienceContracts.Core
             "difficulty preset above unless set to custom.", autoPersistance = true)]
         public string difficulty = "normal";
 
+        [GameParameters.CustomStringParameterUI("Economy", toolTip =
+            "Science payout only. Changing one axis makes the combined preset custom.", autoPersistance = true)]
+        public string economy = "normal";
+
+        [GameParameters.CustomStringParameterUI("Pacing", toolTip =
+            "Repeatable-mission cooldown only.", autoPersistance = true)]
+        public string pacing = "normal";
+
+        [GameParameters.CustomStringParameterUI("Operations", toolTip =
+            "Maximum simultaneously active missions per branch.", autoPersistance = true)]
+        public string operations = "normal";
+
         public override IList ValidValues(MemberInfo member)
         {
-            if (member.Name == nameof(difficulty))
+            if (member.Name == nameof(difficulty) || member.Name == nameof(economy) ||
+                member.Name == nameof(pacing) || member.Name == nameof(operations))
                 return new List<string> { "normal", "casual", "hard", "custom" };
             return null;
         }
@@ -39,10 +52,10 @@ namespace CustomScienceContracts.Core
         {
             switch (preset)
             {
-                case GameParameters.Preset.Easy: difficulty = "casual"; break;
-                case GameParameters.Preset.Normal: difficulty = "normal"; break;
-                case GameParameters.Preset.Moderate: difficulty = "hard"; break;
-                case GameParameters.Preset.Hard: difficulty = "hard"; break;
+                case GameParameters.Preset.Easy: difficulty = economy = pacing = operations = "casual"; break;
+                case GameParameters.Preset.Normal: difficulty = economy = pacing = operations = "normal"; break;
+                case GameParameters.Preset.Moderate: difficulty = economy = pacing = operations = "hard"; break;
+                case GameParameters.Preset.Hard: difficulty = economy = pacing = operations = "hard"; break;
                 // Custom: leave whatever the player already picked for our own difficulty.
             }
         }

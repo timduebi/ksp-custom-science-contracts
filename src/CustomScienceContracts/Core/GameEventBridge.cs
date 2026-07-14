@@ -15,7 +15,13 @@ namespace CustomScienceContracts.Core
         public struct MergeEvent { public uint IdA; public uint IdB; }
         /// <summary>A vessel left the game this tick: recovered (true) or destroyed (false). Used to
         /// tell a permanently lost assigned vessel from a transient scene-load unload.</summary>
-        public struct LifecycleEvent { public uint Id; public bool Recovered; }
+        public struct LifecycleEvent
+        {
+            public uint Id;
+            public bool Recovered;
+            /// <summary>Crew snapshot taken before recovery removes the ProtoVessel.</summary>
+            public List<string> Crew;
+        }
 
         public readonly List<DockEvent> Dockings = new List<DockEvent>();
         public readonly List<SoiEvent> SoiChanges = new List<SoiEvent>();
@@ -80,7 +86,15 @@ namespace CustomScienceContracts.Core
 
         private void OnVesselRecovered(ProtoVessel pv, bool quick)
         {
-            if (pv != null) Lifecycles.Add(new LifecycleEvent { Id = pv.persistentId, Recovered = true });
+            if (pv == null) return;
+            var crew = new List<string>();
+            try
+            {
+                foreach (var kerbal in pv.GetVesselCrew())
+                    if (kerbal != null && !string.IsNullOrEmpty(kerbal.name)) crew.Add(kerbal.name);
+            }
+            catch (System.Exception e) { Log.Warn($"Could not snapshot recovered crew: {e.Message}"); }
+            Lifecycles.Add(new LifecycleEvent { Id = pv.persistentId, Recovered = true, Crew = crew });
         }
 
         private void OnVesselWillDestroy(Vessel v)

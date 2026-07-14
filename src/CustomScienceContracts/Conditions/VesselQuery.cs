@@ -125,20 +125,24 @@ namespace CustomScienceContracts.Conditions
         {
             foreach (var v in vessels)
             {
-                if (v == null) continue;
-                switch (v.vesselType)
-                {
-                    case VesselType.Debris:
-                    case VesselType.Flag:
-                    case VesselType.SpaceObject:
-                    case VesselType.Unknown:
-                    case VesselType.DeployedScienceController:
-                    case VesselType.DeployedSciencePart:
-                        continue;
-                    default:
-                        yield return v;
-                        break;
-                }
+                if (IsReal(v)) yield return v;
+            }
+        }
+
+        public static bool IsReal(Vessel v)
+        {
+            if (v == null) return false;
+            switch (v.vesselType)
+            {
+                case VesselType.Debris:
+                case VesselType.Flag:
+                case VesselType.SpaceObject:
+                case VesselType.Unknown:
+                case VesselType.DeployedScienceController:
+                case VesselType.DeployedSciencePart:
+                    return false;
+                default:
+                    return true;
             }
         }
 

@@ -125,11 +125,11 @@ namespace CustomScienceContracts.Conditions
                 string key = $"c{ci}_vid";
                 uint vid = GetUInt(c.Progress, key);
                 if (vid == 0) continue;
-                if (ctx.Vessels.Any(v => v != null && v.persistentId == vid)) continue; // still exists
+                if (ctx.FindVessel(vid) != null) continue; // still exists
                 foreach (var m in merges)
                 {
                     uint other = vid == m.IdA ? m.IdB : (vid == m.IdB ? m.IdA : 0u);
-                    if (other != 0u && ctx.Vessels.Any(v => v != null && v.persistentId == other))
+                    if (ctx.FindVessel(other) != null)
                     {
                         c.Progress.SetValue(key, other.ToString(), true);
                         break;
@@ -142,17 +142,17 @@ namespace CustomScienceContracts.Conditions
             foreach (var m in merges)
             {
                 uint av = MissionBinding.AssignedVid(c);
-                if (av != 0 && !ctx.Vessels.Any(v => v != null && v.persistentId == av))
+                if (av != 0 && ctx.FindVessel(av) == null)
                 {
                     uint other = av == m.IdA ? m.IdB : (av == m.IdB ? m.IdA : 0u);
-                    if (other != 0u && ctx.Vessels.Any(v => v != null && v.persistentId == other))
+                    if (ctx.FindVessel(other) != null)
                         MissionBinding.RemapAssigned(c, av, other);
                 }
                 foreach (var fe in MissionBinding.Fleet(c))
                 {
-                    if (ctx.Vessels.Any(v => v != null && v.persistentId == fe.Vid)) continue;
+                    if (ctx.FindVessel(fe.Vid) != null) continue;
                     uint other = fe.Vid == m.IdA ? m.IdB : (fe.Vid == m.IdB ? m.IdA : 0u);
-                    if (other != 0u && ctx.Vessels.Any(v => v != null && v.persistentId == other))
+                    if (ctx.FindVessel(other) != null)
                         MissionBinding.FleetRemap(c, fe.Vid, other);
                 }
             }
@@ -165,7 +165,7 @@ namespace CustomScienceContracts.Conditions
             // loaded or unloaded. Transient missing (scene load) returns null and the caller holds t0.
             uint assigned = MissionBinding.AssignedVid(c);
             if (assigned != 0)
-                return ctx.Vessels.FirstOrDefault(v => v != null && v.persistentId == assigned);
+                return ctx.FindVessel(assigned);
 
             // Fleet/network mission: use the first present assigned satellite as the representative
             // subject for the shared CREW_NONE / DURATION checks instead of the active vessel.
@@ -173,7 +173,7 @@ namespace CustomScienceContracts.Conditions
             {
                 foreach (var fe in MissionBinding.Fleet(c))
                 {
-                    var fv = ctx.Vessels.FirstOrDefault(v => v != null && v.persistentId == fe.Vid);
+                    var fv = ctx.FindVessel(fe.Vid);
                     if (fv != null) return fv;
                 }
                 return null;
@@ -184,7 +184,7 @@ namespace CustomScienceContracts.Conditions
 
             uint vid = GetUInt(c.Progress, $"c{ci}_vid");
             Vessel bound = vid != 0
-                ? ctx.Vessels.FirstOrDefault(v => v != null && v.persistentId == vid)
+                ? ctx.FindVessel(vid)
                 : null;
 
             // Running timer means locked binding: only the bound vessel counts, even unfocused or
@@ -341,14 +341,14 @@ namespace CustomScienceContracts.Conditions
                                        chk.Kind == CheckKind.RELAY_VESSEL_COUNT_INCLINATION;
             // Networks require active assignment: only assigned satellites count, so the player must
             // assign the constellation and foreign craft are never mistaken for the network.
-            int count = VesselQuery.RealVessels(ctx.Vessels).Count(v =>
+            int count = ctx.RealVessels.Count(v =>
                 MissionBinding.FleetContains(c, v.persistentId) &&
                 v.mainBody == body &&
                 v.situation == Vessel.Situations.ORBITING &&
                 v.orbit != null &&
                 (minM <= 0.0 || v.orbit.PeA > minM) &&
                 (!inclinationRequired || v.orbit.inclination >= chk.InclinationMin) &&
-                (!relayRequired || HasRelayTransmitter(v)));
+                (!relayRequired || RelayCapability.IsOperational(v, out _)));
             return count >= chk.Count;
         }
 
@@ -370,7 +370,7 @@ namespace CustomScienceContracts.Conditions
             if (inclinationRequired && v.orbit.inclination < chk.InclinationMin) { reason = "inclination too low"; return false; }
             bool relayRequired = chk.Kind == CheckKind.RELAY_VESSEL_COUNT ||
                                  chk.Kind == CheckKind.RELAY_VESSEL_COUNT_INCLINATION;
-            if (relayRequired && !HasRelayTransmitter(v)) { reason = "no relay antenna"; return false; }
+            if (relayRequired && !RelayCapability.IsOperational(v, out reason)) return false;
             reason = "in orbit";
             return true;
         }
@@ -392,7 +392,7 @@ namespace CustomScienceContracts.Conditions
             // anything docked into it) counts, so a different craft passing the body does not finish it.
             uint assigned = MissionBinding.AssignedVid(c);
 
-            foreach (var v in VesselQuery.RealVessels(ctx.Vessels))
+            foreach (var v in ctx.RealVessels)
             {
                 if (assigned != 0 && v.persistentId != assigned) continue;
                 bool atTarget = v.mainBody == body;
@@ -442,7 +442,7 @@ namespace CustomScienceContracts.Conditions
             if (GetI(c.Progress, pfx + "set", 0) != 1)
             {
                 int gameSeed = HighLogic.CurrentGame != null ? HighLogic.CurrentGame.Seed : 0;
-                var rng = new System.Random(gameSeed ^ ($"{c.Id}#{ci}_{j}").GetHashCode());
+                var rng = new System.Random(gameSeed ^ DeterministicHash.Of($"{c.Id}#{ci}_{j}"));
                 double aMin = Math.Min(chk.LatAbsMin, chk.LatAbsMax);
                 double aMax = Math.Max(chk.LatAbsMin, chk.LatAbsMax);
                 double absLat = rng.NextDouble() * (aMax - aMin) + aMin;
@@ -465,7 +465,7 @@ namespace CustomScienceContracts.Conditions
 
             // 2) Ensure visible waypoint; object state only lives at runtime.
             if (!MarkerWaypoint.Has(wpId))
-                MarkerWaypoint.Set(wpId, body, mLat, mLon, c.Titel, Math.Abs(wpId.GetHashCode()) % 10000);
+                MarkerWaypoint.Set(wpId, body, mLat, mLon, c.Titel, DeterministicHash.Of(wpId) % 10000);
 
             // 3) Landed + distance.
             var v = VesselQuery.Active;
@@ -486,50 +486,8 @@ namespace CustomScienceContracts.Conditions
         /// the destination.</summary>
         private static bool EvalReturn(MissionContract c, int ci, int j, Check chk, EvaluationContext ctx)
         {
-            ConfigNode node = StateNode(c.Progress, $"ret{ci}_{j}");
-            if (NInt(node, "done") == 1) return true;
-
-            var from = BodyResolver.Resolve(chk.Body);
-            var home = BodyResolver.Resolve(string.IsNullOrEmpty(chk.ReturnBody) ? "Kerbin" : chk.ReturnBody);
-            if (from == null || home == null) return false;
-            bool flybyMode = string.Equals(chk.ReturnMode, "flyby", StringComparison.OrdinalIgnoreCase);
-            bool visitMode = flybyMode || string.Equals(chk.ReturnMode, "visit", StringComparison.OrdinalIgnoreCase);
-            bool homeMode = string.Equals(chk.ReturnMode, "home", StringComparison.OrdinalIgnoreCase);
-
-            bool seenSource = NInt(node, "seenSource") == 1;
-            bool justLoggedSource = false;
-            foreach (var v in VesselQuery.RealVessels(ctx.Vessels))
-            {
-                if (!Crewed(v)) continue;
-                bool atSource = homeMode
-                    ? v.mainBody == from && !Surface(v) && v.situation != Vessel.Situations.PRELAUNCH
-                    : v.mainBody == from && (visitMode || Surface(v));
-                bool atHomeSurface = v.mainBody == home && Surface(v);
-                if (!seenSource && atSource)
-                {
-                    RememberHomeVessels(node, ctx, home);
-                    seenSource = true;
-                    justLoggedSource = true;
-                    node.SetValue("seenSource", "1", true);
-                    node.SetValue("sourceVessel", v.persistentId.ToString(), true);
-                    c.Progress.SetValue("ret_status", visitMode || homeMode ? "visit_logged" : "source_logged", true);
-                }
-                if (seenSource && !justLoggedSource && atHomeSurface && !IsRememberedHomeVessel(node, v.persistentId))
-                {
-                    node.SetValue("done", "1", true);
-                    node.SetValue("returnVessel", v.persistentId.ToString(), true);
-                    c.Progress.SetValue("ret_status", "returned", true);
-                    return true;
-                }
-            }
-
-            c.Progress.SetValue("ret_status", seenSource ? "awaiting_return" : (visitMode || homeMode ? "awaiting_visit" : "awaiting_source"), true);
-            return false;
+            return ReturnEvaluation.Evaluate(c, ci, j, chk, ctx);
         }
-
-        private static bool Crewed(Vessel v) => v != null && VesselQuery.EffectiveCrew(v) > 0;
-        private static bool Surface(Vessel v) =>
-            v != null && (v.situation == Vessel.Situations.LANDED || v.situation == Vessel.Situations.SPLASHED);
         private static bool HasWheelModule(Vessel v)
         {
             if (v == null || v.parts == null) return false;
@@ -544,61 +502,6 @@ namespace CustomScienceContracts.Conditions
                 }
             }
             return false;
-        }
-
-        private static bool HasRelayTransmitter(Vessel v)
-        {
-            if (v == null) return false;
-            if (v.loaded && v.parts != null)
-            {
-                foreach (var p in v.parts)
-                {
-                    if (p == null || p.Modules == null) continue;
-                    foreach (PartModule module in p.Modules)
-                        if (IsRelayModule(module)) return true;
-                }
-                return false;
-            }
-            // Unloaded/on-rails: the parts list is empty, so an out-of-range relay would otherwise read
-            // as "no antenna". Read the part prefab modules from the proto snapshots instead.
-            if (v.protoVessel != null && v.protoVessel.protoPartSnapshots != null)
-                foreach (var pps in v.protoVessel.protoPartSnapshots)
-                {
-                    Part prefab = pps != null && pps.partInfo != null ? pps.partInfo.partPrefab : null;
-                    if (prefab == null || prefab.Modules == null) continue;
-                    foreach (PartModule module in prefab.Modules)
-                        if (IsRelayModule(module)) return true;
-                }
-            return false;
-        }
-
-        private static bool IsRelayModule(PartModule module)
-        {
-            if (module == null) return false;
-            string name = module.moduleName ?? module.GetType().Name ?? "";
-            if (!string.Equals(name, "ModuleDataTransmitter", StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            object antennaType = module.GetType().GetField("antennaType")?.GetValue(module);
-            if (antennaType != null &&
-                antennaType.ToString().IndexOf("RELAY", StringComparison.OrdinalIgnoreCase) >= 0)
-                return true;
-
-            string fieldValue = module.Fields?.GetValue("antennaType")?.ToString();
-            return !string.IsNullOrEmpty(fieldValue) &&
-                   fieldValue.IndexOf("RELAY", StringComparison.OrdinalIgnoreCase) >= 0;
-        }
-        private static void RememberHomeVessels(ConfigNode node, EvaluationContext ctx, CelestialBody home)
-        {
-            ConfigNode homeNode = StateNode(node, "HOME_BASELINE");
-            foreach (var v in VesselQuery.RealVessels(ctx.Vessels))
-                if (Crewed(v) && Surface(v) && v.mainBody == home)
-                    GetVesselNode(homeNode, v.persistentId, create: true);
-        }
-        private static bool IsRememberedHomeVessel(ConfigNode node, uint id)
-        {
-            ConfigNode homeNode = node.GetNode("HOME_BASELINE");
-            return homeNode != null && GetVesselNode(homeNode, id, create: false) != null;
         }
 
         // ---- ConfigNode state helpers ----

@@ -34,8 +34,8 @@ Everything is managed from the in-game **Mission Control** window:
   body. Each card always shows whether it is ready or how many more missions you need to complete
   before it refreshes ("Available after 2 more missions"), with a progress bar and how often you
   have flown it.
-- **Program Log** — every completed mission in chronological order with its in-game date, epoch
-  and reward: your campaign as a flight log.
+- **Program Log** — every individual claim and skip in chronological order with its in-game date,
+  actual paid science, vessel and crew snapshot. Pre-0.7 history is imported without inventing payouts.
 - **Active Missions** — a separate window (resizable) tracking accepted missions with live
   objective status, vessel assignment and claim/abort actions. Its toolbar icon shows a green
   dot while something is ready to claim.
@@ -43,7 +43,8 @@ Everything is managed from the in-game **Mission Control** window:
   claimable, what a claim paid out and unlocked, when a repeatable's cooldown finishes and when
   you complete a whole epoch (both can be turned off in the settings).
 - **Settings** — science multiplier, UI scale for high-DPI displays, difficulty presets
-  (Casual / Normal / Hard) and notification toggles. A "?" button in Mission Control explains
+  (Casual / Normal / Hard), independently adjustable Economy/Pacing/Operations axes and notification
+  toggles. A "?" button in Mission Control explains
   every color and symbol. The difficulty preset is also available natively in KSP's own
   Difficulty Options, at new-game creation and via the pause menu.
 - **Stock toolbar integration** — Active Missions and Mission Control are registered directly
@@ -110,10 +111,12 @@ shipped as a release asset — it returns once the plugin UI is translatable as 
 
 - Altitude requirements are minimums (e.g. "periapsis above 2000 km" means greater than 2000 km).
 - Polar missions require at least 75° inclination.
-- Communication networks count real vessels in orbit — debris, flags, asteroids and deployed science objects do not count.
+- Communication networks count real vessels with an enabled relay antenna and, when stock CommNet is
+  active, a live connection — debris, flags, asteroids and deployed science objects do not count.
 - Repeatable missions (↻) go on a short cooldown after each claim: complete two other missions and
   they become available again in the Repeatables tab. The card always shows the remaining count.
-- Progress is stored per save at `saves/<Name>/CustomScienceContracts/contracts_state.cfg`.
+- Progress is stored atomically per save at `saves/<Name>/CustomScienceContracts/contracts_state.cfg`;
+  the previous valid file remains as `.bak`.
 
 ## Feedback & bug reports
 

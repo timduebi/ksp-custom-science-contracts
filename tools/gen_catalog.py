@@ -7,6 +7,7 @@
 Titel werden regelbasiert (+ kuratierte Sonderfaelle) gebildet, das Icon je Mission nach
 dominantem Check. Body-Namen sind interne CelestialBody.name (Luna = Moon)."""
 import re, os
+from catalog_common import long_stay_days, parse_check as parse_common_check, stability_days
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOC  = os.path.join(ROOT, "custom_science_contracts_missionsdesign.md")
@@ -254,53 +255,6 @@ TITLE = {
 }
 
 # ---------------- Parsing ----------------
-def parse_check(s):
-    """'FLYBY Moon 500 | label' -> (kind, ordered-kv-list, label)."""
-    head, _, label = s.partition("|")
-    label = label.strip()
-    toks = head.split()
-    kind = toks[0]; a = toks[1:]
-    kv = []
-    if kind in ("CREW_MIN", "CREW_EXACT", "CREW_CAPACITY_MIN"): kv = [("min", a[0])]
-    elif kind == "CREW_NONE": kv = []
-    elif kind in ("SUBORBITAL", "LANDED", "ORE_SURFACE"): kv = [("body", a[0])]
-    elif kind == "ORBIT_ABOVE":
-        kv = [("body", a[0])] + ([("km", a[1])] if len(a) > 1 else [])
-    elif kind == "APOAPSIS_MAX":
-        kv = [("body", a[0]), ("km", a[1])]
-    elif kind == "INCLINATION_MIN":
-        kv = [("body", a[0]), ("inclinationMin", a[1])]
-    elif kind == "ATMO_FRACTION":
-        kv = [("body", a[0]), ("fracMin", fpct(a[1])), ("fracMax", fpct(a[2]))]
-    elif kind == "FLYBY": kv = [("body", a[0]), ("km", a[1])]
-    elif kind == "MARKER_LANDING":
-        kv = [("body", a[0]), ("km", a[1])] + ([("latMin", a[2]), ("latMax", a[3])] if len(a) > 3 else [])
-    elif kind == "VESSEL_COUNT":
-        kv = [("body", a[0]), ("count", a[1])] + ([("km", a[2])] if len(a) > 2 else [])
-    elif kind == "VESSEL_COUNT_INCLINATION":
-        kv = [("body", a[0]), ("count", a[1]), ("inclinationMin", a[2])] + ([("km", a[3])] if len(a) > 3 else [])
-    elif kind == "EVA": kv = [("body", a[0])] + ([("situation", a[1])] if len(a) > 1 else [])
-    elif kind == "FUEL_MIN": kv = [("amount", a[0])]
-    elif kind == "RESOURCE_MIN": kv = [("resource", a[0]), ("amount", a[1])]
-    elif kind == "WHEEL_MOTION": kv = [("body", a[0]), ("speed", a[1])]
-    elif kind == "DOCK_ANY": kv = []
-    elif kind == "DOCK_STATION": kv = [("stationKey", a[0])]
-    elif kind == "HOLD": kv = [("seconds", a[0])]
-    elif kind == "DURATION": kv = [("days", a[0])]
-    elif kind == "RELAY_VESSEL_COUNT":
-        kv = [("body", a[0]), ("count", a[1])] + ([("km", a[2])] if len(a) > 2 else [])
-    elif kind == "RELAY_VESSEL_COUNT_INCLINATION":
-        kv = [("body", a[0]), ("count", a[1]), ("inclinationMin", a[2])] + ([("km", a[3])] if len(a) > 3 else [])
-    elif kind == "RETURN_FROM_BODY":
-        kv = [("body", a[0]), ("returnBody", a[1])]
-        if len(a) > 2: kv.append(("returnMode", a[2]))
-    else: raise SystemExit(f"Unbekannter Check '{kind}' in: {s}")
-    return kind, kv, label
-
-def fpct(p):
-    v = float(p) / 100.0
-    return (f"{v:.3f}").rstrip("0").rstrip(".")
-
 def parse_missions(text):
     out = []
     for blk in text.split("=== MISSION ===")[1:]:
@@ -311,7 +265,7 @@ def parse_missions(text):
                 if s.startswith("=="): break
                 continue
             if s.startswith("check:"):
-                checks.append(parse_check(s[6:].strip())); continue
+                checks.append(parse_common_check(s[6:].strip())); continue
             mm = re.match(r"(id|sparte|body|prereq|reward|repeatable|recordStation|stationRef|beschreibung_en|beschreibung|icon):\s*(.*)$", s)
             if mm: m[mm.group(1)] = mm.group(2).strip()
         if "id" in m:
@@ -611,6 +565,7 @@ def orbit_chain(key, body, sub, orbitword, km, stages, prereq0, station_word, mu
         sid = f"cr_{key}_build" if build else f"cr_{key}_expand{n}"
         sup, lng = f"cr_{key}_supply{n}", f"cr_{key}_longstay{n}"
         empty = {"kind": "CREW_NONE", "label": "Station unbemannt, keine Kerbals an Bord"}
+        stable_days = stability_days(build)
         if build:
             core = station_word[6:] if station_word.startswith("Erste ") else station_word
             title = f"{station_word} ({seats(n)})"
@@ -620,16 +575,15 @@ def orbit_chain(key, body, sub, orbitword, km, stages, prereq0, station_word, mu
                     f"der Name, den du ihr gibst, begleitet jeden künftigen Versorgungsflug.")
             out.append(contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
                        round(220 * mult), [prereq0],
-                       cks([empty, capacity(n), orbit, apo, {"kind": "DURATION", "days": 10, "label": "10 Tage im Zielorbit stabil halten"}]),
+                       cks([empty, capacity(n), orbit, apo, {"kind": "DURATION", "days": stable_days, "label": f"{stable_days} Tage im Zielorbit stabil halten"}]),
                        record=key))
         else:
             title = f"Stationsausbau auf {seats(n)}"
-            desc = (f"Erweitere %station% auf mindestens {seats(n)} und "
-                    f"halte die Station für diesen Ausbau leer und unbemannt. Besatzung "
-                    f"zählt erst ab der nächsten Versorgung.")
+            desc = (f"Erweitere %station% auf mindestens {seats(n)}, ohne die vorhandene "
+                    f"Besatzung evakuieren zu müssen, und weise den stabilen Ausbau nach.")
             out.append(contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
                        round((180 + 20 * n) * mult), [prev_long],
-                       cks([empty, capacity(n), orbit, apo, {"kind": "DURATION", "days": 10, "label": "10 Tage im Zielorbit stabil halten"}]),
+                       cks([capacity(n), orbit, apo, {"kind": "DURATION", "days": stable_days, "label": f"{stable_days} Tage im Zielorbit stabil halten"}]),
                        ref=key))
         out.append(contract(sup, f"Versorgung der Station ({kerbals(n)})",
                    f"Bring eine frische Ablösung von mindestens {kerbals(n)} zu %station% und docke an, um die "
@@ -638,11 +592,12 @@ def orbit_chain(key, body, sub, orbitword, km, stages, prereq0, station_word, mu
                    cks([{"kind": "CREW_MIN", "min": n, "label": f"Versorgungsschiff mit mindestens {kerbals(n)} an Bord"},
                         orbit, apo, {"kind": "DOCK_STATION", "stationKey": key, "label": "An der Station angedockt"}]),
                    repeatable=True, ref=key))
-        out.append(contract(lng, f"Dauerbetrieb 150 Tage ({kerbals(n)})",
-                   f"Halte %station% 150 Tage ununterbrochen mit mindestens {kerbals(n)} besetzt und "
+        long_days = long_stay_days(build)
+        out.append(contract(lng, f"Dauerbetrieb {long_days} Tage ({kerbals(n)})",
+                   f"Halte %station% {long_days} Tage ununterbrochen mit mindestens {kerbals(n)} besetzt und "
                    f"beweise stabilen Langzeitbetrieb auf dieser Stufe.", "Stationen", sub, "TrackingStation_ButtonMapStation",
                    round((260 + 30 * n) * mult), [sup],
-                   cks([crew(n), orbit, apo, {"kind": "DURATION", "days": 150, "label": f"150 Tage mit {kerbals(n)} ausharren"}]),
+                   cks([crew(n), orbit, apo, {"kind": "DURATION", "days": long_days, "label": f"{long_days} Tage mit {kerbals(n)} ausharren"}]),
                    ref=key))
         prev_long = lng
     return "".join(out)
@@ -680,6 +635,7 @@ def base_chain(key, body, sub, stages, prereq0, base_word, mult):
         build = (i == 0)
         sid = f"cr_{key}_build" if build else f"cr_{key}_expand{n}"
         sup, lng = f"cr_{key}_supply{n}", f"cr_{key}_longstay{n}"
+        stable_days = stability_days(build)
         if build:
             core = base_word[6:] if base_word.startswith("Erste ") else base_word
             title = f"{base_word} ({kerbals(n)})"
@@ -688,7 +644,7 @@ def base_chain(key, body, sub, stages, prereq0, base_word, mult):
                     f"gilt für jeden weiteren Flug dorthin.")
             out.append(contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapBase",
                        round(240 * mult), prereq0_list,
-                       cks([crew(n), landed, {"kind": "DURATION", "days": 10, "label": f"10 Tage mit {kerbals(n)} halten"}]),
+                       cks([crew(n), landed, {"kind": "DURATION", "days": stable_days, "label": f"{stable_days} Tage mit {kerbals(n)} halten"}]),
                        record=key))
         else:
             title = f"Basisausbau auf {kerbals(n)}"
@@ -696,7 +652,7 @@ def base_chain(key, body, sub, stages, prereq0, base_word, mult):
                     f"bevor der nächste Ausbau folgt.")
             out.append(contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapBase",
                        round((180 + 20 * n) * mult), [prev_long],
-                       cks([crew(n), landed, {"kind": "DURATION", "days": 10, "label": f"10 Tage mit {kerbals(n)} halten"}]),
+                       cks([crew(n), landed, {"kind": "DURATION", "days": stable_days, "label": f"{stable_days} Tage mit {kerbals(n)} halten"}]),
                        ref=key))
         out.append(contract(sup, f"Versorgung der Basis ({kerbals(n)})",
                    f"Lande eine frische Ablösung von mindestens {kerbals(n)} bei %station% und halte die "
@@ -704,11 +660,12 @@ def base_chain(key, body, sub, stages, prereq0, base_word, mult):
                    "Stationen", sub, "TrackingStation_ButtonMapLander", round((110 + 12 * n) * mult), [sid],
                    cks([{"kind": "CREW_MIN", "min": n, "label": f"Versorgungsschiff mit mindestens {kerbals(n)} an Bord"}, landed]),
                    repeatable=True, ref=key))
-        out.append(contract(lng, f"Dauerbetrieb 150 Tage ({kerbals(n)})",
-                   f"Halte %station% 150 Tage ununterbrochen mit mindestens {kerbals(n)} am Leben und "
+        long_days = long_stay_days(build)
+        out.append(contract(lng, f"Dauerbetrieb {long_days} Tage ({kerbals(n)})",
+                   f"Halte %station% {long_days} Tage ununterbrochen mit mindestens {kerbals(n)} am Leben und "
                    f"beweise, dass Menschen hier dauerhaft leben können.", "Stationen", sub, "TrackingStation_ButtonMapBase",
                    round((260 + 30 * n) * mult), [sup],
-                   cks([crew(n), landed, {"kind": "DURATION", "days": 150, "label": f"150 Tage mit {kerbals(n)} ausharren"}]),
+                   cks([crew(n), landed, {"kind": "DURATION", "days": long_days, "label": f"{long_days} Tage mit {kerbals(n)} ausharren"}]),
                    ref=key))
         prev_long = lng
     return "".join(out)
@@ -722,6 +679,7 @@ def fuel_depot_chain(key, sub, stages, prereq0, mult):
         build = (i == 0)
         sid = f"cr_{key}_build" if build else f"cr_{key}_expand{n}"
         sup = f"cr_{key}_supply{n}"
+        stable_days = stability_days(build)
         lf, ox = 1440 * (i + 1), 1760 * (i + 1)
         crew = {"kind": "CREW_MIN", "min": n, "label": f"Bemannt mit mindestens {kerbals(n)} an Bord"}
         orbit = {"kind": "ORBIT_ABOVE", "body": "Earth", "km": 130, "label": "Stabiler Erdorbit, Periapsis über 130 km"}
@@ -736,7 +694,7 @@ def fuel_depot_chain(key, sub, stages, prereq0, mult):
                     f"sollen hier nachtanken — der Name bleibt für jeden Nachschubflug erhalten.")
             out.append(contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
                        round(150 * mult), [prereq0],
-                       cks([crew, orbit, apo] + fuel + [{"kind": "DURATION", "days": 10, "label": "10 Tage stabil betrieben"}]),
+                       cks([crew, orbit, apo] + fuel + [{"kind": "DURATION", "days": stable_days, "label": f"{stable_days} Tage stabil betrieben"}]),
                        record=key))
         else:
             title = f"Tankstellen-Ausbau ({kerbals(n)})"
@@ -744,7 +702,7 @@ def fuel_depot_chain(key, sub, stages, prereq0, mult):
                     f"LiquidFuel und {ox} Oxidizer auf.")
             out.append(contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
                        round((150 + 25 * i) * mult), [prev],
-                       cks([crew, orbit, apo] + fuel + [{"kind": "DURATION", "days": 10, "label": "10 Tage stabil betrieben"}]),
+                       cks([crew, orbit, apo] + fuel + [{"kind": "DURATION", "days": stable_days, "label": f"{stable_days} Tage stabil betrieben"}]),
                        ref=key))
         out.append(contract(sup, f"Nachbetankung der Tankstelle ({kerbals(n)})",
                    f"Bring frischen Treibstoff und eine Ablösung von mindestens {kerbals(n)} zu %station% und docke an.",

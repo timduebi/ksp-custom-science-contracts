@@ -14,6 +14,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 import gen_catalog as de
+from catalog_common import long_stay_days, stability_days
 
 ROOT = de.ROOT
 DOC = de.DOC
@@ -390,21 +391,22 @@ def orbit_chain(key, body, sub, orbitword, km, stages, prereq0, station_word, mu
         sid = f"cr_{key}_build" if build else f"cr_{key}_expand{n}"
         sup, lng = f"cr_{key}_supply{n}", f"cr_{key}_longstay{n}"
         empty = make_check("CREW_NONE", "Station uncrewed, no Kerbals aboard")
+        stable_days = stability_days(build)
         station_checks = [
-            empty,
             make_check("CREW_CAPACITY_MIN", f"At least {seats(n)} available", min=n),
             make_check("ORBIT_ABOVE", f"Stable {orbitword}, periapsis above {km} km", body=body, km=km),
             make_check("APOAPSIS_MAX", f"Apoapsis below {max_km} km", body=body, km=max_km),
-            make_check("DURATION", "Hold in the target orbit for 10 days", days=10),
+            make_check("DURATION", f"Hold in the target orbit for {stable_days} days", days=stable_days),
         ]
         if build:
+            station_checks.insert(0, empty)
             title = f"{station_word} ({seats(n)})"
             desc = f"Build your first {station_word.lower()} with at least {seats(n)}. The station must be empty and uncrewed; crew is counted from resupply onward. The station name will be reused by future supply flights."
             out.append(de.contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
                        round(220 * mult), [prereq0], station_checks, record=key))
         else:
             title = f"Station Expansion to {seats(n)}"
-            desc = f"Expand %station% to at least {seats(n)} and keep the station empty and uncrewed for this expansion. Crew is counted from the next resupply onward."
+            desc = f"Expand %station% to at least {seats(n)} without evacuating its existing crew, then demonstrate stable operation."
             out.append(de.contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
                        round((180 + 20 * n) * mult), [prev_long], station_checks, ref=key))
         out.append(de.contract(sup, f"Station Resupply ({kerbals(n)})",
@@ -415,13 +417,14 @@ def orbit_chain(key, body, sub, orbitword, km, stages, prereq0, station_word, mu
                     make_check("APOAPSIS_MAX", f"Apoapsis below {max_km} km", body=body, km=max_km),
                     make_check("DOCK_STATION", "Docked to the station", stationKey=key)],
                    repeatable=True, ref=key))
-        out.append(de.contract(lng, f"150-Day Operations ({kerbals(n)})",
-                   f"Keep %station% crewed continuously for 150 days with at least {kerbals(n)} aboard.",
+        long_days = long_stay_days(build)
+        out.append(de.contract(lng, f"{long_days}-Day Operations ({kerbals(n)})",
+                   f"Keep %station% crewed continuously for {long_days} days with at least {kerbals(n)} aboard.",
                    "Stationen", sub, "TrackingStation_ButtonMapStation", round((260 + 30 * n) * mult), [sup],
                    [make_check("CREW_MIN", f"Crewed with at least {kerbals(n)} aboard", min=n),
                     make_check("ORBIT_ABOVE", f"Stable {orbitword}, periapsis above {km} km", body=body, km=km),
                     make_check("APOAPSIS_MAX", f"Apoapsis below {max_km} km", body=body, km=max_km),
-                    make_check("DURATION", f"Hold for 150 days with {kerbals(n)} aboard", days=150)],
+                    make_check("DURATION", f"Hold for {long_days} days with {kerbals(n)} aboard", days=long_days)],
                    ref=key))
         prev_long = lng
     return "".join(out)
@@ -457,10 +460,11 @@ def base_chain(key, body, sub, stages, prereq0, base_word, mult):
         build = i == 0
         sid = f"cr_{key}_build" if build else f"cr_{key}_expand{n}"
         sup, lng = f"cr_{key}_supply{n}", f"cr_{key}_longstay{n}"
+        stable_days = stability_days(build)
         checks = [
             make_check("CREW_MIN", f"Crewed with at least {kerbals(n)} aboard", min=n),
             make_check("LANDED", f"Landed on {body_name}", body=body),
-            make_check("DURATION", f"Hold for 10 days with {kerbals(n)} aboard", days=10),
+            make_check("DURATION", f"Hold for {stable_days} days with {kerbals(n)} aboard", days=stable_days),
         ]
         if build:
             title = f"{base_word} ({kerbals(n)})"
@@ -478,12 +482,13 @@ def base_chain(key, body, sub, stages, prereq0, base_word, mult):
                    [make_check("CREW_MIN", f"Supply lander with at least {kerbals(n)} aboard", min=n),
                     make_check("LANDED", f"Landed on {body_name}", body=body)],
                    repeatable=True, ref=key))
-        out.append(de.contract(lng, f"150-Day Base Operations ({kerbals(n)})",
-                   f"Keep %station% alive continuously for 150 days with at least {kerbals(n)} aboard.",
+        long_days = long_stay_days(build)
+        out.append(de.contract(lng, f"{long_days}-Day Base Operations ({kerbals(n)})",
+                   f"Keep %station% alive continuously for {long_days} days with at least {kerbals(n)} aboard.",
                    "Stationen", sub, "TrackingStation_ButtonMapBase", round((260 + 30 * n) * mult), [sup],
                    [make_check("CREW_MIN", f"Crewed with at least {kerbals(n)} aboard", min=n),
                     make_check("LANDED", f"Landed on {body_name}", body=body),
-                    make_check("DURATION", f"Hold for 150 days with {kerbals(n)} aboard", days=150)],
+                    make_check("DURATION", f"Hold for {long_days} days with {kerbals(n)} aboard", days=long_days)],
                    ref=key))
         prev_long = lng
     return "".join(out)
@@ -496,6 +501,7 @@ def fuel_depot_chain(key, sub, stages, prereq0, mult):
         build = i == 0
         sid = f"cr_{key}_build" if build else f"cr_{key}_expand{n}"
         sup = f"cr_{key}_supply{n}"
+        stable_days = stability_days(build)
         lf, ox = 1440 * (i + 1), 1760 * (i + 1)
         checks = [
             make_check("CREW_MIN", f"Crewed with at least {kerbals(n)} aboard", min=n),
@@ -503,7 +509,7 @@ def fuel_depot_chain(key, sub, stages, prereq0, mult):
             make_check("APOAPSIS_MAX", f"Apoapsis below {max_km} km", body="Earth", km=max_km),
             make_check("RESOURCE_MIN", f"At least {lf} LiquidFuel in storage", resource="LiquidFuel", amount=lf),
             make_check("RESOURCE_MIN", f"At least {ox} Oxidizer in storage", resource="Oxidizer", amount=ox),
-            make_check("DURATION", "Operate for 10 days", days=10),
+            make_check("DURATION", f"Operate for {stable_days} days", days=stable_days),
         ]
         if build:
             title = f"Orbital Fuel Depot ({kerbals(n)})"

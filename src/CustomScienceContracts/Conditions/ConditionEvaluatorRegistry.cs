@@ -23,6 +23,9 @@ namespace CustomScienceContracts.Conditions
         public IConditionEvaluator Get(ConditionType t) =>
             _map.TryGetValue(t, out var e) ? e : _map[ConditionType.ORBIT];
 
+        public bool HasConcreteEvaluator(ConditionType type) =>
+            _map.TryGetValue(type, out var evaluator) && !(evaluator is StubEvaluator);
+
         public void NotifyAccepted(MissionContract c)
         {
             foreach (var cond in c.Bedingungen) Get(cond.Type).OnAccepted(c, cond);
