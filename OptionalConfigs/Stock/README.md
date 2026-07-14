@@ -16,14 +16,14 @@ Requires CustomScienceContracts 0.4.3 or newer. Older plugin builds ignore the S
 chapter names and older Stock config files did not contain epoch assignments.
 
 Campaign chapters:
-1. First Sparks
-2. Orbital Habits
-3. Mun or Bust
-4. Minty Operations
-5. Inner Mischief
-6. Red Dust
-7. Deep-Space Lifeline
-8. Jool Frontier
+1. First Sparks
+2. Orbital Habits
+3. Mun or Bust
+4. Minty Operations
+5. Inner Mischief
+6. Red Dust
+7. Deep-Space Lifeline
+8. Jool Frontier
 9. The Purple Finale
 
 Generated mission counts:

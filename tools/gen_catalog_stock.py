@@ -409,6 +409,10 @@ def write_file(path, title, body):
 def write_readme(counts, epoch_names):
     readme = os.path.join(ROOT, "OptionalConfigs", "Stock", "README.md")
     os.makedirs(os.path.dirname(readme), exist_ok=True)
+    chapter_lines = "\n".join(
+        f"{i}. {epoch_names.get(i, DEFAULT_EPOCH_NAMES[i])}"
+        for i in range(1, 10)
+    )
     text = f"""# Stock KSP config
 
 Optional config pack for the stock Kerbol system. It replaces only the four contract
@@ -427,7 +431,7 @@ Requires CustomScienceContracts 0.4.3 or newer. Older plugin builds ignore the S
 chapter names and older Stock config files did not contain epoch assignments.
 
 Campaign chapters:
-{os.linesep.join(f"{i}. {epoch_names.get(i, DEFAULT_EPOCH_NAMES[i])}" for i in range(1, 10))}
+{chapter_lines}
 
 Generated mission counts:
 - Pioneers: {counts.get('Bemannt', 0)}
