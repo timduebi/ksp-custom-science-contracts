@@ -72,6 +72,7 @@ namespace CustomScienceContracts.Core
             c.Progress = new ConfigNode("PROGRESS");
             InheritFleetFromPrereqs(c);   // follow-up networks pre-fill the predecessor's satellites
             AutoAssignStationOnAccept(c);  // longstay/expand pin the registered station automatically
+            CheckEvaluation.InitializeAcceptedState(c, Stations);
             Evaluators.NotifyAccepted(c);
             Debug.Log($"[CSC] Accepted: {c.Id}");
             return true;
@@ -163,7 +164,7 @@ namespace CustomScienceContracts.Core
                 return false;
             foreach (var cond in c.Bedingungen)
                 foreach (var chk in cond.Checks)
-                    if (chk.Kind == CheckKind.DOCK_STATION) return false;
+                    if (chk.Kind == CheckKind.DOCK_STATION || chk.IsDelivery) return false;
             return true;
         }
 
@@ -500,14 +501,18 @@ namespace CustomScienceContracts.Core
             Toast("Unlocked: " + titles);
         }
 
-        /// <summary>Toast when the first completion of a mission finishes its whole epoch.</summary>
+        /// <summary>Toast when the epoch's guided route is complete. Optional side missions never
+        /// block it; catalogs without route markers retain the all-missions rule.</summary>
         private void AnnounceEpochIfComplete(MissionContract c)
         {
             int epoch = Mathf.Max(1, c.Epoch);
+            bool hasRecommended = Catalog.All.Any(other => Mathf.Max(1, other.Epoch) == epoch && other.Recommended);
             foreach (var other in Catalog.All)
-                if (Mathf.Max(1, other.Epoch) == epoch && !IsCompleted(other)) return;
-            string name = Catalog.Epoch(epoch)?.Name;
-            Toast($"Epoch complete: {(string.IsNullOrEmpty(name) ? "Epoch " + epoch : name)}");
+                if (Mathf.Max(1, other.Epoch) == epoch &&
+                    (!hasRecommended || other.Recommended) && !IsCompleted(other)) return;
+            var info = Catalog.Epoch(epoch);
+            string name = info?.Name;
+            Toast($"Recommended route complete: {(string.IsNullOrEmpty(name) ? "Epoch " + epoch : name)}");
         }
 
         /// <summary>On-screen message; missions complete in scenes without ScreenMessages too,
@@ -574,6 +579,9 @@ namespace CustomScienceContracts.Core
             }
             return list;
         }
+
+        public List<MissionContract> ShortestUnlockPath(MissionContract c) =>
+            UnlockPath.Build(c, Catalog.Get, IsCompleted);
     }
 
     /// <summary>UI row for one assigned satellite of a network mission.</summary>

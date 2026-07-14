@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using CustomScienceContracts.Core;
 using UnityEngine;
 
@@ -104,14 +105,59 @@ namespace CustomScienceContracts.Conditions
         /// <summary>Total amount of a resource on the vessel, e.g. "Ore".</summary>
         public static double Resource(Vessel v, string resourceName)
         {
+            if (v == null) return 0.0;
             var def = PartResourceLibrary.Instance?.GetDefinition(resourceName);
             if (def == null) return 0.0;
             v.GetConnectedResourceTotals(def.id, out double amount, out _);
             return amount;
         }
 
+        public static double ResourceCapacity(Vessel v, string resourceName)
+        {
+            if (v == null) return 0.0;
+            var def = PartResourceLibrary.Instance?.GetDefinition(resourceName);
+            if (def == null) return 0.0;
+            v.GetConnectedResourceTotals(def.id, out _, out double capacity);
+            return capacity;
+        }
+
         /// <summary>LiquidFuel + Oxidizer as fuel for FUEL_ORBIT.</summary>
         public static double Fuel(Vessel v) => Resource(v, "LiquidFuel") + Resource(v, "Oxidizer");
+
+        /// <summary>Vessel mass in KSP tonnes, including resources.</summary>
+        public static double Mass(Vessel v)
+        {
+            if (v == null) return 0.0;
+            try { return v.GetTotalMass(); }
+            catch (System.Exception) { return 0.0; }
+        }
+
+        /// <summary>Counts PartModules for loaded and packed vessels. A pipe-separated module
+        /// expression allows compatible alternatives without requiring a particular parts mod.</summary>
+        public static int ModuleCount(Vessel v, string moduleExpression)
+        {
+            if (v == null || string.IsNullOrEmpty(moduleExpression)) return 0;
+            var accepted = new HashSet<string>(
+                moduleExpression.Split(new[] { '|', ',' }, System.StringSplitOptions.RemoveEmptyEntries)
+                    .Select(name => name.Trim()), System.StringComparer.OrdinalIgnoreCase);
+            int count = 0;
+            if (v.loaded && v.parts != null)
+            {
+                foreach (Part part in v.parts)
+                    if (part?.Modules != null)
+                        foreach (PartModule module in part.Modules)
+                            if (module != null && accepted.Contains(module.moduleName ?? module.GetType().Name)) count++;
+                return count;
+            }
+            if (v.protoVessel?.protoPartSnapshots == null) return 0;
+            foreach (ProtoPartSnapshot part in v.protoVessel.protoPartSnapshots)
+            {
+                if (part?.modules != null)
+                    foreach (ProtoPartModuleSnapshot module in part.modules)
+                        if (module != null && accepted.Contains(module.moduleName)) count++;
+            }
+            return count;
+        }
 
         /// <summary>Day length in seconds from the API.</summary>
         public static double SecondsPerDay()

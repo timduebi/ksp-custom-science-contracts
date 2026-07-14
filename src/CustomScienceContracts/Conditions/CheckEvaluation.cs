@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using CustomScienceContracts.Core;
@@ -38,6 +39,8 @@ namespace CustomScienceContracts.Conditions
             // Subject vessel: once a timer is running, the binding is locked to the recorded vessel
             // so focus or scene changes do not break the timer.
             Vessel subject = ResolveSubject(c, ci, cond, ctx, hasTimer, hasVesselChecks, timerRunning);
+            bool legacyEvaluation = GetI(c.Progress, "evaluationSchema", 0) <
+                                    StatePersistencePolicy.CurrentEvaluationSchema;
 
             bool allInstant = true;
             bool allTimerPrereqs = true;
@@ -57,7 +60,10 @@ namespace CustomScienceContracts.Conditions
                     else if (chk.IsMarker) m = EvalMarker(c, ci, j, chk, ctx);
                     else if (chk.IsReturn) m = EvalReturn(c, ci, j, chk, ctx);
                     else if (chk.IsEvent)  m = EvalEvent(chk, ctx);
-                    else if (chk.IsFleet)  m = EvalFleet(c, chk, ctx);
+                    else if (chk.IsFleet)  m = EvalFleet(c, chk, ctx, legacyEvaluation);
+                    else if (chk.IsDelivery) m = legacyEvaluation
+                        ? EvalLegacyDelivery(chk, subject)
+                        : EvalDelivery(c, ci, j, chk, ctx, subject);
                     else if (chk.Kind == CheckKind.EVA) m = EvalEvaForMission(chk, ctx, subject);
                     else                   m = subject != null && EvalVessel(chk, subject);
                     if (hasReturn && !chk.IsReturn && m)
@@ -112,6 +118,108 @@ namespace CustomScienceContracts.Conditions
 
         /// <summary>Removes marker waypoints for all checks of this contract.</summary>
         public static void ClearMarkers(MissionContract c) => MarkerWaypoint.RemoveAll(c.Id);
+
+        /// <summary>Stamps the ruleset used by a newly accepted mission and snapshots every
+        /// delivery target before the supply craft can be merged into it. Loaded pre-0.8 active
+        /// missions have no stamp and deliberately retain their former, less strict behavior.</summary>
+        public static void InitializeAcceptedState(MissionContract c, StationRegistry stations)
+        {
+            if (c?.Progress == null) return;
+            c.Progress.SetValue("evaluationSchema",
+                StatePersistencePolicy.CurrentEvaluationSchema.ToString(Inv), true);
+            for (int ci = 0; ci < c.Bedingungen.Count; ci++)
+                for (int j = 0; j < c.Bedingungen[ci].Checks.Count; j++)
+                {
+                    Check check = c.Bedingungen[ci].Checks[j];
+                    if (!check.IsDelivery) continue;
+                    var station = stations?.Get(check.StationKey);
+                    Vessel target = FindLiveVessel(station?.PersistentId ?? 0u);
+                    if (target == null) continue;
+                    ConfigNode state = StateNode(c.Progress, $"delivery{ci}_{j}");
+                    state.SetValue("baseline", DeliveryAmount(target, check).ToString("R", Inv), true);
+                    state.SetValue("targetId", target.persistentId.ToString(), true);
+                }
+        }
+
+        public static double DeliveryProgress(MissionContract c, int conditionIndex, int checkIndex)
+        {
+            ConfigNode state = c?.Progress?.GetNode($"delivery{conditionIndex}_{checkIndex}");
+            return NDouble(state, "delivered", 0.0);
+        }
+
+        private static bool EvalLegacyDelivery(Check check, Vessel subject)
+        {
+            // Checks introduced from nothing (new SOL/base delivery goals) are ignored for missions
+            // already active during the upgrade. A converted FUEL_MIN keeps its original snapshot
+            // semantics, including its strict greater-than comparison.
+            if (!string.Equals(check.LegacyKind, "FUEL_MIN", StringComparison.OrdinalIgnoreCase))
+                return true;
+            return subject != null && VesselQuery.Fuel(subject) > check.Amount;
+        }
+
+        private static bool EvalDelivery(MissionContract c, int ci, int j, Check chk,
+            EvaluationContext ctx, Vessel subject)
+        {
+            ConfigNode state = StateNode(c.Progress, $"delivery{ci}_{j}");
+            if (NInt(state, "done") == 1) return true;
+            var station = ctx.Stations?.Get(chk.StationKey);
+            Vessel target = station == null ? null : ctx.FindVessel(station.PersistentId);
+            if (target == null) return false;
+
+            // Surface/base delivery: the separately landed supply vessel must physically reach
+            // the recorded base. Its carried amount is the delivery, never the base's old stock.
+            if (subject != null && subject.persistentId != target.persistentId &&
+                subject.mainBody == target.mainBody)
+            {
+                double radius = (chk.Km > 0.0 ? chk.Km : 2.0) * 1000.0;
+                if (Vector3d.Distance(subject.GetWorldPos3D(), target.GetWorldPos3D()) <= radius)
+                {
+                    double carried = DeliveryAmount(subject, chk);
+                    state.SetValue("delivered", carried.ToString("R", Inv), true);
+                    if (carried >= chk.Amount)
+                    {
+                        state.SetValue("done", "1", true);
+                        return true;
+                    }
+                }
+            }
+
+            if (state.GetValue("baseline") == null)
+            {
+                state.SetValue("baseline", DeliveryAmount(target, chk).ToString("R", Inv), true);
+                state.SetValue("targetId", target.persistentId.ToString(), true);
+                return false;
+            }
+
+            uint acceptedTarget = GetUInt(state, "targetId");
+            bool dockedNow = ctx.Events?.Dockings != null &&
+                ctx.Events.Dockings.Any(ev => ev.Vessel != null && ev.Vessel.persistentId == target.persistentId);
+            if (!dockedNow && ctx.Events?.Merges != null)
+                dockedNow = ctx.Events.Merges.Any(merge =>
+                    merge.IdA == acceptedTarget || merge.IdB == acceptedTarget ||
+                    merge.IdA == target.persistentId || merge.IdB == target.persistentId);
+            if (dockedNow) state.SetValue("docked", "1", true);
+            if (NInt(state, "docked") != 1) return false;
+
+            double baseline = NDouble(state, "baseline", DeliveryAmount(target, chk));
+            double delivered = ResourceDeliveryPolicy.Accumulate(baseline, DeliveryAmount(target, chk),
+                NDouble(state, "delivered", 0.0));
+            state.SetValue("delivered", delivered.ToString("R", Inv), true);
+            if (!ResourceDeliveryPolicy.Reached(delivered, chk.Amount)) return false;
+            state.SetValue("done", "1", true);
+            return true;
+        }
+
+        private static double DeliveryAmount(Vessel vessel, Check check) =>
+            string.Equals(check.Resource, "Fuel", StringComparison.OrdinalIgnoreCase)
+                ? VesselQuery.Fuel(vessel)
+                : VesselQuery.Resource(vessel, check.Resource);
+
+        private static Vessel FindLiveVessel(uint id)
+        {
+            if (id == 0 || FlightGlobals.Vessels == null) return null;
+            return FlightGlobals.Vessels.FirstOrDefault(v => v != null && v.persistentId == id);
+        }
 
         /// <summary>Remaps timer binding (c{ci}_vid) to the merged vessel when the bound vessel was
         /// absorbed by docking, avoiding a permanently paused timer with an obsolete persistentId.</summary>
@@ -265,6 +373,12 @@ namespace CustomScienceContracts.Conditions
                            VesselQuery.Resource(v, "Ore") > 0.0;
                 case CheckKind.FUEL_MIN:     return VesselQuery.Fuel(v) > chk.Amount;
                 case CheckKind.RESOURCE_MIN: return VesselQuery.Resource(v, chk.Resource) > chk.Amount;
+                case CheckKind.MASS_MIN:     return VesselQuery.Mass(v) >= chk.Amount;
+                case CheckKind.MODULE_COUNT: return VesselQuery.ModuleCount(v, chk.Module) >= chk.Count;
+                case CheckKind.POWER_CAPACITY_MIN:
+                    return VesselQuery.ResourceCapacity(v, "ElectricCharge") >= chk.Amount;
+                case CheckKind.DOCKING_PORT_COUNT:
+                    return VesselQuery.ModuleCount(v, "ModuleDockingNode") >= chk.Count;
                 case CheckKind.WHEEL_MOTION:
                     return body != null && v.mainBody == body &&
                            v.situation == Vessel.Situations.LANDED &&
@@ -283,6 +397,17 @@ namespace CustomScienceContracts.Conditions
             CelestialBody body = BodyResolver.Resolve(chk.Body);
             StationRegistry.Entry station = chk.Kind == CheckKind.DOCK_STATION ? ctx.Stations?.Get(chk.StationKey) : null;
             if (chk.Kind == CheckKind.DOCK_STATION && station == null) return false;
+
+            // StationRegistry is remapped to the docking survivor before evaluation. The merge
+            // buffer therefore provides the most reliable match even when onPartCouple retained a
+            // reference to the absorbed vessel.
+            if (station != null && ctx.Events?.Merges != null && ctx.Events.Merges.Any(merge =>
+                    merge.IdA == station.PersistentId || merge.IdB == station.PersistentId))
+            {
+                Vessel target = ctx.FindVessel(station.PersistentId);
+                if (target != null && (body == null || target.mainBody == body) &&
+                    VesselQuery.MatchesSituation(target, chk.Situation)) return true;
+            }
 
             foreach (var ev in ctx.Events.Dockings)
             {
@@ -330,26 +455,50 @@ namespace CustomScienceContracts.Conditions
             return VesselQuery.MatchesSituation(v, chk.Situation);
         }
 
-        private static bool EvalFleet(MissionContract c, Check chk, EvaluationContext ctx)
+        private static bool EvalFleet(MissionContract c, Check chk, EvaluationContext ctx, bool legacyEvaluation)
         {
             CelestialBody body = BodyResolver.Resolve(chk.Body);
             if (body == null) return false;
             double minM = chk.Km * 1000.0;
             bool relayRequired = chk.Kind == CheckKind.RELAY_VESSEL_COUNT ||
-                                 chk.Kind == CheckKind.RELAY_VESSEL_COUNT_INCLINATION;
+                                 chk.Kind == CheckKind.RELAY_VESSEL_COUNT_INCLINATION ||
+                                 chk.Kind == CheckKind.RELAY_NETWORK_TOPOLOGY;
             bool inclinationRequired = chk.Kind == CheckKind.VESSEL_COUNT_INCLINATION ||
-                                       chk.Kind == CheckKind.RELAY_VESSEL_COUNT_INCLINATION;
+                                       chk.Kind == CheckKind.RELAY_VESSEL_COUNT_INCLINATION ||
+                                       (chk.Kind == CheckKind.RELAY_NETWORK_TOPOLOGY && chk.InclinationMin > 0.0);
             // Networks require active assignment: only assigned satellites count, so the player must
             // assign the constellation and foreign craft are never mistaken for the network.
-            int count = ctx.RealVessels.Count(v =>
+            var members = ctx.RealVessels.Where(v =>
                 MissionBinding.FleetContains(c, v.persistentId) &&
                 v.mainBody == body &&
                 v.situation == Vessel.Situations.ORBITING &&
                 v.orbit != null &&
                 (minM <= 0.0 || v.orbit.PeA > minM) &&
                 (!inclinationRequired || v.orbit.inclination >= chk.InclinationMin) &&
-                (!relayRequired || RelayCapability.IsOperational(v, out _)));
-            return count >= chk.Count;
+                (!relayRequired || RelayCapability.IsOperational(v, out _))).ToList();
+            int required = chk.Count + (chk.Kind == CheckKind.RELAY_NETWORK_TOPOLOGY && !legacyEvaluation
+                ? Math.Max(0, chk.Redundancy) : 0);
+            if (members.Count < required) return false;
+            if (chk.Kind != CheckKind.RELAY_NETWORK_TOPOLOGY || legacyEvaluation) return true;
+            return NetworkTopologyPolicy.Meets(members.Select(v => OrbitalPhase(v, ctx.UniversalTime)),
+                chk.Count, chk.Redundancy, chk.SeparationMin, chk.MaxGap);
+        }
+
+        private static double OrbitalPhase(Vessel vessel, double ut)
+        {
+            try
+            {
+                double phase = vessel.orbit.getMeanAnomalyAtUT(ut) * Mathf.Rad2Deg;
+                return NormalizeDegrees(phase);
+            }
+            catch (Exception) { }
+            return NormalizeDegrees(vessel.longitude);
+        }
+
+        private static double NormalizeDegrees(double value)
+        {
+            value %= 360.0;
+            return value < 0.0 ? value + 360.0 : value;
         }
 
         /// <summary>Whether a single assigned satellite currently qualifies for a fleet check, plus a
@@ -366,10 +515,12 @@ namespace CustomScienceContracts.Conditions
             double minM = chk.Km * 1000.0;
             if (minM > 0.0 && v.orbit.PeA <= minM) { reason = "periapsis too low"; return false; }
             bool inclinationRequired = chk.Kind == CheckKind.VESSEL_COUNT_INCLINATION ||
-                                       chk.Kind == CheckKind.RELAY_VESSEL_COUNT_INCLINATION;
+                                       chk.Kind == CheckKind.RELAY_VESSEL_COUNT_INCLINATION ||
+                                       (chk.Kind == CheckKind.RELAY_NETWORK_TOPOLOGY && chk.InclinationMin > 0.0);
             if (inclinationRequired && v.orbit.inclination < chk.InclinationMin) { reason = "inclination too low"; return false; }
             bool relayRequired = chk.Kind == CheckKind.RELAY_VESSEL_COUNT ||
-                                 chk.Kind == CheckKind.RELAY_VESSEL_COUNT_INCLINATION;
+                                 chk.Kind == CheckKind.RELAY_VESSEL_COUNT_INCLINATION ||
+                                 chk.Kind == CheckKind.RELAY_NETWORK_TOPOLOGY;
             if (relayRequired && !RelayCapability.IsOperational(v, out reason)) return false;
             reason = "in orbit";
             return true;

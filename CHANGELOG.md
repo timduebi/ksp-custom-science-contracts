@@ -8,6 +8,28 @@ packs on the same release that swap the catalog to the stock KSP system or to Ge
 
 ## [Unreleased]
 
+### Added
+- A complete topologically ordered recommended route derived from the campaign milestones and all
+  of their required prerequisites; the atlas shows only the single next recommended mission.
+- Locked mission cards now show the complete shortest prerequisite sequence in executable order.
+- Relay objectives can require a phased, redundant operational network instead of a raw vessel count.
+- Logistics objectives can measure resources delivered to a recorded station or base from the stock
+  captured when the mission was accepted.
+- Optional station certification missions for mass, science modules, ElectricCharge capacity and
+  docking-port capacity in both SOL and Stock campaigns.
+- Orbital station expansions now scale docking-port and ElectricCharge requirements with capacity;
+  ordinary station resupply no longer asks for fuel. Fuel remains meaningful only for bases and
+  dedicated depots.
+
+### Fixed
+- Restored all historical per-save progress files. KSP's `ConfigNode.Save` omits the name of the root
+  node; versions through 0.7 wrote a valid bare document which the 0.7 loader mistakenly rejected.
+  Both the historical and explicitly wrapped layouts are now supported and regression-tested.
+
+### Compatibility
+- Existing active relay and supply missions retain their original acceptance-time rules. The stricter
+  topology and delivery tracking applies only to missions accepted with the new evaluation schema.
+
 ## [0.7.0] - 2026-07-14
 
 ### Added

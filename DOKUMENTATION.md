@@ -22,7 +22,7 @@ At game load, `ContractsScenario` initializes the mod:
 1. Load tuning values from `GameData/CustomScienceContracts/settings.cfg`.
 2. Load all `CUSTOM_CONTRACT_CATALOG` nodes through KSP `GameDatabase`.
 3. Build the in-memory `ContractCatalog`, including optional `EPOCH` metadata
-   nodes (number/name/description) used for the atlas story intros.
+   nodes (number/name/description) used for chapter storytelling.
 4. Load save-specific state from
    `saves/<SaveName>/CustomScienceContracts/contracts_state.cfg`.
 5. Register condition evaluators.
@@ -31,7 +31,7 @@ At game load, `ContractsScenario` initializes the mod:
 
 The manager posts on-screen messages (`ScreenMessages`) when a mission becomes
 claimable, when a claim pays out (including which follow-up missions it
-unlocked) and when the first completion of a mission finishes its whole epoch.
+unlocked) and when the recommended route through an epoch is complete.
 
 The check loop evaluates active missions in Flight, Tracking Station, Space
 Center and Editor scenes. In-game universal time remains authoritative, so
@@ -95,9 +95,9 @@ The campaign layout is:
 2. Epoch tabs with acceptable counts, a completion progress bar and a checkmark
    for fully completed epochs. The tabs size themselves to the window and wrap
    into a second row instead of overflowing, so every epoch stays reachable.
-3. An epoch intro panel with the chapter name, its narrative text (from the
-   catalog's `EPOCH` nodes) and the epoch completion count. Catalogs without
-   `EPOCH` nodes simply skip the panel.
+3. An epoch intro panel with the chapter name, narrative text and exactly one global "recommended
+   next" mission. There is no route counter or secondary transition panel. Catalogs without `EPOCH`
+   nodes simply skip the panel.
 4. One epoch page at a time.
 5. Branch rows for Pioneers, Robotic Explorers and Lifelines.
 6. Body rows inside each branch.
@@ -117,7 +117,7 @@ build/expansion and long-stay follow-ups instead of leaving holes in the atlas.
 Mission cards show only the compact summary by default: title, body, science
 reward and a ↻ badge on repeatables. Expanding a card shows the status,
 description, action, requirements, cross-epoch unlocks and the full objective
-list (no extra foldout click). Locked cards show unlock requirements instead of
+list (no extra foldout click). Locked cards show the de-duplicated shortest prerequisite sequence instead of
 the mission description. Cross-epoch unlock hints use blue while the target is
 still locked and green once the target has unlocked. Dependency arrows use
 rounded curve connectors with arrowheads so crossings remain readable in dense
@@ -175,12 +175,14 @@ Supported check types include:
   `LANDED`, `SUBORBITAL`, `EVA`.
 - Orbit details: `INCLINATION_MIN`, `VESSEL_COUNT`,
   `VESSEL_COUNT_INCLINATION`, `RELAY_VESSEL_COUNT`,
-  `RELAY_VESSEL_COUNT_INCLINATION`.
+  `RELAY_VESSEL_COUNT_INCLINATION`, `RELAY_NETWORK_TOPOLOGY`.
 - Time: `HOLD`, `DURATION`.
 - Events: `DOCK_ANY`, `DOCK_STATION`.
 - Stateful goals: `FLYBY`, `MARKER_LANDING`, `RETURN_FROM_BODY`.
-- Resources and ground movement: `FUEL_MIN`, `RESOURCE_MIN`, `ORE_SURFACE`,
-  `WHEEL_MOTION`.
+- Resources and ground movement: `FUEL_MIN`, `RESOURCE_MIN`, `RESOURCE_DELIVERY`,
+  `ORE_SURFACE`, `WHEEL_MOTION`.
+- Station capability: `MASS_MIN`, `MODULE_COUNT`, `POWER_CAPACITY_MIN`,
+  `DOCKING_PORT_COUNT`.
 - Atmosphere: `ATMO_FRACTION`, `SUBORBITAL_ABOVE_ATMO`.
 
 All body sizes, atmosphere heights and day lengths are read from the KSP API at
@@ -243,11 +245,17 @@ It contains:
 - marker target state,
 - registered station/base vessels,
 - completed network fleet records,
+- delivery baselines, delivered amounts and acceptance-time evaluation schema,
 - science multiplier and unlock-all test setting.
 
-Before every write the previous file is copied to `contracts_state.cfg.bak`;
-loading falls back to that backup when the main file is missing or broken.
+Writes use a validated temporary file and atomic replacement; the previous valid file becomes
+`contracts_state.cfg.bak`. Loading falls back to that backup when the main file is missing or broken.
 Only if neither parses does the mod seed fresh state from the catalog.
+
+KSP's `ConfigNode.Save(path)` writes a node's contents without its own node name. Historical CSC
+versions therefore produced a bare top-level document containing `version` and `STATE` entries. The
+loader permanently accepts that historical layout as well as an explicitly wrapped
+`CUSTOM_SCIENCE_CONTRACTS_STATE` node. Never require the wrapper without migrating existing saves.
 
 Per-save the file also persists the notification toggles, UI scale and the
 selected difficulty preset (`difficulty = casual|normal|hard|custom`, default

@@ -7,7 +7,9 @@
 Titel werden regelbasiert (+ kuratierte Sonderfaelle) gebildet, das Icon je Mission nach
 dominantem Check. Body-Namen sind interne CelestialBody.name (Luna = Moon)."""
 import re, os
-from catalog_common import long_stay_days, parse_check as parse_common_check, stability_days
+from catalog_common import (long_stay_days, parse_check as parse_common_check,
+                            recommended_route_order, stability_days,
+                            station_expansion_requirements, upgrade_operational_checks)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOC  = os.path.join(ROOT, "custom_science_contracts_missionsdesign.md")
@@ -201,6 +203,34 @@ EPOCH_TEXTS = {
         "Crew fliegt weiter als alle zuvor."),
 }
 
+EPOCH_TRANSITIONS = {
+    1: "Der Orbit ist kein Experiment mehr, sondern ein erreichbarer Ort. Das Programm richtet den Blick nun auf Luna â€” den ersten Horizont, der nicht zur Erde gehÃ¶rt.",
+    2: "Die ersten Spuren auf Luna verÃ¤ndern die Frage: nicht mehr nur, ob Kerbals eine andere Welt erreichen, sondern wie lange sie dort und im Orbit bleiben kÃ¶nnen.",
+    3: "Stationen und Relais machen aus einzelnen FlÃ¼gen ein zusammenhÃ¤ngendes Raumfahrtprogramm. Mit diesem RÃ¼ckgrat kann der Griff zu Venus, Merkur und Mars beginnen.",
+    4: "Das innere System ist kein fernes Schaubild mehr. WÃ¤hrend die Mondinfrastruktur trÃ¤gt, wird Mars zum nÃ¤chsten grossen Ziel fÃ¼r Menschen.",
+    5: "Auf dem roten Staub endet die Ã„ra der kurzen Besuche. Mars braucht Versorgung, Stationen und eine Basis â€” und dahinter wartet der AsteroidengÃ¼rtel.",
+    6: "Depots, Bergbau und dauerhafte Aussenposten geben dem Programm Reichweite. Zum ersten Mal ist eine bemannte Reise zu den Riesenplaneten mehr als eine kÃ¼hne Skizze.",
+    7: "Ganymed beweist, dass Crews auch im Reich Jupiters bestehen kÃ¶nnen. Der nÃ¤chste Ruf kommt aus dem Schatten der Saturnringe.",
+    8: "Titan ist erreicht und bewohnbar gemacht. Nur noch die fernsten Welten fehlen in der Chronik â€” und eine letzte Crewmission soll den Rand des bekannten Systems markieren.",
+    9: "Die empfohlene Route ist vollendet. Aus TestflÃ¼gen wurde ein interplanetarisches Netz aus Sonden, Relais, Stationen, Basen und Heimkehrern.",
+}
+
+CAMPAIGN_FINALE = ("MISSION CONTROL â€” FINALER EINTRAG: Die ferne Crew ist heimgekehrt und die Signale der Ã¤usseren "
+                    "Welten liegen im Archiv. Die Kampagne endet hier, aber das Programm nicht: Jede offene Nebenmission "
+                    "bleibt eine Einladung, die eigene Geschichte weiterzuschreiben.")
+
+RECOMMENDED_MILESTONES = {
+    "un_earth_orbit", "cr_earth_orbit", "cr_earth_docking_demo",
+    "un_luna_landing", "cr_luna_landing", "cr_luna_stay_7d",
+    "cr_earth_station_build", "cr_earth_station_longstay3", "net_earth_comm_network3", "cr_moon_station_build",
+    "cr_moon_base_build", "cr_moon_base_longstay2", "un_mars_landing", "cr_venus_flyby",
+    "net_mars_comm_network", "cr_mars_landing", "cr_mars_stay_30d", "cr_mars_station_build",
+    "cr_mars_station_longstay3", "cr_mars_base_build", "cr_mars_base_longstay2", "net_solar_comm_network",
+    "net_jupiter_comm_network", "cr_jupiter_orbit", "cr_ganymede_landing", "cr_ganymede_stay_7d",
+    "net_saturn_comm_network", "cr_saturn_orbit", "cr_titan_landing", "cr_titan_stay_7d",
+    "cr_neptune_flyby",
+}
+
 def epoch_nodes(texts):
     """EPOCH metadata nodes (number/name/description) shown as the atlas intro panel.
     Emitted once per catalog, at the top of the A file."""
@@ -282,7 +312,7 @@ def title_for(m):
     days = next((kv for k, kv, _ in m["checks"] if k == "DURATION"), None)
     days = dict(days).get("days") if days else None
     def kv(k): return next((dict(kvl) for kk, kvl, _ in m["checks"] if kk == k), {})
-    if "FUEL_MIN" in kinds:
+    if "FUEL_MIN" in kinds or "RESOURCE_DELIVERY" in kinds:
         noun = (f"Treibstoffdepot im Orbit um {body}" if "ORBIT_ABOVE" in kinds
                 else f"Treibstofflager auf {body}" if "LANDED" in kinds else f"Treibstoffdepot bei {body}")
     elif "ORE_SURFACE" in kinds: noun = f"Ore-Förderung auf {body}"
@@ -311,13 +341,14 @@ def icon_for(m):
     kinds = [k for k, _, _ in m["checks"]]
     has_dur = "DURATION" in kinds; crew = (m["sparte"] == "Pioniere")
     if "MARKER_LANDING" in kinds: return "TrackingStation_ButtonMapFlag"
-    if "FUEL_MIN" in kinds: return "TrackingStation_ButtonMapBase"
+    if "FUEL_MIN" in kinds or "RESOURCE_DELIVERY" in kinds: return "TrackingStation_ButtonMapBase"
     if "ORE_SURFACE" in kinds: return "TrackingStation_ButtonMapBase"
     if "DOCK_ANY" in kinds or "DOCK_STATION" in kinds: return "TrackingStation_ButtonMapStation"
     if "EVA" in kinds and "LANDED" not in kinds: return "TrackingStation_ButtonMapEVA"
     if "LANDED" in kinds: return "TrackingStation_ButtonMapBase" if has_dur else "TrackingStation_ButtonMapLander"
     if "FLYBY" in kinds: return "TrackingStation_ButtonMapProbe"
-    if "VESSEL_COUNT_INCLINATION" in kinds or "VESSEL_COUNT" in kinds: return "TrackingStation_ButtonMapCommunicationsRelay"
+    if ("VESSEL_COUNT_INCLINATION" in kinds or "VESSEL_COUNT" in kinds or
+            "RELAY_NETWORK_TOPOLOGY" in kinds): return "TrackingStation_ButtonMapCommunicationsRelay"
     if "ATMO_FRACTION" in kinds or "SUBORBITAL" in kinds: return "TrackingStation_ButtonMapAircraft"
     if "ORBIT_ABOVE" in kinds:
         if has_dur and crew: return "TrackingStation_ButtonMapStation"
@@ -339,11 +370,16 @@ def emit_checks(checks):
 
 def contract(cid, title, desc, sparte, sub, icon, reward, prereqs, checks,
              repeatable=False, reveal=None, record=None, ref=None, epoch=None):
+    mission_epoch = epoch if epoch is not None else epoch_for_id(cid)
+    _CONTRACT_META[cid] = {
+        "prerequisites": list(prereqs), "epoch": mission_epoch, "branch": sparte,
+        "sequence": len(_CONTRACT_META),
+    }
     s = "    CONTRACT\n    {\n"
     s += f"        id = {cid}\n        title = {title}\n        description = {desc}\n"
     s += f"        sparte = {sparte}\n        subcategory = {sub}\n        icon = {icon}\n"
     s += f"        reward = {reward}\n"
-    s += f"        epoch = {epoch if epoch is not None else epoch_for_id(cid)}\n"
+    s += f"        epoch = {mission_epoch}\n"
     if repeatable: s += "        repeatable = true\n"
     if reveal:  s += f"        revealAllAfter = {reveal}\n"
     if record:  s += f"        recordStationKey = {record}\n"
@@ -353,6 +389,33 @@ def contract(cid, title, desc, sparte, sub, icon, reward, prereqs, checks,
     s += emit_checks(checks)
     s += "        }\n    }\n"
     return s
+
+
+_CONTRACT_META = {}
+
+
+def build_recommended_route():
+    branch_priority = {
+        "Robotische Erkunder": 0, "UnbemannteErkundung": 0,
+        "Pioniere": 1, "Bemannt": 1,
+        "Versorgungsnetz": 2, "NetzwerkLogistik": 2,
+        "Stationen": 3,
+    }
+    prerequisites = {mission_id: meta["prerequisites"]
+                     for mission_id, meta in _CONTRACT_META.items()}
+    return recommended_route_order(prerequisites, RECOMMENDED_MILESTONES,
+        lambda mission_id: (_CONTRACT_META[mission_id]["epoch"],
+                            branch_priority.get(_CONTRACT_META[mission_id]["branch"], 9),
+                            _CONTRACT_META[mission_id]["sequence"], mission_id))
+
+
+def mark_recommended_route(body, route_order):
+    for mission_id, order in route_order.items():
+        needle = f"        id = {mission_id}\n"
+        if needle in body:
+            body = body.replace(needle, needle +
+                f"        recommended = true\n        recommendedOrder = {order}\n", 1)
+    return body
 
 SKIP_IDS = set()
 
@@ -390,6 +453,15 @@ def catalog_checks(m):
     checks = [normalize_network_check(m, c) for c in m["checks"]]
     checks = apply_curated_check_overrides(m, checks)
     checks = ensure_crewed_orbit_requirements(m, checks)
+    policy = {"checks": checks}
+    checks = upgrade_operational_checks(policy)["checks"]
+    checks = [
+        (kind, values,
+         (f"Gestaffeltes Relaisnetz: {dict(values).get('count', '3')} Hauptsatelliten plus "
+          "1 betriebsbereite Reserve, größte Orbitallücke höchstens 150 Grad")
+         if kind == "RELAY_NETWORK_TOPOLOGY" else label)
+        for kind, values, label in checks
+    ]
     if m["id"].endswith("_rover") and not any(kind == "WHEEL_MOTION" for kind, _, _ in checks):
         checks.append(("WHEEL_MOTION", [("body", m["body"]), ("speed", "4")],
                        "Rover mit Rädern fährt am Boden mindestens 4 m/s"))
@@ -503,9 +575,13 @@ def return_check_for(m):
 def description_for_catalog(m, desc, checks):
     original_has_return = any(kind == "RETURN_FROM_BODY" for kind, _, _ in m["checks"])
     generated_has_return = any(kind == "RETURN_FROM_BODY" for kind, _, _ in checks)
+    result = desc.rstrip()
     if generated_has_return and not original_has_return:
-        return desc.rstrip() + " Die Mission zählt erst, wenn die Crew sicher zur Erde zurückgekehrt ist."
-    return desc
+        result += " Die Mission zählt erst, wenn die Crew sicher zur Erde zurückgekehrt ist."
+    if any(kind == "RELAY_NETWORK_TOPOLOGY" for kind, _, _ in checks):
+        result += (" Setze einen zusätzlichen betriebsbereiten Reservesatelliten aus und staffle das "
+                   "Netz so, dass der Ausfall eines einzelnen Relais die Verbindung nicht trennt.")
+    return result
 
 HEADER = ("// ===========================================================================\n"
           "//  {t}\n"
@@ -579,18 +655,28 @@ def orbit_chain(key, body, sub, orbitword, km, stages, prereq0, station_word, mu
                        record=key))
         else:
             title = f"Stationsausbau auf {seats(n)}"
+            ports, power = station_expansion_requirements(n)
             desc = (f"Erweitere %station% auf mindestens {seats(n)}, ohne die vorhandene "
-                    f"Besatzung evakuieren zu müssen, und weise den stabilen Ausbau nach.")
+                    f"Besatzung evakuieren zu müssen. Der Ausbau braucht mindestens {ports} "
+                    f"Dockingports und {power} ElectricCharge-Kapazität.")
             out.append(contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
                        round((180 + 20 * n) * mult), [prev_long],
-                       cks([capacity(n), orbit, apo, {"kind": "DURATION", "days": stable_days, "label": f"{stable_days} Tage im Zielorbit stabil halten"}]),
+                       cks([capacity(n), orbit, apo,
+                            {"kind": "DOCKING_PORT_COUNT", "count": ports,
+                             "label": f"Mindestens {ports} Dockingports"},
+                            {"kind": "POWER_CAPACITY_MIN", "amount": power,
+                             "label": f"ElectricCharge-Kapazität mindestens {power}"},
+                            {"kind": "DURATION", "days": stable_days,
+                             "label": f"{stable_days} Tage im Zielorbit stabil halten"}]),
                        ref=key))
         out.append(contract(sup, f"Versorgung der Station ({kerbals(n)})",
                    f"Bring eine frische Ablösung von mindestens {kerbals(n)} zu %station% und docke an, um die "
-                   f"müde gewordene Stammbesatzung abzulösen.", "Stationen", sub, "TrackingStation_ButtonMapShips",
+                   f"müde gewordene Stammbesatzung abzulösen.",
+                   "Stationen", sub, "TrackingStation_ButtonMapShips",
                    round((110 + 12 * n) * mult), [sid],
                    cks([{"kind": "CREW_MIN", "min": n, "label": f"Versorgungsschiff mit mindestens {kerbals(n)} an Bord"},
-                        orbit, apo, {"kind": "DOCK_STATION", "stationKey": key, "label": "An der Station angedockt"}]),
+                        orbit, apo, {"kind": "DOCK_STATION", "stationKey": key,
+                                     "label": "An der Station angedockt"}]),
                    repeatable=True, ref=key))
         long_days = long_stay_days(build)
         out.append(contract(lng, f"Dauerbetrieb {long_days} Tage ({kerbals(n)})",
@@ -656,9 +742,11 @@ def base_chain(key, body, sub, stages, prereq0, base_word, mult):
                        ref=key))
         out.append(contract(sup, f"Versorgung der Basis ({kerbals(n)})",
                    f"Lande eine frische Ablösung von mindestens {kerbals(n)} bei %station% und halte die "
-                   f"Besatzung der Basis in Schwung.",
+                   f"Besatzung der Basis mit mindestens {100 * n} Einheiten geliefertem Treibstoff in Schwung.",
                    "Stationen", sub, "TrackingStation_ButtonMapLander", round((110 + 12 * n) * mult), [sid],
-                   cks([{"kind": "CREW_MIN", "min": n, "label": f"Versorgungsschiff mit mindestens {kerbals(n)} an Bord"}, landed]),
+                   cks([{"kind": "CREW_MIN", "min": n, "label": f"Versorgungsschiff mit mindestens {kerbals(n)} an Bord"}, landed,
+                        {"kind": "RESOURCE_DELIVERY", "stationKey": key, "resource": "Fuel", "amount": 100 * n, "km": 2,
+                         "label": f"Mindestens {100 * n} Einheiten Treibstoff bis auf 2 km an die Basis liefern"}]),
                    repeatable=True, ref=key))
         long_days = long_stay_days(build)
         out.append(contract(lng, f"Dauerbetrieb {long_days} Tage ({kerbals(n)})",
@@ -705,22 +793,48 @@ def fuel_depot_chain(key, sub, stages, prereq0, mult):
                        cks([crew, orbit, apo] + fuel + [{"kind": "DURATION", "days": stable_days, "label": f"{stable_days} Tage stabil betrieben"}]),
                        ref=key))
         out.append(contract(sup, f"Nachbetankung der Tankstelle ({kerbals(n)})",
-                   f"Bring frischen Treibstoff und eine Ablösung von mindestens {kerbals(n)} zu %station% und docke an.",
+                   f"Bring mindestens {500 * (i + 1)} Einheiten frischen Treibstoff und eine Ablösung von mindestens {kerbals(n)} zu %station% und docke an.",
                    "Stationen", sub, "TrackingStation_ButtonMapShips", round((90 + 12 * n) * mult), [sid],
                    cks([{"kind": "CREW_MIN", "min": n, "label": f"Versorgungsschiff mit mindestens {kerbals(n)} an Bord"},
-                        orbit, apo, {"kind": "DOCK_STATION", "stationKey": key, "label": "An der Tankstelle angedockt"}]),
+                        orbit, apo, {"kind": "DOCK_STATION", "stationKey": key, "label": "An der Tankstelle angedockt"},
+                        {"kind": "RESOURCE_DELIVERY", "stationKey": key, "resource": "Fuel", "amount": 500 * (i + 1),
+                         "label": f"Mindestens {500 * (i + 1)} Einheiten Treibstoff tatsächlich anliefern"}]),
                    repeatable=True, ref=key))
         prev = sid
     return "".join(out)
+
+def station_certification(cid, title, body, sub, key, prerequisite, epoch,
+                          mass, power, ports, reward):
+    """Optional engineering audit. It never unlocks the main path."""
+    orbit_km = {"Earth": 130, "Moon": 25, "Mars": 90}[body]
+    checks = [
+        ("ORBIT_ABOVE", [("body", body), ("km", orbit_km)], f"Stabiler Orbit, Periapsis über {orbit_km} km"),
+        ("MASS_MIN", [("amount", mass)], f"Stationsmasse mindestens {mass} t"),
+        ("MODULE_COUNT", [("module", "ModuleScienceLab|ModuleScienceConverter|Laboratory"), ("count", 1)],
+         "Mindestens ein kompatibles Wissenschaftslabor"),
+        ("POWER_CAPACITY_MIN", [("amount", power)], f"ElectricCharge-Kapazität mindestens {power}"),
+        ("DOCKING_PORT_COUNT", [("count", ports)], f"Mindestens {ports} Dockingports"),
+    ]
+    desc = (f"Führe eine optionale technische Zertifizierung von %station% durch: Masse, "
+            "Wissenschaftsmodul, Energiereserve und Dockingkapazität werden gemeinsam geprüft. "
+            "Diese Mission blockiert keinen weiteren Kampagnenschritt.")
+    return contract(cid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
+                    reward, [prerequisite], checks, ref=key, epoch=epoch)
 
 def build_stations():
     s = ""
     s += "    // ===== ERDE — Raumstation (3 -> 12 Plaetze) =====\n"
     s += orbit_chain("earth_station", "Earth", "Erde", "Erdorbit", 130,
                      [3, 4, 6, 8, 10, 12], "cr_luna_landing", "Erste Raumstation im Erdorbit", 1.0)
+    s += station_certification("opt_earth_station_certification", "Optionale Erdstation-Zertifizierung",
+                               "Earth", "Erde", "earth_station", "cr_earth_station_expand4", 3,
+                               15, 1000, 2, 45)
     s += "\n    // ===== LUNA — Raumstation (ab Erd-Dauerbetrieb 4) =====\n"
     s += orbit_chain("moon_station", "Moon", "Luna", "Mondorbit", 25,
                      [3, 4, 6, 8, 10], "cr_earth_station_longstay4", "Erste Mond-Raumstation im Mondorbit", 1.5)
+    s += station_certification("opt_moon_station_certification", "Optionale Mondstation-Zertifizierung",
+                               "Moon", "Luna", "moon_station", "cr_moon_station_build", 3,
+                               20, 1500, 2, 70)
     s += "\n    // ===== LUNA — Basisstandort-Erkundungen nach Erdstation 4 =====\n"
     s += moon_base_site_survey_landings()
     s += "\n    // ===== LUNA — Oberflaechenbasis (ab 150 Tage Mondstation 3 Kerbals) =====\n"
@@ -729,6 +843,9 @@ def build_stations():
     s += "\n    // ===== MARS — Raumstation (ab 10 Tage auf Mars) =====\n"
     s += orbit_chain("mars_station", "Mars", "Mars", "Marsorbit", 90,
                      [2, 3, 4, 6], "cr_mars_stay_10d", "Erste Mars-Raumstation im Marsorbit", 2.4)
+    s += station_certification("opt_mars_station_certification", "Optionale Marsstation-Zertifizierung",
+                               "Mars", "Mars", "mars_station", "cr_mars_station_build", 5,
+                               25, 2000, 2, 110)
     s += "\n    // ===== MARS — Oberflaechenbasis (ab 30 Tage auf Mars) =====\n"
     s += base_chain("mars_base", "Mars", "Mars", [2, 3, 4, 6], "cr_mars_stay_30d", "Erste Marsbasis", 2.6)
     s += "\n    // ===== ERDE — Treibstoff-Tankstelle (Versorgungsnetz, bemannt) =====\n"
@@ -737,6 +854,7 @@ def build_stations():
 
 # ---------------- Main ----------------
 def main():
+    _CONTRACT_META.clear()
     text = open(DOC, encoding="utf-8").read()
     missions = parse_missions(text)
     buckets = {"Pioniere": [], "Robotische Erkunder": [], "Versorgungsnetz": []}
@@ -746,16 +864,23 @@ def main():
         if m["id"] == "cr_earth_docking_demo":
             buckets["Pioniere"].append(docking_target_contract())
         buckets[m["sparte"]].append(mission_contract(m))
+    station_body = build_stations()
+    route_order = build_recommended_route()
+    pioneer_body = mark_recommended_route("".join(buckets["Pioniere"]), route_order)
+    robotic_body = mark_recommended_route("".join(buckets["Robotische Erkunder"]), route_order)
+    network_body = mark_recommended_route("".join(buckets["Versorgungsnetz"]), route_order)
+    station_body = mark_recommended_route(station_body, route_order)
     write_file(os.path.join(OUT, "A_Pioniere.cfg"), "SPARTE A — PIONIERE (bemannt)",
-               epoch_nodes(EPOCH_TEXTS) + "".join(buckets["Pioniere"]))
-    write_file(os.path.join(OUT, "B_Spaeher.cfg"), "SPARTE B — ROBOTISCHE ERKUNDER (unbemannt)", "".join(buckets["Robotische Erkunder"]))
-    write_file(os.path.join(OUT, "C_Lebensadern.cfg"), "SPARTE C — VERSORGUNGSNETZ (Logistik)", "".join(buckets["Versorgungsnetz"]))
-    write_file(os.path.join(OUT, "D_Stationen.cfg"), "STATIONEN, BASEN & DEPOTS (generierte Ketten)", build_stations())
+               epoch_nodes(EPOCH_TEXTS) + pioneer_body)
+    write_file(os.path.join(OUT, "B_Spaeher.cfg"), "SPARTE B — ROBOTISCHE ERKUNDER (unbemannt)", robotic_body)
+    write_file(os.path.join(OUT, "C_Lebensadern.cfg"), "SPARTE C — VERSORGUNGSNETZ (Logistik)", network_body)
+    write_file(os.path.join(OUT, "D_Stationen.cfg"), "STATIONEN, BASEN & DEPOTS (generierte Ketten)", station_body)
     write_optional_readme()
     print(f"A Pioniere:           {len(buckets['Pioniere'])}")
     print(f"B Robotische Erkunder:{len(buckets['Robotische Erkunder'])}")
     print(f"C Versorgungsnetz:    {len(buckets['Versorgungsnetz'])}")
-    print(f"D Stationen: generiert ({sum(len(s) for s in [build_stations()])} Zeichen)")
+    print(f"D Stationen: generiert ({len(station_body)} Zeichen)")
+    print(f"Empfohlene Route:    {len(route_order)} Missionen")
     print("Deutsche SOL-Konfiguration geschrieben nach", OUT)
     import gen_catalog_en
     gen_catalog_en.main()

@@ -109,6 +109,11 @@ namespace CustomScienceContracts.Data
             bool.TryParse(node.GetValue("repeatable"), out rep);
             mc.Repeatable = rep;
 
+            bool recommended;
+            bool.TryParse(node.GetValue("recommended"), out recommended);
+            mc.Recommended = recommended;
+            int.TryParse(node.GetValue("recommendedOrder"), out mc.RecommendedOrder);
+
             foreach (string pre in node.GetValues("prerequisite"))
                 if (!string.IsNullOrEmpty(pre)) mc.Voraussetzungen.Add(pre.Trim());
 

@@ -216,10 +216,25 @@ namespace CustomScienceContracts.Persistence
             if (loaded == null) return false;
             if (loaded.name == RootNode) root = loaded;
             else if (loaded.HasNode(RootNode)) root = loaded.GetNode(RootNode);
+            else
+            {
+                // ConfigNode.Save(path) serializes the node's contents but omits its own name.
+                // Every released CSC version used that API, so historical files (and our own v2
+                // temporary write) load as an anonymous node with version/STATE at top level.
+                int bareVersion = ParseInt(loaded.GetValue("version"));
+                if (StatePersistencePolicy.LooksLikeBareState(
+                        bareVersion, loaded.GetNodes("STATE").Length))
+                    root = loaded;
+            }
             if (root == null || root.name != RootNode)
             {
-                Debug.LogError($"[CSC] Invalid state root in '{path}'.");
-                return false;
+                // A bare file deliberately has no RootNode name; the structural check above is
+                // what distinguishes it from an unrelated or truncated ConfigNode file.
+                if (root == null)
+                {
+                    Debug.LogError($"[CSC] Invalid state root in '{path}'.");
+                    return false;
+                }
             }
             version = ParseInt(root.GetValue("version"));
             return version > 0;

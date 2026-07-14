@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using CustomScienceContracts.Conditions;
 using CustomScienceContracts.Core;
 using CustomScienceContracts.Model;
 using UnityEngine;
@@ -254,6 +255,10 @@ namespace CustomScienceContracts.UI
                         string label = CheckLabel(cond.Checks[j], mgr.Stations);
                         if (!ready && cond.Checks[j].IsTimer)
                             label += TimerProgress(mgr.CheckRemaining(c, i), cond.Checks[j]);
+                        if (!ready && cond.Checks[j].IsDelivery &&
+                            c.Progress.GetValue("evaluationSchema") ==
+                            StatePersistencePolicy.CurrentEvaluationSchema.ToString(CultureInfo.InvariantCulture))
+                            label += $"  ({CheckEvaluation.DeliveryProgress(c, i, j):0}/{cond.Checks[j].Amount:0} delivered)";
                         GUILayout.Label((met ? "✓  " : "✗  ") + label, met ? Theme.CondOk : Theme.CondBad);
                     }
                 }
@@ -356,6 +361,19 @@ namespace CustomScienceContracts.UI
                     return $"{chk.Count} relay satellites simultaneously in orbit around {body}";
                 case CheckKind.RELAY_VESSEL_COUNT_INCLINATION:
                     return $"{chk.Count} relay satellites simultaneously in orbit around {body}, inclination at least {chk.InclinationMin:0} degrees";
+                case CheckKind.RELAY_NETWORK_TOPOLOGY:
+                    return $"Phased relay network around {body}: {chk.Count} primary + {chk.Redundancy} reserve, " +
+                           $"largest gap at most {chk.MaxGap:0} degrees";
+                case CheckKind.RESOURCE_DELIVERY:
+                    string target = stations?.Name(chk.StationKey) ?? "the target";
+                    return $"Deliver {chk.Amount:0} {chk.Resource} to \"{target}\"";
+                case CheckKind.MASS_MIN: return $"Station mass at least {chk.Amount:0.#} t";
+                case CheckKind.MODULE_COUNT:
+                    return $"At least {chk.Count} compatible {chk.Module.Replace('|', '/')} module{(chk.Count == 1 ? "" : "s")}";
+                case CheckKind.POWER_CAPACITY_MIN:
+                    return $"ElectricCharge capacity at least {chk.Amount:0}";
+                case CheckKind.DOCKING_PORT_COUNT:
+                    return $"At least {chk.Count} docking ports";
                 case CheckKind.HOLD:        return $"Hold state for {chk.Seconds:0} seconds";
                 case CheckKind.DURATION:    return $"Hold continuously for {chk.Days:0} days";
                 default:                    return chk.Kind.ToString();

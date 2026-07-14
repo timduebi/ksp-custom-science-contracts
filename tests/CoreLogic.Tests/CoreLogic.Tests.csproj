@@ -13,6 +13,9 @@
     <Compile Include="../../src/CustomScienceContracts/Core/DeterministicHash.cs" Link="DeterministicHash.cs" />
     <Compile Include="../../src/CustomScienceContracts/Core/CompletionLog.cs" Link="CompletionLog.cs" />
     <Compile Include="../../src/CustomScienceContracts/Core/StatePersistencePolicy.cs" Link="StatePersistencePolicy.cs" />
+    <Compile Include="../../src/CustomScienceContracts/Core/UnlockPath.cs" Link="UnlockPath.cs" />
+    <Compile Include="../../src/CustomScienceContracts/Core/NetworkTopologyPolicy.cs" Link="NetworkTopologyPolicy.cs" />
+    <Compile Include="../../src/CustomScienceContracts/Core/ResourceDeliveryPolicy.cs" Link="ResourceDeliveryPolicy.cs" />
     <Compile Include="../../src/CustomScienceContracts/Model/MissionStatus.cs" Link="MissionStatus.cs" />
   </ItemGroup>
 </Project>

@@ -14,7 +14,11 @@ def _fraction_percent(value):
 
 def parse_check(source: str):
     """Parse the mission-design CHECK shorthand for every maintained catalog."""
-    head, _, label = source.partition("|")
+    # The human-readable label delimiter contains spaces. Bare pipes are allowed inside values,
+    # for example compatible module alternatives in MODULE_COUNT.
+    head, separator, label = source.partition(" | ")
+    if not separator:
+        head, _, label = source.partition("|")
     tokens = head.split()
     if not tokens:
         raise SystemExit("Empty check line")
@@ -45,12 +49,31 @@ def parse_check(source: str):
         values = [("body", args[0]), ("count", args[1]), ("inclinationMin", args[2])]
         if len(args) > 3:
             values.append(("km", args[3]))
+    elif kind == "RELAY_NETWORK_TOPOLOGY":
+        values = [("body", args[0]), ("count", args[1]), ("redundancy", args[2]),
+                  ("separationMin", args[3]), ("maxGap", args[4])]
+        if len(args) > 5:
+            values.append(("inclinationMin", args[5]))
+        if len(args) > 6:
+            values.append(("km", args[6]))
     elif kind == "EVA":
         values = [("body", args[0])] + ([("situation", args[1])] if len(args) > 1 else [])
     elif kind == "FUEL_MIN":
         values = [("amount", args[0])]
     elif kind == "RESOURCE_MIN":
         values = [("resource", args[0]), ("amount", args[1])]
+    elif kind == "RESOURCE_DELIVERY":
+        values = [("stationKey", args[0]), ("resource", args[1]), ("amount", args[2])]
+        if len(args) > 3:
+            values.append(("km", args[3]))
+    elif kind == "MASS_MIN":
+        values = [("amount", args[0])]
+    elif kind == "MODULE_COUNT":
+        values = [("module", args[0]), ("count", args[1])]
+    elif kind == "POWER_CAPACITY_MIN":
+        values = [("amount", args[0])]
+    elif kind == "DOCKING_PORT_COUNT":
+        values = [("count", args[0])]
     elif kind == "WHEEL_MOTION":
         values = [("body", args[0]), ("speed", args[1])]
     elif kind == "DOCK_ANY":
@@ -80,6 +103,44 @@ def long_stay_days(is_initial_stage: bool) -> int:
     return 150 if is_initial_stage else 60
 
 
+def station_expansion_requirements(seats: int):
+    """Scale useful station infrastructure with habitation capacity."""
+    seats = int(seats)
+    return max(2, (seats + 1) // 2), max(1000, seats * 250)
+
+
+def recommended_route_order(prerequisites: dict, milestones: set, sort_key):
+    """Expand milestone anchors to their complete prerequisite closure and topologically order it."""
+    missing = sorted(set(milestones) - set(prerequisites))
+    if missing:
+        raise SystemExit(f"Recommended-route milestone(s) missing: {', '.join(missing)}")
+
+    route = set()
+    stack = list(milestones)
+    while stack:
+        mission_id = stack.pop()
+        if mission_id in route:
+            continue
+        route.add(mission_id)
+        stack.extend(prerequisites.get(mission_id, []))
+
+    remaining = set(route)
+    emitted = set()
+    ordered = []
+    while remaining:
+        ready = [mission_id for mission_id in remaining
+                 if all(pre not in route or pre in emitted
+                        for pre in prerequisites.get(mission_id, []))]
+        if not ready:
+            raise SystemExit("Recommended route contains a dependency cycle")
+        ready.sort(key=sort_key)
+        mission_id = ready[0]
+        remaining.remove(mission_id)
+        emitted.add(mission_id)
+        ordered.append(mission_id)
+    return {mission_id: index + 1 for index, mission_id in enumerate(ordered)}
+
+
 _STOCK_INITIAL_LONG_STAYS = {
     "st_kerbin_station_longstay3",
     "st_mun_station_longstay3",
@@ -95,6 +156,21 @@ def normalize_stock_station_policy(mission: dict) -> dict:
         checks = [check for check in checks if check[0] != "CREW_NONE"]
         checks = [_replace_duration(check, 3, "keep the occupied station stable for 3 days")
                   if check[0] == "DURATION" else check for check in checks]
+        capacity = next((int(dict(values)["min"]) for kind, values, _ in checks
+                         if kind == "CREW_CAPACITY_MIN"), 0)
+        if capacity > 0:
+            ports, power = station_expansion_requirements(capacity)
+            checks.extend([
+                ("DOCKING_PORT_COUNT", [("count", str(ports))],
+                 f"at least {ports} docking ports"),
+                ("POWER_CAPACITY_MIN", [("amount", str(power))],
+                 f"ElectricCharge capacity at least {power}"),
+            ])
+            for key in ("description", "beschreibung", "beschreibung_en"):
+                if key in mission:
+                    mission[key] = mission[key].rstrip() + (
+                        f" The expanded station also needs at least {ports} docking ports and "
+                        f"{power} ElectricCharge capacity.")
         mission["checks"] = checks
     elif "_station_longstay" in mission_id and mission_id not in _STOCK_INITIAL_LONG_STAYS:
         mission["checks"] = [_replace_duration(check, 60, "operate continuously for 60 days")
@@ -102,6 +178,34 @@ def normalize_stock_station_policy(mission: dict) -> dict:
         for key in ("description", "beschreibung", "beschreibung_en"):
             if key in mission:
                 mission[key] = mission[key].replace("150 days", "60 days")
+    return mission
+
+
+def upgrade_operational_checks(mission: dict) -> dict:
+    """Upgrade newly accepted relay/logistics missions while ids and prerequisites stay stable.
+
+    The plugin carries an evaluation-schema compatibility path for already-active old missions.
+    """
+    checks = mission.get("checks", [])
+    dock = next((dict(values) for kind, values, _ in checks if kind == "DOCK_STATION"), None)
+    upgraded = []
+    for kind, values, label in checks:
+        data = dict(values)
+        if kind in ("RELAY_VESSEL_COUNT", "RELAY_VESSEL_COUNT_INCLINATION"):
+            data["redundancy"] = "1"
+            data["separationMin"] = "20"
+            data["maxGap"] = "150"
+            label = (f"phased relay network: {data.get('count', '3')} primary + 1 reserve, "
+                     "largest orbital gap at most 150 degrees")
+            upgraded.append(("RELAY_NETWORK_TOPOLOGY", list(data.items()), label))
+        elif kind == "FUEL_MIN" and dock is not None:
+            delivery = [("stationKey", dock["stationKey"]), ("resource", "Fuel"),
+                        ("amount", data["amount"]), ("legacyKind", "FUEL_MIN")]
+            upgraded.append(("RESOURCE_DELIVERY", delivery,
+                             f"deliver at least {data['amount']} fuel to the recorded target"))
+        else:
+            upgraded.append((kind, values, label))
+    mission["checks"] = upgraded
     return mission
 
 

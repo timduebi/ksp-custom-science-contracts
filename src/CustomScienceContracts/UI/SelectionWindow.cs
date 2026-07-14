@@ -256,7 +256,18 @@ namespace CustomScienceContracts.UI
 
             float textW = r.width - 40f;
             float dh = TextHeight(Theme.EpochIntroText, info.Description, textW);
-            float h = 12f + 15f + 28f + dh + 15f;
+            var orderedRoute = mgr.Catalog.All.Where(c => c.Recommended)
+                .OrderBy(c => c.RecommendedOrder > 0 ? c.RecommendedOrder : int.MaxValue)
+                .ToList();
+            MissionContract next = orderedRoute
+                .FirstOrDefault(c => !ContractManager.IsCompleted(c) &&
+                    (c.Status == MissionStatus.Active || c.Status == MissionStatus.ReadyToClaim)) ??
+                orderedRoute.FirstOrDefault(c => !ContractManager.IsCompleted(c));
+            string routeLine = orderedRoute.Count == 0 ? "" : next != null
+                ? $"RECOMMENDED NEXT: {next.Titel}"
+                : "RECOMMENDED ROUTE COMPLETE";
+            float routeH = string.IsNullOrEmpty(routeLine) ? 0f : TextHeight(Theme.Station, routeLine, textW);
+            float h = 12f + 15f + 28f + dh + (routeH > 0f ? routeH + 10f : 0f) + 15f;
 
             Rect panel = new Rect(r.x, r.y, r.width, h);
             GUI.Box(panel, GUIContent.none, Theme.EpochPanel);
@@ -271,7 +282,14 @@ namespace CustomScienceContracts.UI
                 : $"EPOCH {_selectedEpoch} OF {_maxEpoch}";
             GUI.Label(new Rect(r.x + 20f, r.y + 12f, textW, 14f), kicker, Theme.EpochKicker);
             GUI.Label(new Rect(r.x + 20f, r.y + 27f, textW, 26f), EpochName(_selectedEpoch), Theme.EpochTitle);
-            GUI.Label(new Rect(r.x + 20f, r.y + 56f, textW, dh), info.Description, Theme.EpochIntroText);
+            float storyY = r.y + 56f;
+            if (routeH > 0f)
+            {
+                GUI.Label(new Rect(r.x + 20f, storyY, textW, routeH), routeLine,
+                    next == null ? Theme.CondOk : Theme.Station);
+                storyY += routeH + 8f;
+            }
+            GUI.Label(new Rect(r.x + 20f, storyY, textW, dh), info.Description, Theme.EpochIntroText);
 
             if (Event.current.type == EventType.Repaint)
             {
@@ -301,6 +319,7 @@ namespace CustomScienceContracts.UI
                 { Sparte.Bemannt, Sparte.UnbemannteErkundung, Sparte.Stationen, Sparte.NetzwerkLogistik };
             var symbolRows = new[]
             {
+                "★   Recommended route (guidance only; side missions stay open)",
                 "↻   Repeatable mission (shows how often it was flown)",
                 "→   Tag: unlocks a mission in a later epoch",
                 "◂   Tag: continues a chain from an earlier epoch",
@@ -632,6 +651,12 @@ namespace CustomScienceContracts.UI
                         new Color(0.90f, 0.34f, 0.30f, 0.46f));
                 }
                 Theme.DrawRect(new Rect(r.x + 1f, r.y + 2f, 4f, r.height - 4f), StatusColor(c, canAccept));
+                if (_mode == CenterMode.Campaign && c.Recommended)
+                {
+                    Color routeColor = ContractManager.IsCompleted(c) ? Theme.Ok : Theme.Accent;
+                    Theme.DrawRect(new Rect(r.x + 5f, r.y + 1f, r.width - 6f, 3f),
+                        WithAlpha(routeColor, 0.82f));
+                }
                 var missionIcon = BodyVisual.MissionIcon(c);
                 if (lockedForDetails)
                 {
@@ -659,7 +684,8 @@ namespace CustomScienceContracts.UI
                 Toggle(_expandedCards, c.Id);
             if (GUI.Button(new Rect(r.x + 34f, r.y + 6f, r.width - 116f, 58f), GUIContent.none, GUIStyle.none))
                 Toggle(_expandedCards, c.Id);
-            GUI.Label(new Rect(r.x + 36f, r.y + 8f, r.width - 118f, 58f), c.Titel, Theme.CardTitle);
+            string cardTitle = _mode == CenterMode.Campaign && c.Recommended ? "★  " + c.Titel : c.Titel;
+            GUI.Label(new Rect(r.x + 36f, r.y + 8f, r.width - 118f, 58f), cardTitle, Theme.CardTitle);
 
             DrawPlanetLine(r, c, mgr);
             if (_mode == CenterMode.Repeatable)
@@ -870,13 +896,13 @@ namespace CustomScienceContracts.UI
             MissionContract c, bool canAccept)
         {
             var lines = new List<string>();
-            foreach (string id in c.Voraussetzungen)
+            var path = mgr.ShortestUnlockPath(c);
+            if (path.Count > 0)
             {
-                var pre = mgr.Catalog.Get(id);
-                if (ContractManager.IsCompleted(pre)) continue;
-                string title = pre != null ? pre.Titel : id;
-                string epoch = pre != null ? EpochName(pre.Epoch) : "Unknown epoch";
-                lines.Add("Complete: " + title + " (" + epoch + ")");
+                const int maxShown = 7;
+                string sequence = string.Join("  →  ", path.Take(maxShown).Select(mission => mission.Titel));
+                if (path.Count > maxShown) sequence += $"  →  +{path.Count - maxShown} more";
+                lines.Add($"Shortest unlock path ({path.Count} mission{(path.Count == 1 ? "" : "s")}): {sequence}");
             }
 
             if (lines.Count > 0) return lines;

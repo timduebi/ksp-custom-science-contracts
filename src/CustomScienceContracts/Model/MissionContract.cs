@@ -22,6 +22,11 @@ namespace CustomScienceContracts.Model
         public List<Condition> Bedingungen = new List<Condition>();
         public float ScienceReward = 0f;
         public bool Repeatable = false;
+        /// <summary>Highlighted main-route mission. It remains a normal mission: side missions are
+        /// never hidden or blocked, and the flag is guidance only.</summary>
+        public bool Recommended = false;
+        /// <summary>Global topological position in the optional recommended campaign route.</summary>
+        public int RecommendedOrder = 0;
         /// <summary>Exploration/outer system only: when this contract id is CompletedOnce, all
         /// contracts in the subcategory become visible and the 4-item cap is lifted.</summary>
         public string RevealAllAfter = "";

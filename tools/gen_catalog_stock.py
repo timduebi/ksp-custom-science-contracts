@@ -7,7 +7,8 @@ it as an overlay without changing the SOL source catalogs.
 """
 import os
 import re
-from catalog_common import normalize_stock_station_policy, parse_check as parse_common_check
+from catalog_common import (normalize_stock_station_policy, parse_check as parse_common_check,
+                            recommended_route_order, upgrade_operational_checks)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOC = os.path.join(ROOT, "custom_science_contracts_stock_missionsdesign.md")
@@ -57,6 +58,34 @@ EPOCH_TEXTS = {
     9: "Everything led here: Gilly as the fuel stepping stone, a support station above the "
        "purple planet — then the crewed Eve landing and return. And afterwards, one absurd "
        "question: are we living here now?",
+}
+
+EPOCH_TRANSITIONS = {
+    1: "Kerbin orbit is no longer a stunt. The next task is to make it somewhere Kerbals can live, work and call home from.",
+    2: "Docking, long stays and a working relay net turn Kerbin orbit into infrastructure. The Mun is now a destination rather than scenery.",
+    3: "Bootprints, a station and a base make the Mun part of the program. Minmus offers the first chance to turn exploration into practical fuel operations.",
+    4: "The Kerbin system can now support itself. Mission Control is free to open the stubborn inner-system side paths before committing to Duna.",
+    5: "Eve, Moho and Dres have tested the program's patience. The next chapter focuses every lesson on one sustained interplanetary campaign: Duna.",
+    6: "Duna is no longer a flag stop but an operating destination. Its expanded station and relay network can now carry signals and crews into deep space.",
+    7: "The interplanetary switchboard is live. Jool's moons are connected to home, and the program can attempt its most varied frontier yet.",
+    8: "Laythe proves that a living outpost can exist in the Jool system. The final examination waits at Eve, where landing is easy and leaving is not.",
+    9: "The recommended route is complete. Kerbals have learned to launch, dock, settle moons, cross interplanetary space and climb back from Eve.",
+}
+
+CAMPAIGN_FINALE = ("MISSION CONTROL â€” FINAL ENTRY: The Eve crew is home. The purple planet took every lesson the "
+                    "program had learned and returned proof that none of it was wasted. The campaign is complete; "
+                    "unfinished side missions remain open for whichever wonderfully unnecessary idea comes next.")
+
+RECOMMENDED_MILESTONES = {
+    "cr_kerbin_first_launch", "cr_kerbin_orbit", "cr_kerbin_orbit_3d",
+    "st_kerbin_station_core3", "st_kerbin_station_longstay3", "net_kerbin_relay3",
+    "cr_mun_landing", "st_mun_station_longstay3", "base_mun_base3",
+    "cr_minmus_landing", "base_minmus_fuel_base",
+    "cr_eve_orbit", "net_eve_relay3",
+    "net_duna_relay3", "cr_duna_landing", "st_duna_station_upgrade4",
+    "net_interplanetary_relay3", "cr_eeloo_landing",
+    "net_jool_relay3", "cr_laythe_landing", "base_laythe_base3",
+    "st_eve_support_station", "cr_eve_landing_return",
 }
 
 def epoch_nodes(epoch_names):
@@ -263,7 +292,7 @@ def parse_missions(text):
                 m[mm.group(1)] = mm.group(2).strip()
         if "id" in m:
             m["checks"] = checks
-            missions.append(normalize_stock_station_policy(m))
+            missions.append(upgrade_operational_checks(normalize_stock_station_policy(m)))
     return missions
 
 
@@ -320,7 +349,11 @@ def title_for(m):
 
 
 def description_for(m):
-    return (m.get("description") or m.get("beschreibung_en") or m.get("beschreibung") or "").strip()
+    description = (m.get("description") or m.get("beschreibung_en") or m.get("beschreibung") or "").strip()
+    if any(kind == "RELAY_NETWORK_TOPOLOGY" for kind, _, _ in m["checks"]):
+        description += (" Add one operational reserve satellite and phase the constellation so a single "
+                        "failure does not break the network.")
+    return description
 
 
 def icon_for(m):
@@ -329,13 +362,16 @@ def icon_for(m):
         return "TrackingStation_ButtonMapRover"
     if "MARKER_LANDING" in kinds:
         return "TrackingStation_ButtonMapFlag"
-    if "RELAY_VESSEL_COUNT" in kinds or "RELAY_VESSEL_COUNT_INCLINATION" in kinds:
+    if ("RELAY_VESSEL_COUNT" in kinds or "RELAY_VESSEL_COUNT_INCLINATION" in kinds or
+            "RELAY_NETWORK_TOPOLOGY" in kinds):
         return "TrackingStation_ButtonMapCommunicationsRelay"
     if "ORE_SURFACE" in kinds or "RESOURCE_MIN" in kinds:
         return "TrackingStation_ButtonMapBase"
-    if "FUEL_MIN" in kinds:
+    if "FUEL_MIN" in kinds or "RESOURCE_DELIVERY" in kinds:
         return "TrackingStation_ButtonMapBase"
     if "CREW_CAPACITY_MIN" in kinds:
+        return "TrackingStation_ButtonMapStation"
+    if any(kind in kinds for kind in ("MASS_MIN", "MODULE_COUNT", "POWER_CAPACITY_MIN", "DOCKING_PORT_COUNT")):
         return "TrackingStation_ButtonMapStation"
     if "DOCK_ANY" in kinds or "DOCK_STATION" in kinds:
         return "TrackingStation_ButtonMapStation"
@@ -373,6 +409,11 @@ def contract(m, epoch_names):
     prereqs = [] if m.get("prereq", "-") in ("-", "") else [p.strip() for p in m["prereq"].split(",")]
     sparte = SPARTE[m["sparte"]]
     sub = m.get("subcategory") or SUBCAT[m["body"]]
+    epoch = epoch_for(m)
+    _CONTRACT_META[m["id"]] = {
+        "prerequisites": list(prereqs), "epoch": epoch, "branch": sparte,
+        "sequence": len(_CONTRACT_META),
+    }
     out = "    CONTRACT\n    {\n"
     out += f"        id = {m['id']}\n"
     out += f"        title = {title_for(m)}\n"
@@ -381,7 +422,6 @@ def contract(m, epoch_names):
     out += f"        subcategory = {sub}\n"
     out += f"        icon = {m.get('icon') or icon_for(m)}\n"
     out += f"        reward = {m['reward']}\n"
-    epoch = epoch_for(m)
     out += f"        epoch = {epoch}\n"
     out += f"        epochName = {m.get('epochName') or epoch_names.get(epoch, DEFAULT_EPOCH_NAMES[epoch])}\n"
     if m.get("repeatable") == "yes":
@@ -398,6 +438,29 @@ def contract(m, epoch_names):
     out += "        }\n"
     out += "    }\n"
     return out
+
+
+_CONTRACT_META = {}
+
+
+def build_recommended_route():
+    branch_priority = {"UnbemannteErkundung": 0, "Bemannt": 1,
+                       "NetzwerkLogistik": 2, "Stationen": 3}
+    prerequisites = {mission_id: meta["prerequisites"]
+                     for mission_id, meta in _CONTRACT_META.items()}
+    return recommended_route_order(prerequisites, RECOMMENDED_MILESTONES,
+        lambda mission_id: (_CONTRACT_META[mission_id]["epoch"],
+                            branch_priority.get(_CONTRACT_META[mission_id]["branch"], 9),
+                            _CONTRACT_META[mission_id]["sequence"], mission_id))
+
+
+def mark_recommended_route(body, route_order):
+    for mission_id, order in route_order.items():
+        needle = f"        id = {mission_id}\n"
+        if needle in body:
+            body = body.replace(needle, needle +
+                f"        recommended = true\n        recommendedOrder = {order}\n", 1)
+    return body
 
 
 def write_file(path, title, body):
@@ -443,20 +506,23 @@ Generated mission counts:
 
 
 def main():
+    _CONTRACT_META.clear()
     text = open(DOC, encoding="utf-8").read()
     missions = parse_missions(text)
     epoch_names = parse_epoch_names(text)
     buckets = {name: [] for name in BUCKET_FILES}
     for m in missions:
         buckets[SPARTE[m["sparte"]]].append(contract(m, epoch_names))
+    route_order = build_recommended_route()
     for name, (fn, title) in BUCKET_FILES.items():
-        body = "".join(buckets[name])
+        body = mark_recommended_route("".join(buckets[name]), route_order)
         if name == "Bemannt":
             body = epoch_nodes(epoch_names) + body
         write_file(os.path.join(OUT, fn), title, body)
     write_readme({k: len(v) for k, v in buckets.items()}, epoch_names)
     for name, items in buckets.items():
         print(f"{name}: {len(items)}")
+    print(f"Recommended route: {len(route_order)} missions")
     print("Written to", OUT)
 
 

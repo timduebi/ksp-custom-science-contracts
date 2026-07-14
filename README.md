@@ -27,7 +27,9 @@ Everything is managed from the in-game **Mission Control** window:
 - **Campaign Atlas** — the campaign timeline. Each epoch opens with a short story intro and a
   completion count, followed by branch rows (Pioneers, Robotic Explorers, Stations, Lifelines),
   mission cards grouped by celestial body and arrows for real prerequisites. Station, base and
-  depot chains live in their own Stations branch, growing stage by stage across the epochs.
+  depot chains live in their own Stations branch, growing stage by stage across the epochs. A
+  highlighted recommended route includes every required main-path step without hiding or locking
+  side missions. The header stays quiet and shows only the single mission recommended next.
   Completed missions stay visible in green with the in-game date of their first completion —
   including repeatable missions, so the atlas is a full chronicle of everything you have achieved.
 - **Repeatables** — one page with every unlocked repeatable mission (marked ↻), grouped by target
@@ -113,10 +115,18 @@ shipped as a release asset — it returns once the plugin UI is translatable as 
 - Polar missions require at least 75° inclination.
 - Communication networks count real vessels with an enabled relay antenna and, when stock CommNet is
   active, a live connection — debris, flags, asteroids and deployed science objects do not count.
+  Later relay objectives additionally require an operational reserve and useful orbital phasing.
+- Supply objectives measure fresh resources delivered after mission acceptance. Surface deliveries
+  must bring the supply craft close to the recorded base; orbital deliveries are measured across the
+  docking merge instead of accepting an old station stockpile.
+- Locked mission cards show the full shortest prerequisite route. Optional station certifications
+  test mass, compatible science modules, power storage and docking capacity without blocking the
+  core campaign.
 - Repeatable missions (↻) go on a short cooldown after each claim: complete two other missions and
   they become available again in the Repeatables tab. The card always shows the remaining count.
 - Progress is stored atomically per save at `saves/<Name>/CustomScienceContracts/contracts_state.cfg`;
-  the previous valid file remains as `.bak`.
+  the previous valid file remains as `.bak`. Historical save layouts remain supported and are migrated
+  in place on the next successful save; completed and active mission progress is not reset.
 
 ## Feedback & bug reports
 

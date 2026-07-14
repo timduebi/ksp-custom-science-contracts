@@ -33,8 +33,8 @@ the dedicated **Stations** branch (`Stationen`, station icon, displayed between 
 and Lifelines); relay networks are **Lifelines** (`NetzwerkLogistik`). Station expansion stages
 are placed per epoch through `epoch_for_id` in `tools/gen_catalog.py` (SOL) and the `epoche:`
 fields in the Stock design source. Each catalog's `A_Pioniere.cfg` also carries nine `EPOCH`
-story nodes (number/name/description, `EPOCH_TEXTS` in the generators) that the atlas shows as
-chapter intros.
+story nodes (number/name/description). Milestone anchors are expanded to their complete prerequisite
+closure and emitted as one topologically ordered, non-blocking recommended route.
 
 ## Generators
 
@@ -141,7 +141,7 @@ every catalog but only wired the feature into one.
   really changes.
 - Same-body missions that do not depend on each other should share a dependency
   column and use vertical lanes, so optional work looks parallel.
-- Locked cards should show what unlocks them, not full mission objectives.
+- Locked cards should show the complete shortest prerequisite sequence, not full mission objectives.
   Objectives are useful once the mission is unlocked or accepted.
 - Icon keys should be unique bundled assets where possible. `icon_...` files are
   preferred over KSP tracking-station names, and legacy keys should map through

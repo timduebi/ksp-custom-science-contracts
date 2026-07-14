@@ -24,7 +24,7 @@ Epoche 7 — Deep-Space Lifeline: Der interplanetare Relay-Ring in Sonnenorbit �
 
 Epoche 8 — Jool Frontier: Jool beginnt ohne unbemannten Flyby, aber mit Atmosphäreneintritt und unbemanntem Jool-Orbiter. Der Jool-Orbiter öffnet die Mondoperationen. Jeder Mond braucht seinen eigenen unbemannten Flyby, danach darf die Crew direkt landen. Laythe braucht zusätzlich einen Atmosphärenlander, das Laythe-Relay-Netz, das Jool-Relay-Netz sowie die ausgebauten Kerbin- und Mun-Relay-Netze mit je sechs Satelliten, davon drei polar. Die Laythe-Basis wächst bis auf 15 Kerbals. Tylo bekommt einen einmaligen 3-Kerbal-Challenge-Outpost ohne Ausbau und ohne Resupply.
 
-Epoche 9 — The Purple Finale: Das Finale ist die bemannte Eve-Landung mit Rückkehr nach Kerbin. Voraussetzung sind die Eve-Supportstation mit Treibstoffreserve, die unbemannte Gilly-Fuel-Station und die bewiesene Laythe-Landung. Danach folgt als letzter absurder Bonus eine kleine Eve-Basis mit der Frage: are we living here now?
+Epoche 9 — The Purple Finale: Das Finale ist die bemannte Eve-Landung mit Rückkehr nach Kerbin. Voraussetzung sind die leistungsfähige Eve-Supportstation, die unbemannte Gilly-Fuel-Station und die bewiesene Laythe-Landung. Danach folgt als letzter absurder Bonus eine kleine Eve-Basis mit der Frage: are we living here now?
 
 # STATIONSKETTEN
 
@@ -233,7 +233,6 @@ beschreibung: Deliver an uncrewed supply vehicle to the Kerbin station. It keeps
 beschreibung_en: Deliver an uncrewed supply vehicle to the Kerbin station. It keeps the first real station alive and gives Mission Control another docking checklist to misplace.
 check: CREW_NONE | uncrewed supply vehicle
 check: ORBIT_ABOVE Kerbin | stable Kerbin orbit
-check: FUEL_MIN 300 | useful supplies and propellant aboard
 check: DOCK_STATION kerbin_station Kerbin | dock with the Kerbin station
 === MISSION ===
 id: st_kerbin_station_upgrade4
@@ -660,11 +659,10 @@ reward: 90
 repeatable: yes
 recordStation: -
 stationRef: mun_station
-beschreibung: Deliver an uncrewed supply vehicle to the Mun orbital station. The Mun may be close, but the station still appreciates fuel, spare parts, and snacks that are not dust-flavored.
-beschreibung_en: Deliver an uncrewed supply vehicle to the Mun orbital station. The Mun may be close, but the station still appreciates fuel, spare parts, and snacks that are not dust-flavored.
+beschreibung: Deliver an uncrewed supply vehicle to the Mun orbital station. The Mun may be close, but the station still appreciates spare parts and snacks that are not dust-flavored.
+beschreibung_en: Deliver an uncrewed supply vehicle to the Mun orbital station. The Mun may be close, but the station still appreciates spare parts and snacks that are not dust-flavored.
 check: CREW_NONE | uncrewed supply vehicle
 check: ORBIT_ABOVE Mun 20 | stable Mun orbit
-check: FUEL_MIN 350 | useful supplies and propellant aboard
 check: DOCK_STATION mun_station Mun | dock with the Mun orbital station
 === MISSION ===
 id: st_mun_station_upgrade6
@@ -730,7 +728,7 @@ beschreibung: Deliver supplies to the Mun base. The base crew appreciates fuel, 
 beschreibung_en: Deliver supplies to the Mun base. The base crew appreciates fuel, spare parts, and anything that was not accidentally labeled as decorative rock.
 check: CREW_NONE | uncrewed supply vehicle
 check: LANDED Mun | landed on the Mun
-check: FUEL_MIN 300 | fuel reserve above 300 units
+check: RESOURCE_DELIVERY mun_base Fuel 300 2 | deliver at least 300 fuel within 2 km of the Mun base
 === MISSION ===
 id: base_mun_base6
 title: Mun Base, Now With Neighbours
@@ -985,13 +983,14 @@ reward: 520
 repeatable: no
 recordStation: eve_support_station
 stationRef: -
-beschreibung: Build a fuel-equipped support station in Eve orbit. It exists for emergencies, return planning, and giving Mission Control something comforting to point at before approving a landing attempt.
-beschreibung_en: Build a fuel-equipped support station in Eve orbit. It exists for emergencies, return planning, and giving Mission Control something comforting to point at before approving a landing attempt.
+beschreibung: Build a capable support station in Eve orbit. It exists for emergencies, return planning, and giving Mission Control something comforting to point at before approving a landing attempt.
+beschreibung_en: Build a capable support station in Eve orbit. It exists for emergencies, return planning, and giving Mission Control something comforting to point at before approving a landing attempt.
 check: CREW_NONE | empty station, no Kerbals aboard
 check: CREW_CAPACITY_MIN 3 | support station has room for at least 3 Kerbals
 check: ORBIT_ABOVE Eve | stable Eve orbit
 check: DURATION 10 | keep the empty station stable for 10 days
-check: FUEL_MIN 1500 | emergency fuel reserve above 1500
+check: DOCKING_PORT_COUNT 2 | at least 2 docking ports for return support
+check: POWER_CAPACITY_MIN 1500 | ElectricCharge capacity at least 1500
 === MISSION ===
 id: un_moho_flyby
 title: Sunburn Scout
@@ -1361,7 +1360,6 @@ beschreibung: Deliver an uncrewed supply vehicle to Duna orbit. Interplanetary l
 beschreibung_en: Deliver an uncrewed supply vehicle to Duna orbit. Interplanetary logistics are slow, expensive, and still easier than explaining why the pantry is empty.
 check: CREW_NONE | uncrewed supply vehicle
 check: ORBIT_ABOVE Duna | stable Duna orbit
-check: FUEL_MIN 800 | fuel reserve above 800 units
 check: DOCK_STATION duna_station Duna | dock with the Duna station
 === MISSION ===
 id: st_duna_station_upgrade4
@@ -1631,13 +1629,14 @@ reward: 850
 repeatable: no
 recordStation: jool_gateway
 stationRef: -
-beschreibung: Build an orbital support hub in the Jool system. It is not required for every landing, but it gives the program a place to store fuel, plans, and the illusion of control.
-beschreibung_en: Build an orbital support hub in the Jool system. It is not required for every landing, but it gives the program a place to store fuel, plans, and the illusion of control.
+beschreibung: Build an orbital support hub in the Jool system. It is not required for every landing, but it gives the program docking space, power, plans, and the illusion of control.
+beschreibung_en: Build an orbital support hub in the Jool system. It is not required for every landing, but it gives the program docking space, power, plans, and the illusion of control.
 check: CREW_NONE | empty station, no Kerbals aboard
 check: CREW_CAPACITY_MIN 3 | gateway has room for at least 3 Kerbals
 check: ORBIT_ABOVE Jool | stable Jool orbit
 check: DURATION 10 | keep the empty station stable for 10 days
-check: FUEL_MIN 1800 | support fuel reserve above 1800
+check: DOCKING_PORT_COUNT 3 | at least 3 docking ports for deep-space traffic
+check: POWER_CAPACITY_MIN 2500 | ElectricCharge capacity at least 2500
 === MISSION ===
 id: un_laythe_flyby
 title: Kerbin-ish, Suspiciously
@@ -1733,7 +1732,7 @@ beschreibung: Deliver supplies to the Laythe base. The colony may have an atmosp
 beschreibung_en: Deliver supplies to the Laythe base. The colony may have an atmosphere and oceans, but it still cannot manufacture replacement ladders out of optimism.
 check: CREW_NONE | uncrewed supply vehicle
 check: LANDED Laythe | landed on Laythe
-check: FUEL_MIN 800 | fuel reserve above 800 units
+check: RESOURCE_DELIVERY laythe_base Fuel 800 2 | deliver at least 800 fuel within 2 km of the Laythe base
 === MISSION ===
 id: base_laythe_base6
 title: Six by the Sea
@@ -1959,3 +1958,57 @@ beschreibung_en: Establish a small Eve surface base after the successful return 
 check: CREW_MIN 3 | at least 3 Kerbals at the Eve base
 check: LANDED Eve | base landed on Eve
 check: DURATION 30 | operate the Eve base for 30 days
+=== MISSION ===
+id: opt_kerbin_station_certification
+title: Optional Kerbin Station Certification
+sparte: Stationen
+body: Kerbin
+epoche: 2
+prereq: st_kerbin_station_upgrade4
+reward: 35
+repeatable: no
+recordStation: -
+stationRef: kerbin_station
+beschreibung: Perform an optional engineering audit of the Kerbin station. Mass, a science laboratory, electrical reserve and docking capacity are checked without blocking the campaign.
+beschreibung_en: Perform an optional engineering audit of the Kerbin station. Mass, a science laboratory, electrical reserve and docking capacity are checked without blocking the campaign.
+check: ORBIT_ABOVE Kerbin 80 | stable Kerbin orbit above 80 km
+check: MASS_MIN 12 | station mass at least 12 tonnes
+check: MODULE_COUNT ModuleScienceLab|ModuleScienceConverter|Laboratory 1 | at least one compatible science laboratory
+check: POWER_CAPACITY_MIN 800 | ElectricCharge capacity at least 800
+check: DOCKING_PORT_COUNT 2 | at least two docking ports
+=== MISSION ===
+id: opt_mun_station_certification
+title: Optional Mun Station Certification
+sparte: Stationen
+body: Mun
+epoche: 3
+prereq: st_mun_station_core3
+reward: 55
+repeatable: no
+recordStation: -
+stationRef: mun_station
+beschreibung: Certify the Mun station as a real orbital laboratory with sufficient mass, science hardware, stored power and docking capacity. This remains an optional side mission.
+beschreibung_en: Certify the Mun station as a real orbital laboratory with sufficient mass, science hardware, stored power and docking capacity. This remains an optional side mission.
+check: ORBIT_ABOVE Mun 15 | stable Mun orbit above 15 km
+check: MASS_MIN 16 | station mass at least 16 tonnes
+check: MODULE_COUNT ModuleScienceLab|ModuleScienceConverter|Laboratory 1 | at least one compatible science laboratory
+check: POWER_CAPACITY_MIN 1200 | ElectricCharge capacity at least 1200
+check: DOCKING_PORT_COUNT 2 | at least two docking ports
+=== MISSION ===
+id: opt_duna_station_certification
+title: Optional Duna Station Certification
+sparte: Stationen
+body: Duna
+epoche: 6
+prereq: st_duna_station_core2
+reward: 90
+repeatable: no
+recordStation: -
+stationRef: duna_station
+beschreibung: Give the Duna station a deep-space engineering certification. Its mass, laboratory module, power reserve and docking ports must support long operations, but the audit never gates later missions.
+beschreibung_en: Give the Duna station a deep-space engineering certification. Its mass, laboratory module, power reserve and docking ports must support long operations, but the audit never gates later missions.
+check: ORBIT_ABOVE Duna 60 | stable Duna orbit above 60 km
+check: MASS_MIN 20 | station mass at least 20 tonnes
+check: MODULE_COUNT ModuleScienceLab|ModuleScienceConverter|Laboratory 1 | at least one compatible science laboratory
+check: POWER_CAPACITY_MIN 1600 | ElectricCharge capacity at least 1600
+check: DOCKING_PORT_COUNT 2 | at least two docking ports

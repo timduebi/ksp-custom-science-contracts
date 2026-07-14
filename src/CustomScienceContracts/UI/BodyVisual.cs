@@ -293,6 +293,7 @@ namespace CustomScienceContracts.UI
                                 break;
                             case CheckKind.FUEL_MIN:
                             case CheckKind.RESOURCE_MIN:
+                            case CheckKind.RESOURCE_DELIVERY:
                             case CheckKind.ORE_SURFACE:
                                 hasBaseResource = true;
                                 break;
@@ -314,7 +315,14 @@ namespace CustomScienceContracts.UI
                             case CheckKind.VESSEL_COUNT_INCLINATION:
                             case CheckKind.RELAY_VESSEL_COUNT:
                             case CheckKind.RELAY_VESSEL_COUNT_INCLINATION:
+                            case CheckKind.RELAY_NETWORK_TOPOLOGY:
                                 hasFleet = true;
+                                break;
+                            case CheckKind.MASS_MIN:
+                            case CheckKind.MODULE_COUNT:
+                            case CheckKind.POWER_CAPACITY_MIN:
+                            case CheckKind.DOCKING_PORT_COUNT:
+                                hasDock = true;
                                 break;
                             case CheckKind.ATMO_FRACTION:
                             case CheckKind.SUBORBITAL:
