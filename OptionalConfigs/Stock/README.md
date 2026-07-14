@@ -12,8 +12,9 @@ Install:
 Run only one config at a time. To go back to SOL, restore the four default catalog files
 from the main download.
 
-Requires CustomScienceContracts 0.4.3 or newer. Older plugin builds ignore the Stock
-chapter names and older Stock config files did not contain epoch assignments.
+Requires CustomScienceContracts 0.8.0 from the same release. The 0.8 Stock catalog integrates
+mandatory station engineering checks and 120-day later endurance stages; do not combine it with
+an older DLL.
 
 Campaign chapters:
 1. First Sparks
@@ -29,4 +30,10 @@ Campaign chapters:
 Generated mission counts:
 - Pioneers: 32
 - Robotic Explorers: 30
+- Stations: 46
 - Lifelines: 10
+- Total: 118
+
+Station cores require minimum mass, docking ports and ElectricCharge capacity. Every station
+expansion additionally requires a compatible stock- or Kerbalism-style laboratory. The Stock
+overlay has no dependency on SOL, Contract Configurator, Toolbar Controller or Kerbalism.

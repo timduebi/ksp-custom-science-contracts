@@ -744,7 +744,7 @@ beschreibung: Expand the Mun base to support six Kerbals. The settlement now has
 beschreibung_en: Expand the Mun base to support six Kerbals. The settlement now has enough crew to do real science, real maintenance, and real arguments about who parked the rover upside down.
 check: CREW_MIN 6 | at least 6 Kerbals at the base
 check: LANDED Mun | base landed on the Mun
-check: DURATION 60 | operate the expanded base for 60 days
+check: DURATION 120 | operate the expanded base for 120 days
 === MISSION ===
 id: cr_minmus_flyby
 title: Minty Flyby
@@ -1491,7 +1491,7 @@ beschreibung: Expand the Duna base to four Kerbals. The settlement now has enoug
 beschreibung_en: Expand the Duna base to four Kerbals. The settlement now has enough crew to call problems departments instead of emergencies.
 check: CREW_MIN 4 | at least 4 Kerbals at the base
 check: LANDED Duna | base landed on Duna
-check: DURATION 60 | operate the expanded base for 60 days
+check: DURATION 120 | operate the expanded base for 120 days
 === MISSION ===
 id: base_duna_base6
 title: Permanent-ish on Duna
@@ -1748,7 +1748,7 @@ beschreibung: Expand the Laythe base to support 6 Kerbals. The settlement is no 
 beschreibung_en: Expand the Laythe base to support 6 Kerbals. The settlement is no longer just a landing site; it is turning into a real off-world community with science, maintenance, and beach arguments.
 check: CREW_MIN 6 | at least 6 Kerbals at the base
 check: LANDED Laythe | base landed on Laythe
-check: DURATION 60 | operate the expanded base for 60 days
+check: DURATION 120 | operate the expanded base for 120 days
 === MISSION ===
 id: base_laythe_base10
 title: Laythe Gets Crowded
@@ -1958,57 +1958,3 @@ beschreibung_en: Establish a small Eve surface base after the successful return 
 check: CREW_MIN 3 | at least 3 Kerbals at the Eve base
 check: LANDED Eve | base landed on Eve
 check: DURATION 30 | operate the Eve base for 30 days
-=== MISSION ===
-id: opt_kerbin_station_certification
-title: Optional Kerbin Station Certification
-sparte: Stationen
-body: Kerbin
-epoche: 2
-prereq: st_kerbin_station_upgrade4
-reward: 35
-repeatable: no
-recordStation: -
-stationRef: kerbin_station
-beschreibung: Perform an optional engineering audit of the Kerbin station. Mass, a science laboratory, electrical reserve and docking capacity are checked without blocking the campaign.
-beschreibung_en: Perform an optional engineering audit of the Kerbin station. Mass, a science laboratory, electrical reserve and docking capacity are checked without blocking the campaign.
-check: ORBIT_ABOVE Kerbin 80 | stable Kerbin orbit above 80 km
-check: MASS_MIN 12 | station mass at least 12 tonnes
-check: MODULE_COUNT ModuleScienceLab|ModuleScienceConverter|Laboratory 1 | at least one compatible science laboratory
-check: POWER_CAPACITY_MIN 800 | ElectricCharge capacity at least 800
-check: DOCKING_PORT_COUNT 2 | at least two docking ports
-=== MISSION ===
-id: opt_mun_station_certification
-title: Optional Mun Station Certification
-sparte: Stationen
-body: Mun
-epoche: 3
-prereq: st_mun_station_core3
-reward: 55
-repeatable: no
-recordStation: -
-stationRef: mun_station
-beschreibung: Certify the Mun station as a real orbital laboratory with sufficient mass, science hardware, stored power and docking capacity. This remains an optional side mission.
-beschreibung_en: Certify the Mun station as a real orbital laboratory with sufficient mass, science hardware, stored power and docking capacity. This remains an optional side mission.
-check: ORBIT_ABOVE Mun 15 | stable Mun orbit above 15 km
-check: MASS_MIN 16 | station mass at least 16 tonnes
-check: MODULE_COUNT ModuleScienceLab|ModuleScienceConverter|Laboratory 1 | at least one compatible science laboratory
-check: POWER_CAPACITY_MIN 1200 | ElectricCharge capacity at least 1200
-check: DOCKING_PORT_COUNT 2 | at least two docking ports
-=== MISSION ===
-id: opt_duna_station_certification
-title: Optional Duna Station Certification
-sparte: Stationen
-body: Duna
-epoche: 6
-prereq: st_duna_station_core2
-reward: 90
-repeatable: no
-recordStation: -
-stationRef: duna_station
-beschreibung: Give the Duna station a deep-space engineering certification. Its mass, laboratory module, power reserve and docking ports must support long operations, but the audit never gates later missions.
-beschreibung_en: Give the Duna station a deep-space engineering certification. Its mass, laboratory module, power reserve and docking ports must support long operations, but the audit never gates later missions.
-check: ORBIT_ABOVE Duna 60 | stable Duna orbit above 60 km
-check: MASS_MIN 20 | station mass at least 20 tonnes
-check: MODULE_COUNT ModuleScienceLab|ModuleScienceConverter|Laboratory 1 | at least one compatible science laboratory
-check: POWER_CAPACITY_MIN 1600 | ElectricCharge capacity at least 1600
-check: DOCKING_PORT_COUNT 2 | at least two docking ports

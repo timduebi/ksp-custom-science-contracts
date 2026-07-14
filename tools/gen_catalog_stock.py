@@ -490,8 +490,9 @@ Install:
 Run only one config at a time. To go back to SOL, restore the four default catalog files
 from the main download.
 
-Requires CustomScienceContracts 0.4.3 or newer. Older plugin builds ignore the Stock
-chapter names and older Stock config files did not contain epoch assignments.
+Requires CustomScienceContracts 0.8.0 from the same release. The 0.8 Stock catalog integrates
+mandatory station engineering checks and 120-day later endurance stages; do not combine it with
+an older DLL.
 
 Campaign chapters:
 {chapter_lines}
@@ -499,7 +500,13 @@ Campaign chapters:
 Generated mission counts:
 - Pioneers: {counts.get('Bemannt', 0)}
 - Robotic Explorers: {counts.get('UnbemannteErkundung', 0)}
+- Stations: {counts.get('Stationen', 0)}
 - Lifelines: {counts.get('NetzwerkLogistik', 0)}
+- Total: {sum(counts.values())}
+
+Station cores require minimum mass, docking ports and ElectricCharge capacity. Every station
+expansion additionally requires a compatible stock- or Kerbalism-style laboratory. The Stock
+overlay has no dependency on SOL, Contract Configurator, Toolbar Controller or Kerbalism.
 """
     with open(readme, "w", encoding="utf-8") as f:
         f.write(text)

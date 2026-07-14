@@ -99,14 +99,20 @@ def stability_days(is_initial_build: bool) -> int:
 
 
 def long_stay_days(is_initial_stage: bool) -> int:
-    """One real endurance milestone per chain; later tiers verify sixty days."""
-    return 150 if is_initial_stage else 60
+    """One real endurance milestone per chain; later tiers verify 120 days."""
+    return 150 if is_initial_stage else 120
 
 
-def station_expansion_requirements(seats: int):
-    """Scale useful station infrastructure with habitation capacity."""
+SCIENCE_LAB_MODULES = "ModuleScienceLab|ModuleScienceConverter|Laboratory"
+
+
+def station_engineering_requirements(seats: int, is_expansion: bool):
+    """Scale mandatory station mass, docking capacity and power with habitation capacity."""
     seats = int(seats)
-    return max(2, (seats + 1) // 2), max(1000, seats * 250)
+    mass = max(18, 8 + seats * 3) if is_expansion else max(12, 8 + seats * 2)
+    ports = max(2, (seats + 1) // 2)
+    power = max(1000, seats * 250)
+    return mass, ports, power
 
 
 def recommended_route_order(prerequisites: dict, milestones: set, sort_key):
@@ -152,32 +158,62 @@ def normalize_stock_station_policy(mission: dict) -> dict:
     """Apply the common station policy to a parsed Stock design mission in place."""
     mission_id = mission.get("id", "")
     checks = mission.get("checks", [])
-    if re.match(r"^st_.*_station_upgrade\d+$", mission_id):
-        checks = [check for check in checks if check[0] != "CREW_NONE"]
-        checks = [_replace_duration(check, 3, "keep the occupied station stable for 3 days")
-                  if check[0] == "DURATION" else check for check in checks]
+    station_key = mission.get("recordStation", "")
+    dedicated_site = any(token in station_key.lower() for token in ("fuel", "depot", "base"))
+    is_expansion = bool(re.match(r"^st_.*_station_upgrade\d+$", mission_id))
+    is_initial_build = bool(station_key and station_key != "-" and not dedicated_site and
+                            any(kind == "CREW_CAPACITY_MIN" for kind, _values, _label in checks) and
+                            any(kind == "ORBIT_ABOVE" for kind, _values, _label in checks))
+
+    if is_initial_build or is_expansion:
+        if is_expansion:
+            checks = [check for check in checks if check[0] != "CREW_NONE"]
+            checks = [_replace_duration(check, 3, "keep the occupied station stable for 3 days")
+                      if check[0] == "DURATION" else check for check in checks]
+
         capacity = next((int(dict(values)["min"]) for kind, values, _ in checks
                          if kind == "CREW_CAPACITY_MIN"), 0)
         if capacity > 0:
-            ports, power = station_expansion_requirements(capacity)
-            checks.extend([
+            mass, ports, power = station_engineering_requirements(capacity, is_expansion)
+            required_checks = [
+                ("MASS_MIN", [("amount", str(mass))], f"station mass at least {mass} tonnes"),
                 ("DOCKING_PORT_COUNT", [("count", str(ports))],
                  f"at least {ports} docking ports"),
                 ("POWER_CAPACITY_MIN", [("amount", str(power))],
                  f"ElectricCharge capacity at least {power}"),
-            ])
+            ]
+            if is_expansion:
+                required_checks.append(
+                    ("MODULE_COUNT", [("module", SCIENCE_LAB_MODULES), ("count", "1")],
+                     "at least one compatible science laboratory"))
+            existing_kinds = {kind for kind, _values, _label in checks}
+            checks.extend(check for check in required_checks if check[0] not in existing_kinds)
+
+            actual = {kind: dict(values) for kind, values, _label in checks}
+            actual_mass = actual["MASS_MIN"]["amount"]
+            actual_ports = actual["DOCKING_PORT_COUNT"]["count"]
+            actual_power = actual["POWER_CAPACITY_MIN"]["amount"]
+            if is_expansion:
+                policy_text = (
+                    f" Mandatory engineering requirements: at least {actual_mass} tonnes, "
+                    f"{actual_ports} docking ports, {actual_power} ElectricCharge capacity and "
+                    "one compatible science laboratory.")
+            else:
+                policy_text = (
+                    f" Mandatory construction certification: at least {actual_mass} tonnes, "
+                    f"{actual_ports} docking ports and {actual_power} ElectricCharge capacity. "
+                    "A compatible science laboratory becomes mandatory with the first expansion.")
             for key in ("description", "beschreibung", "beschreibung_en"):
                 if key in mission:
-                    mission[key] = mission[key].rstrip() + (
-                        f" The expanded station also needs at least {ports} docking ports and "
-                        f"{power} ElectricCharge capacity.")
+                    mission[key] = mission[key].rstrip() + policy_text
         mission["checks"] = checks
-    elif "_station_longstay" in mission_id and mission_id not in _STOCK_INITIAL_LONG_STAYS:
-        mission["checks"] = [_replace_duration(check, 60, "operate continuously for 60 days")
-                             if check[0] == "DURATION" else check for check in checks]
+
+    if "_station_longstay" in mission_id and mission_id not in _STOCK_INITIAL_LONG_STAYS:
+        mission["checks"] = [_replace_duration(check, 120, "operate continuously for 120 days")
+                             if check[0] == "DURATION" else check for check in mission.get("checks", checks)]
         for key in ("description", "beschreibung", "beschreibung_en"):
             if key in mission:
-                mission[key] = mission[key].replace("150 days", "60 days")
+                mission[key] = mission[key].replace("150 days", "120 days").replace("60 days", "120 days")
     return mission
 
 

@@ -2402,11 +2402,11 @@ reward: 1770
 repeatable: no
 recordStation: -
 stationRef: -
-beschreibung: Erweitere die Titanbasis auf sechs Kerbals und halte sie sechzig Tage stabil. Kein neuer Aufbruch, sondern Wachstum am äussersten bemannten Rand.
-beschreibung_en: Expand the Titan base to six Kerbals and hold it steady for sixty days. Not a new departure, but growth at the outermost crewed frontier.
+beschreibung: Erweitere die Titanbasis auf sechs Kerbals und halte sie hundertzwanzig Tage stabil. Kein neuer Aufbruch, sondern Wachstum am äussersten bemannten Rand.
+beschreibung_en: Expand the Titan base to six Kerbals and hold it steady for 120 days. Not a new departure, but growth at the outermost crewed frontier.
 check: CREW_MIN 6 | mindestens 6 Kerbals an Bord
 check: LANDED Titan | auf Titan gelandet
-check: DURATION 60 | 60 Tage ununterbrochen ausharren
+check: DURATION 120 | 120 Tage ununterbrochen ausharren
 
 === MISSION ===
 id: cr_titan_base8

@@ -139,21 +139,34 @@ def validate(missions):
             if check.kind in ("DURATION", "HOLD"):
                 key = "days" if check.kind == "DURATION" else "seconds"
                 try:
-                    if float(check.values.get(key, "0")) <= 0:
+                    value = float(check.values.get(key, "0"))
+                    if value <= 0:
                         errors.append(f"{where}: {check.kind} requires positive {key}")
+                    if (check.kind == "DURATION" and value == 60 and
+                            ("station" in mission.id.lower() or "base" in mission.id.lower())):
+                        errors.append(f"{where}: infrastructure stays must use 120 days instead of 60")
                 except ValueError:
                     errors.append(f"{where}: invalid {check.kind} value")
-        if re.match(r"^cr_.*_station_expand\d+$", mission.id) or re.match(r"^st_.*_station_upgrade\d+$", mission.id):
+        is_station_expansion = bool(re.match(r"^cr_.*_station_expand\d+$", mission.id) or
+                                    re.match(r"^st_.*_station_upgrade\d+$", mission.id))
+        station_key = mission.values.get("stationRef") or mission.values.get("recordStationKey", "")
+        dedicated_site = any(token in station_key.lower() for token in ("fuel", "depot", "base"))
+        kinds = {check.kind for check in mission.checks}
+        is_station_build = bool(mission.values.get("recordStationKey") and not dedicated_site and
+                                "CREW_CAPACITY_MIN" in kinds and "ORBIT_ABOVE" in kinds)
+        if mission.id.startswith("opt_") and "station_certification" in mission.id:
+            errors.append(f"{where}: station certification must be integrated into construction")
+        if is_station_build or is_station_expansion:
+            for required in ("MASS_MIN", "DOCKING_PORT_COUNT", "POWER_CAPACITY_MIN"):
+                if required not in kinds:
+                    errors.append(f"{where}: station construction requires {required}")
+        if is_station_expansion:
             if any(check.kind == "CREW_NONE" for check in mission.checks):
                 errors.append(f"{where}: station expansion must not require evacuation")
-            kinds = {check.kind for check in mission.checks}
-            for required in ("DOCKING_PORT_COUNT", "POWER_CAPACITY_MIN"):
-                if required not in kinds:
-                    errors.append(f"{where}: station expansion requires {required}")
+            if "MODULE_COUNT" not in kinds:
+                errors.append(f"{where}: station expansion requires MODULE_COUNT")
 
-        station_key = mission.values.get("stationRef") or mission.values.get("recordStationKey", "")
-        dedicated_fuel_site = any(token in station_key.lower() for token in ("fuel", "depot", "base"))
-        if station_key and not dedicated_fuel_site:
+        if station_key and not dedicated_site:
             if any(check.kind in ("FUEL_MIN", "RESOURCE_DELIVERY") for check in mission.checks):
                 errors.append(f"{where}: ordinary orbital station must not require fuel")
 

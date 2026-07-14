@@ -9,7 +9,8 @@ dominantem Check. Body-Namen sind interne CelestialBody.name (Luna = Moon)."""
 import re, os
 from catalog_common import (long_stay_days, parse_check as parse_common_check,
                             recommended_route_order, stability_days,
-                            station_expansion_requirements, upgrade_operational_checks)
+                            SCIENCE_LAB_MODULES, station_engineering_requirements,
+                            upgrade_operational_checks)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOC  = os.path.join(ROOT, "custom_science_contracts_missionsdesign.md")
@@ -642,30 +643,40 @@ def orbit_chain(key, body, sub, orbitword, km, stages, prereq0, station_word, mu
         sup, lng = f"cr_{key}_supply{n}", f"cr_{key}_longstay{n}"
         empty = {"kind": "CREW_NONE", "label": "Station unbemannt, keine Kerbals an Bord"}
         stable_days = stability_days(build)
+        mass, ports, power = station_engineering_requirements(n, not build)
+        engineering = [
+            {"kind": "MASS_MIN", "amount": mass, "label": f"Stationsmasse mindestens {mass} t"},
+            {"kind": "DOCKING_PORT_COUNT", "count": ports,
+             "label": f"Mindestens {ports} Dockingports"},
+            {"kind": "POWER_CAPACITY_MIN", "amount": power,
+             "label": f"ElectricCharge-Kapazität mindestens {power}"},
+        ]
         if build:
             core = station_word[6:] if station_word.startswith("Erste ") else station_word
             title = f"{station_word} ({seats(n)})"
             desc = (f"Errichte deine erste Raumstation im {orbitword} mit mindestens "
                     f"{seats_dative(n)}. Die Station muss dabei leer und unbemannt sein; Besatzung "
-                    f"zählt erst ab der Versorgung. Mit ihr beginnt für dein Programm die Ära ständiger Präsenz — "
+                    f"zählt erst ab der Versorgung. Als technische Grundvoraussetzung braucht sie mindestens "
+                    f"{mass} t Masse, {ports} Dockingports und {power} ElectricCharge-Kapazität. "
+                    f"Mit ihr beginnt für dein Programm die Ära ständiger Präsenz — "
                     f"der Name, den du ihr gibst, begleitet jeden künftigen Versorgungsflug.")
             out.append(contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
                        round(220 * mult), [prereq0],
-                       cks([empty, capacity(n), orbit, apo, {"kind": "DURATION", "days": stable_days, "label": f"{stable_days} Tage im Zielorbit stabil halten"}]),
+                       cks([empty, capacity(n), orbit, apo] + engineering +
+                           [{"kind": "DURATION", "days": stable_days,
+                             "label": f"{stable_days} Tage im Zielorbit stabil halten"}]),
                        record=key))
         else:
             title = f"Stationsausbau auf {seats(n)}"
-            ports, power = station_expansion_requirements(n)
             desc = (f"Erweitere %station% auf mindestens {seats(n)}, ohne die vorhandene "
-                    f"Besatzung evakuieren zu müssen. Der Ausbau braucht mindestens {ports} "
-                    f"Dockingports und {power} ElectricCharge-Kapazität.")
+                    f"Besatzung evakuieren zu müssen. Der Ausbau braucht mindestens {mass} t Masse, "
+                    f"{ports} Dockingports, {power} ElectricCharge-Kapazität und ab dieser ersten "
+                    f"Ausbaustufe ein kompatibles Wissenschaftslabor.")
             out.append(contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
                        round((180 + 20 * n) * mult), [prev_long],
-                       cks([capacity(n), orbit, apo,
-                            {"kind": "DOCKING_PORT_COUNT", "count": ports,
-                             "label": f"Mindestens {ports} Dockingports"},
-                            {"kind": "POWER_CAPACITY_MIN", "amount": power,
-                             "label": f"ElectricCharge-Kapazität mindestens {power}"},
+                       cks([capacity(n), orbit, apo] + engineering + [
+                            {"kind": "MODULE_COUNT", "module": SCIENCE_LAB_MODULES, "count": 1,
+                             "label": "Mindestens ein kompatibles Wissenschaftslabor"},
                             {"kind": "DURATION", "days": stable_days,
                              "label": f"{stable_days} Tage im Zielorbit stabil halten"}]),
                        ref=key))
@@ -803,38 +814,14 @@ def fuel_depot_chain(key, sub, stages, prereq0, mult):
         prev = sid
     return "".join(out)
 
-def station_certification(cid, title, body, sub, key, prerequisite, epoch,
-                          mass, power, ports, reward):
-    """Optional engineering audit. It never unlocks the main path."""
-    orbit_km = {"Earth": 130, "Moon": 25, "Mars": 90}[body]
-    checks = [
-        ("ORBIT_ABOVE", [("body", body), ("km", orbit_km)], f"Stabiler Orbit, Periapsis über {orbit_km} km"),
-        ("MASS_MIN", [("amount", mass)], f"Stationsmasse mindestens {mass} t"),
-        ("MODULE_COUNT", [("module", "ModuleScienceLab|ModuleScienceConverter|Laboratory"), ("count", 1)],
-         "Mindestens ein kompatibles Wissenschaftslabor"),
-        ("POWER_CAPACITY_MIN", [("amount", power)], f"ElectricCharge-Kapazität mindestens {power}"),
-        ("DOCKING_PORT_COUNT", [("count", ports)], f"Mindestens {ports} Dockingports"),
-    ]
-    desc = (f"Führe eine optionale technische Zertifizierung von %station% durch: Masse, "
-            "Wissenschaftsmodul, Energiereserve und Dockingkapazität werden gemeinsam geprüft. "
-            "Diese Mission blockiert keinen weiteren Kampagnenschritt.")
-    return contract(cid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
-                    reward, [prerequisite], checks, ref=key, epoch=epoch)
-
 def build_stations():
     s = ""
     s += "    // ===== ERDE — Raumstation (3 -> 12 Plaetze) =====\n"
     s += orbit_chain("earth_station", "Earth", "Erde", "Erdorbit", 130,
                      [3, 4, 6, 8, 10, 12], "cr_luna_landing", "Erste Raumstation im Erdorbit", 1.0)
-    s += station_certification("opt_earth_station_certification", "Optionale Erdstation-Zertifizierung",
-                               "Earth", "Erde", "earth_station", "cr_earth_station_expand4", 3,
-                               15, 1000, 2, 45)
     s += "\n    // ===== LUNA — Raumstation (ab Erd-Dauerbetrieb 4) =====\n"
     s += orbit_chain("moon_station", "Moon", "Luna", "Mondorbit", 25,
                      [3, 4, 6, 8, 10], "cr_earth_station_longstay4", "Erste Mond-Raumstation im Mondorbit", 1.5)
-    s += station_certification("opt_moon_station_certification", "Optionale Mondstation-Zertifizierung",
-                               "Moon", "Luna", "moon_station", "cr_moon_station_build", 3,
-                               20, 1500, 2, 70)
     s += "\n    // ===== LUNA — Basisstandort-Erkundungen nach Erdstation 4 =====\n"
     s += moon_base_site_survey_landings()
     s += "\n    // ===== LUNA — Oberflaechenbasis (ab 150 Tage Mondstation 3 Kerbals) =====\n"
@@ -843,9 +830,6 @@ def build_stations():
     s += "\n    // ===== MARS — Raumstation (ab 10 Tage auf Mars) =====\n"
     s += orbit_chain("mars_station", "Mars", "Mars", "Marsorbit", 90,
                      [2, 3, 4, 6], "cr_mars_stay_10d", "Erste Mars-Raumstation im Marsorbit", 2.4)
-    s += station_certification("opt_mars_station_certification", "Optionale Marsstation-Zertifizierung",
-                               "Mars", "Mars", "mars_station", "cr_mars_station_build", 5,
-                               25, 2000, 2, 110)
     s += "\n    // ===== MARS — Oberflaechenbasis (ab 30 Tage auf Mars) =====\n"
     s += base_chain("mars_base", "Mars", "Mars", [2, 3, 4, 6], "cr_mars_stay_30d", "Erste Marsbasis", 2.6)
     s += "\n    // ===== ERDE — Treibstoff-Tankstelle (Versorgungsnetz, bemannt) =====\n"

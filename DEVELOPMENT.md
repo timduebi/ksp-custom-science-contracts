@@ -1,17 +1,18 @@
 # Development — one engine, three catalogs, one release
 
-## 0.7 quality gates
+## 0.8 quality gates
 
 Run `python tools/validate_catalog.py`, `python -m unittest discover -s tests -p "test_*.py"`
 and `dotnet test tests/CoreLogic.Tests/CoreLogic.Tests.csproj -c Release` before packaging.
 
 `tools/analyze_balance.py` compares the SOL reward curve with an installed Stock + Community Tech
-Tree and validates literal Probes Before Crew `TechRequired` targets. The 0.7.0 reference run against
-KSP 1.12.5, current CTT and Moonlington/ProbesBeforeCrew found 145 tech nodes with a nominal
-176,303-science full-tree cost and 90,663 one-pass non-repeatable CSC science (51.4%). This is an
-intentional supplement: experiments remain necessary, while partial mission participation still moves
-the program forward. No broad reward reduction was justified; repetitive operation durations were
-trimmed instead.
+Tree and validates literal Probes Before Crew `TechRequired` targets. The 0.8.0 reference run against
+KSP 1.12.5, CTT 3.4.5 and Moonlington/ProbesBeforeCrew found 145 tech nodes with a nominal
+176,303-science full-tree cost and no unresolved PBC targets. SOL provides 90,663 one-pass
+non-repeatable science (51.4%); Stock provides 52,750 (29.9%). This is an intentional supplement:
+experiments remain necessary, while partial mission participation still moves the program forward.
+No broad reward reduction was justified; later infrastructure endurance stages were raised from 60 to
+120 days instead.
 
 CustomScienceContracts has **one shared engine** (one compiled `CustomScienceContracts.dll`) and
 three maintained contract catalogs. Releases ship **two assets**: the main download (engine +
@@ -52,6 +53,7 @@ the generator than in every mission block. Examples from the SOL campaign:
 - relay-specific network checks,
 - generated crewed-orbit apoapsis caps and minimum half-day holds,
 - generated station/base/depot chains,
+- mandatory capacity-scaled station mass, docking, power and expansion-laboratory certification,
 - generated support missions such as the first docking target,
 - optional generated side missions that are deliberately not prerequisites,
 - epoch placement through `EPOCH_EXACT` / `epoch_for_id`.

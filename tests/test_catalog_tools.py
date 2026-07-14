@@ -7,7 +7,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 from catalog_common import (long_stay_days, normalize_stock_station_policy, parse_check,
-                            recommended_route_order, stability_days, upgrade_operational_checks)
+                            recommended_route_order, SCIENCE_LAB_MODULES, stability_days,
+                            station_engineering_requirements, upgrade_operational_checks)
 from catalog_validation import load_catalog, validate
 
 
@@ -16,7 +17,11 @@ class CatalogToolTests(unittest.TestCase):
         self.assertEqual(10, stability_days(True))
         self.assertEqual(3, stability_days(False))
         self.assertEqual(150, long_stay_days(True))
-        self.assertEqual(60, long_stay_days(False))
+        self.assertEqual(120, long_stay_days(False))
+
+    def test_station_engineering_scales_build_and_expansion(self):
+        self.assertEqual((14, 2, 1000), station_engineering_requirements(3, False))
+        self.assertEqual((32, 4, 2000), station_engineering_requirements(8, True))
 
     def test_stock_upgrade_keeps_crew(self):
         mission = {"id": "st_kerbin_station_upgrade4", "checks": [
@@ -34,9 +39,28 @@ class CatalogToolTests(unittest.TestCase):
         ]}
         normalize_stock_station_policy(mission)
         checks = {kind: dict(values) for kind, values, _ in mission["checks"]}
+        self.assertEqual("32", checks["MASS_MIN"]["amount"])
         self.assertEqual("4", checks["DOCKING_PORT_COUNT"]["count"])
         self.assertEqual("2000", checks["POWER_CAPACITY_MIN"]["amount"])
+        self.assertEqual(SCIENCE_LAB_MODULES, checks["MODULE_COUNT"]["module"])
         self.assertNotIn("fuel", mission["description"].lower())
+
+    def test_stock_initial_station_build_gets_mandatory_baseline_without_lab(self):
+        mission = {
+            "id": "st_kerbin_station_core3",
+            "recordStation": "kerbin_station",
+            "description": "Build.",
+            "checks": [
+                ("CREW_CAPACITY_MIN", [("min", "3")], "three seats"),
+                ("ORBIT_ABOVE", [("body", "Kerbin")], "orbit"),
+            ],
+        }
+        normalize_stock_station_policy(mission)
+        checks = {kind: dict(values) for kind, values, _ in mission["checks"]}
+        self.assertEqual("14", checks["MASS_MIN"]["amount"])
+        self.assertEqual("2", checks["DOCKING_PORT_COUNT"]["count"])
+        self.assertEqual("1000", checks["POWER_CAPACITY_MIN"]["amount"])
+        self.assertNotIn("MODULE_COUNT", checks)
 
     def test_recommended_route_expands_prerequisites_and_orders_them_first(self):
         prerequisites = {"a": [], "b": ["a"], "c": ["b"], "side": []}
@@ -103,6 +127,35 @@ CONTRACT
             Path(directory, "a.cfg").write_text(cfg, encoding="utf-8")
             errors = validate(load_catalog(directory))
         self.assertTrue(any("unknown prerequisite" in error for error in errors))
+
+    def test_validator_rejects_legacy_sixty_day_infrastructure_stay(self):
+        cfg = """CUSTOM_CONTRACT_CATALOG
+{
+CONTRACT
+{
+ id = cr_titan_base6
+ title = Base
+ description = Base
+ sparte = Bemannt
+ reward = 1
+ epoch = 9
+ CONDITION
+ {
+  type = COMPOSITE
+  CHECK
+  {
+   kind = DURATION
+   days = 60
+   label = legacy stay
+  }
+ }
+}
+}
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "a.cfg").write_text(cfg, encoding="utf-8")
+            errors = validate(load_catalog(directory))
+        self.assertTrue(any("must use 120 days" in error for error in errors))
 
 
 if __name__ == "__main__":

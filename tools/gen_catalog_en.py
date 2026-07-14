@@ -14,7 +14,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 import gen_catalog as de
-from catalog_common import long_stay_days, stability_days
+from catalog_common import (long_stay_days, SCIENCE_LAB_MODULES,
+                            stability_days, station_engineering_requirements)
 
 ROOT = de.ROOT
 DOC = de.DOC
@@ -428,26 +429,35 @@ def orbit_chain(key, body, sub, orbitword, km, stages, prereq0, station_word, mu
         sup, lng = f"cr_{key}_supply{n}", f"cr_{key}_longstay{n}"
         empty = make_check("CREW_NONE", "Station uncrewed, no Kerbals aboard")
         stable_days = stability_days(build)
+        mass, ports, power = station_engineering_requirements(n, not build)
         station_checks = [
             make_check("CREW_CAPACITY_MIN", f"At least {seats(n)} available", min=n),
             make_check("ORBIT_ABOVE", f"Stable {orbitword}, periapsis above {km} km", body=body, km=km),
             make_check("APOAPSIS_MAX", f"Apoapsis below {max_km} km", body=body, km=max_km),
-            make_check("DURATION", f"Hold in the target orbit for {stable_days} days", days=stable_days),
+            make_check("MASS_MIN", f"Station mass at least {mass} tonnes", amount=mass),
+            make_check("DOCKING_PORT_COUNT", f"At least {ports} docking ports", count=ports),
+            make_check("POWER_CAPACITY_MIN", f"ElectricCharge capacity at least {power}", amount=power),
         ]
         if build:
             station_checks.insert(0, empty)
+            station_checks.append(make_check("DURATION", f"Hold in the target orbit for {stable_days} days",
+                                             days=stable_days))
             title = f"{station_word} ({seats(n)})"
-            desc = f"Build your first {station_word.lower()} with at least {seats(n)}. The station must be empty and uncrewed; crew is counted from resupply onward. The station name will be reused by future supply flights."
+            desc = (f"Build your first {station_word.lower()} with at least {seats(n)}. The station must be "
+                    f"empty and uncrewed; crew is counted from resupply onward. Mandatory construction "
+                    f"certification requires at least {mass} tonnes, {ports} docking ports and {power} "
+                    "ElectricCharge capacity. The station name will be reused by future supply flights.")
             out.append(de.contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
                        round(220 * mult), [prereq0], station_checks, record=key))
         else:
             title = f"Station Expansion to {seats(n)}"
-            ports, power = de.station_expansion_requirements(n)
             desc = (f"Expand %station% to at least {seats(n)} without evacuating its existing crew. "
-                    f"The expansion needs at least {ports} docking ports and {power} ElectricCharge capacity.")
+                    f"The expansion needs at least {mass} tonnes, {ports} docking ports, {power} "
+                    "ElectricCharge capacity and, from this first expansion onward, a compatible science laboratory.")
             station_checks.extend([
-                make_check("DOCKING_PORT_COUNT", f"At least {ports} docking ports", count=ports),
-                make_check("POWER_CAPACITY_MIN", f"ElectricCharge capacity at least {power}", amount=power),
+                make_check("MODULE_COUNT", "At least one compatible science laboratory",
+                           module=SCIENCE_LAB_MODULES, count=1),
+                make_check("DURATION", f"Hold in the target orbit for {stable_days} days", days=stable_days),
             ])
             out.append(de.contract(sid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
                        round((180 + 20 * n) * mult), [prev_long], station_checks, ref=key))
@@ -579,38 +589,14 @@ def fuel_depot_chain(key, sub, stages, prereq0, mult):
     return "".join(out)
 
 
-def station_certification(cid, title, body, sub, key, prerequisite, epoch,
-                          mass, power, ports, reward):
-    orbit_km = {"Earth": 130, "Moon": 25, "Mars": 90}[body]
-    checks = [
-        make_check("ORBIT_ABOVE", f"Stable orbit, periapsis above {orbit_km} km", body=body, km=orbit_km),
-        make_check("MASS_MIN", f"Station mass at least {mass} tonnes", amount=mass),
-        make_check("MODULE_COUNT", "At least one compatible science laboratory",
-                   module="ModuleScienceLab|ModuleScienceConverter|Laboratory", count=1),
-        make_check("POWER_CAPACITY_MIN", f"ElectricCharge capacity at least {power}", amount=power),
-        make_check("DOCKING_PORT_COUNT", f"At least {ports} docking ports", count=ports),
-    ]
-    desc = ("Perform an optional engineering certification of %station%: mass, a science module, "
-            "stored electrical power and docking capacity are audited together. This mission does "
-            "not block any later campaign step.")
-    return de.contract(cid, title, desc, "Stationen", sub, "TrackingStation_ButtonMapStation",
-                       reward, [prerequisite], checks, ref=key, epoch=epoch)
-
-
 def build_stations():
     s = ""
     s += "    // ===== EARTH - Space station (3 -> 12 seats) =====\n"
     s += orbit_chain("earth_station", "Earth", "Earth", "Earth orbit", 130,
                      [3, 4, 6, 8, 10, 12], "cr_luna_landing", "Earth Orbital Station", 1.0)
-    s += station_certification("opt_earth_station_certification", "Optional Earth Station Certification",
-                               "Earth", "Earth", "earth_station", "cr_earth_station_expand4", 3,
-                               15, 1000, 2, 45)
     s += "\n    // ===== MOON - Space station =====\n"
     s += orbit_chain("moon_station", "Moon", "Moon", "lunar orbit", 25,
                      [3, 4, 6, 8, 10], "cr_earth_station_longstay4", "Lunar Orbital Station", 1.5)
-    s += station_certification("opt_moon_station_certification", "Optional Lunar Station Certification",
-                               "Moon", "Moon", "moon_station", "cr_moon_station_build", 3,
-                               20, 1500, 2, 70)
     s += "\n    // ===== MOON - Base-site surveys after Earth station expansion =====\n"
     s += moon_base_site_survey_landings()
     s += "\n    // ===== MOON - Surface base =====\n"
@@ -619,9 +605,6 @@ def build_stations():
     s += "\n    // ===== MARS - Space station =====\n"
     s += orbit_chain("mars_station", "Mars", "Mars", "Mars orbit", 90,
                      [2, 3, 4, 6], "cr_mars_stay_10d", "Mars Orbital Station", 2.4)
-    s += station_certification("opt_mars_station_certification", "Optional Mars Station Certification",
-                               "Mars", "Mars", "mars_station", "cr_mars_station_build", 5,
-                               25, 2000, 2, 110)
     s += "\n    // ===== MARS - Surface base =====\n"
     s += base_chain("mars_base", "Mars", "Mars", [2, 3, 4, 6], "cr_mars_stay_30d", "Mars Base", 2.6)
     s += "\n    // ===== EARTH - Crewed orbital fuel depot =====\n"

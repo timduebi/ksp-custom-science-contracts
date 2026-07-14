@@ -8,6 +8,8 @@ packs on the same release that swap the catalog to the stock KSP system or to Ge
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-07-14
+
 ### Added
 - A complete topologically ordered recommended route derived from the campaign milestones and all
   of their required prerequisites; the atlas shows only the single next recommended mission.
@@ -15,11 +17,22 @@ packs on the same release that swap the catalog to the stock KSP system or to Ge
 - Relay objectives can require a phased, redundant operational network instead of a raw vessel count.
 - Logistics objectives can measure resources delivered to a recorded station or base from the stock
   captured when the mission was accepted.
-- Optional station certification missions for mass, science modules, ElectricCharge capacity and
-  docking-port capacity in both SOL and Stock campaigns.
-- Orbital station expansions now scale docking-port and ElectricCharge requirements with capacity;
-  ordinary station resupply no longer asks for fuel. Fuel remains meaningful only for bases and
-  dedicated depots.
+- Mandatory station-construction certification in both SOL and Stock: every ordinary orbital-station
+  build checks minimum mass, docking capacity and ElectricCharge storage.
+- Station expansions scale mass, docking-port and ElectricCharge requirements with capacity and require
+  a compatible stock- or Kerbalism-style science laboratory from the first expansion onward.
+- Semantic validation and regression tests enforce the construction baseline, expansion laboratory and
+  the absence of standalone optional certification missions in every generated catalog.
+
+### Changed
+- Later 60-day station and base endurance stages now require 120 days. Initial 150-day endurance
+  milestones and three-day expansion stabilization remain unchanged.
+- Removed six optional certification side missions; their checks are now part of the corresponding main
+  construction/expansion path. Mission ids, rewards and prerequisites of all retained missions stay stable.
+- Ordinary station resupply no longer asks for fuel. Fuel remains meaningful only for bases and dedicated
+  depots.
+- Replaced the player README with a complete guide to editions, dependencies, installation, station
+  formulas, objective evaluation, saves, troubleshooting and development.
 
 ### Fixed
 - Restored all historical per-save progress files. KSP's `ConfigNode.Save` omits the name of the root
@@ -29,6 +42,8 @@ packs on the same release that swap the catalog to the stock KSP system or to Ge
 ### Compatibility
 - Existing active relay and supply missions retain their original acceptance-time rules. The stricter
   topology and delivery tracking applies only to missions accepted with the new evaluation schema.
+- Removed optional certification completions in old state files are ignored safely; they were never
+  prerequisites. Existing completed and active retained mission ids continue to load without a reset.
 
 ## [0.7.0] - 2026-07-14
 
